@@ -1,6 +1,9 @@
 /************ OTA ************/
 void setup_ota() {
-  Serial.println("================= Configurando OTA device =================");
+  Serial.println();
+  Serial.println("=================================");
+  Serial.println("  Configurando OTA device  ");
+  Serial.println("=================================");
   Serial.println("...");
   mqtt_client_id = mqtt_client_id + ESP.getChipId();
   ArduinoOTA.setHostname(mqtt_client_id.c_str());
@@ -10,7 +13,7 @@ void setup_ota() {
 
   telnetServer.begin();  // Necessário para fazer o software Arduino detectar automaticamente o dispositivo OTA
   ArduinoOTA.onStart([]() {
-    Serial.println("OTA iniciando...");
+    Serial.println("   OTA iniciando...");
   });
   ArduinoOTA.onEnd([]() {
     Serial.println("Atualização OTA concluída!");
@@ -28,5 +31,5 @@ void setup_ota() {
     else if (error == OTA_END_ERROR) Serial.println("Falha no término");
   });
   ArduinoOTA.begin();
-  Serial.println("OTA Configurado.");
+  Serial.println("   OTA Configurado.");
 }

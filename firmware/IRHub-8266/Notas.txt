@@ -112,3 +112,12 @@
          [flag][min width][precision][length modifier]
     --------------------------------------------------------------
   */
+
+/************ MQTT Tópicos Assinados ************/
+// Tópico 0: IRHub-8266-Sala/command
+// Tópico 1: IRHub-8266-Sala/command/LEDA
+// Tópico 2: IRHub-8266-Sala/command/IR/typeSendCod
+// Tópico 3: IRHub-8266-Sala/command/IR/NEC/DEC
+// Tópico 4: IRHub-8266-Sala/command/IR/NEC/HEX
+// Tópico 5: IRHub-8266-Sala/command/IR/NIKAI/DEC
+// Tópico 6: IRHub-8266-Sala/command/IR/NIKAI/HEX

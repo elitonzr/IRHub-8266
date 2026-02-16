@@ -1,0 +1,3008 @@
+[
+    {
+        "id": "4a48fb317c95e915",
+        "type": "tab",
+        "label": "IRHub-8266",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "435e8e075e9b899b",
+        "type": "group",
+        "z": "4a48fb317c95e915",
+        "name": "feedback()",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "936fcede289efe91",
+            "bb61922107fea560",
+            "f375374aa706eb87",
+            "361f2c2f86273d5f",
+            "11eff37c2711f45f",
+            "5667307f019d29c9",
+            "32236ea1b4ce6db0",
+            "387f6fdaece66843",
+            "0f099007dfa43dbc",
+            "0134a24143580611",
+            "70e8b78d25324047",
+            "6748e5d93160a097",
+            "501f7f1bdeab48ab",
+            "64dea736f5a17679",
+            "d9f318775ddb55bb"
+        ],
+        "x": 34,
+        "y": 199,
+        "w": 322,
+        "h": 342
+    },
+    {
+        "id": "40d0af71a5e4d995",
+        "type": "group",
+        "z": "4a48fb317c95e915",
+        "name": "LED A - on/off (Comando Invertido)",
+        "style": {
+            "stroke": "#2d324a",
+            "fill": "#1f2335",
+            "label": true,
+            "color": "#7982a9"
+        },
+        "nodes": [
+            "d69d6198f34ce1a9",
+            "f65c67fae75025f1",
+            "8047de16a77e56d9",
+            "1a9b014ca0df415a",
+            "74820d8516888624",
+            "47bdc8f909c13fa4",
+            "c3d72d2356c097f3",
+            "6ba174f41f7495c6",
+            "d090d6a43caaf547"
+        ],
+        "x": 434,
+        "y": 199,
+        "w": 322,
+        "h": 242
+    },
+    {
+        "id": "32eae25ae565dcb2",
+        "type": "group",
+        "z": "4a48fb317c95e915",
+        "name": "Astronauta",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "afa1f421428edf24",
+            "c1e5f01dc97963f9",
+            "4f775dfbd74d5176",
+            "b5c1dd32b3be1dd0",
+            "14b5e3c5c451a7c5",
+            "0c4e3a7e21420c0d",
+            "235b89157f90def2",
+            "31cf23f5f4f57d22",
+            "ab2f02e253f3ca39",
+            "44355659619e51c8",
+            "b562982839b840ba",
+            "b2e525516005dddf",
+            "42786948e2104689",
+            "78c45b491fef2a8f",
+            "fc3413803b60f651",
+            "04996fbf8a512b33",
+            "99d49adb55a8ca91",
+            "502d9639ac19e6bc"
+        ],
+        "x": 814,
+        "y": 1199,
+        "w": 562,
+        "h": 662
+    },
+    {
+        "id": "ee9e901666325229",
+        "type": "group",
+        "z": "4a48fb317c95e915",
+        "style": {
+            "stroke": "#2d324a",
+            "stroke-opacity": "1",
+            "fill": "#1f2335",
+            "fill-opacity": "0.5",
+            "label": true,
+            "label-position": "nw",
+            "color": "#7982a9"
+        },
+        "nodes": [
+            "9723db06d9dcad11",
+            "2f94a281156b3978",
+            "ef4c5b582b8f07f3",
+            "40df49d61680c43a",
+            "dcb9cbea2bf53815",
+            "d89ef9b41d61e80c",
+            "686ed4f1231ac6dd",
+            "59eef432b2fc5e96",
+            "0551d772bb1ecf4c",
+            "d99aa46d4e97df12",
+            "acdb1eb198b03f61",
+            "0de7e966add82f59",
+            "5384189ba78372fe",
+            "f2d9044b964c12c6",
+            "d896f097b603aa39",
+            "9ab71a8d6f1144e7",
+            "b8847f3336897547",
+            "91d0b0352e2b6310",
+            "d05548c9bb3ddaa9",
+            "a0db86132cba03a3",
+            "7d566e8715f7ef98",
+            "d2dda57ee2df2b4f",
+            "dd0784207197823c"
+        ],
+        "x": 1414,
+        "y": 1179,
+        "w": 672,
+        "h": 682
+    },
+    {
+        "id": "6e3af5e4fbc74a38",
+        "type": "group",
+        "z": "4a48fb317c95e915",
+        "style": {
+            "stroke": "#232433",
+            "stroke-opacity": "1",
+            "fill": "#16161e",
+            "fill-opacity": "0.5",
+            "label": true,
+            "label-position": "nw",
+            "color": "#787c99"
+        },
+        "nodes": [
+            "cc2af01511d4dea0"
+        ],
+        "x": 34,
+        "y": 59,
+        "w": 172,
+        "h": 82
+    },
+    {
+        "id": "f0c8ff8331fcad58",
+        "type": "group",
+        "z": "4a48fb317c95e915",
+        "name": "Teste Emissor IR - Hanilita/Desabilita",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "9f7cba3710a84f38",
+            "7bab6170fbadbdd0",
+            "868512c3eef95c4c",
+            "faaabdf7ec753944",
+            "fb41312c2d6d5023",
+            "bec753d954149177",
+            "8f7dcad895afd937"
+        ],
+        "x": 34,
+        "y": 565.6666666666666,
+        "w": 272,
+        "h": 182
+    },
+    {
+        "id": "b998867203736964",
+        "type": "group",
+        "z": "4a48fb317c95e915",
+        "name": "controla o tipo de recepção de IR",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "4214f67f0f450455",
+            "9d838030dbf6ce10",
+            "4770b30be24ecdbc",
+            "62bbba12ad04422c",
+            "e9ec37d5dc609809",
+            "81e77f756b1ddf30",
+            "1f299b5d5e2cc9de",
+            "1ff341a15845c675",
+            "743f9fca8eb9a3ad",
+            "a240909e45205169",
+            "ca4b0b4ea1042a16",
+            "df5cf50a13bc4c8f"
+        ],
+        "x": 34,
+        "y": 772.3333333333333,
+        "w": 272,
+        "h": 322
+    },
+    {
+        "id": "afa0df6a0ee2942c",
+        "type": "group",
+        "z": "4a48fb317c95e915",
+        "name": "Recepitor IR - Hanilita/Desabilita",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "b9be515909c3f17f",
+            "6fcdbb87bce1485f",
+            "e5f1eef1096b4ba8",
+            "c0df6e7ab7a7384a",
+            "ddf4a4d755b4f185",
+            "1c894f92b0fb8bf0",
+            "09f6da120902e778"
+        ],
+        "x": 34,
+        "y": 1119,
+        "w": 282,
+        "h": 182
+    },
+    {
+        "id": "cb06e28931beedd4",
+        "type": "group",
+        "z": "4a48fb317c95e915",
+        "style": {
+            "stroke": "#232433",
+            "stroke-opacity": "1",
+            "fill": "#16161e",
+            "fill-opacity": "0.5",
+            "label": true,
+            "label-position": "nw",
+            "color": "#787c99"
+        },
+        "nodes": [
+            "c166c96c8e97c3c1",
+            "2b494cedb68cb838",
+            "72f7e14d40aac462",
+            "bf6ac887557993ff",
+            "b7e3a671ab52e140",
+            "a699260020ead74e",
+            "67c63b81c7bd375b"
+        ],
+        "x": 1284,
+        "y": 59,
+        "w": 312,
+        "h": 182
+    },
+    {
+        "id": "5417fd04841c2795",
+        "type": "group",
+        "z": "4a48fb317c95e915",
+        "style": {
+            "stroke": "#232433",
+            "stroke-opacity": "1",
+            "fill": "#16161e",
+            "fill-opacity": "0.5",
+            "label": true,
+            "label-position": "nw",
+            "color": "#787c99"
+        },
+        "nodes": [
+            "09edf28df789355e",
+            "e0b95e2e2d518ef6",
+            "efc43603a1e7a3e3",
+            "c1ae6ff5570bf39e"
+        ],
+        "x": 34,
+        "y": 59,
+        "w": 312,
+        "h": 122
+    },
+    {
+        "id": "efc43603a1e7a3e3",
+        "type": "mqtt in",
+        "z": "4a48fb317c95e915",
+        "g": "5417fd04841c2795",
+        "name": "",
+        "topic": "IRHub-8266-Sala/#",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "929c2467a3e43338",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "c1ae6ff5570bf39e"
+            ]
+        ]
+    },
+    {
+        "id": "ca7645f0b13c60dc",
+        "type": "debug",
+        "z": "4a48fb317c95e915",
+        "name": "debug 57",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 655,
+        "y": 140,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "3bb35112e53b5321",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "name": "topic",
+        "func": "const timestamp = global.get(\"now.timestamp\") ?? \"00/00/00 00:00:00\";\n\nif (msg.topic === \"IRHub-8266-Sala/command\" || msg.topic === \"IRHub-8266-Sala/command/IR/DEC\") {\n    return null;\n}\n\nnode.status({\n    fill: \"yellow\",\n    shape: \"dot\",\n    text: `🔄️ ${msg.topic} | Topic recebido! | ${timestamp}`\n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 570,
+        "y": 140,
+        "wires": [
+            [
+                "ca7645f0b13c60dc"
+            ]
+        ]
+    },
+    {
+        "id": "63d3ba1b4166d7f8",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "name": "uptime",
+        "func": "const timestamp = global.get(\"now.timestamp\") ?? \"00/00/00 00:00:00\";\n\nif (msg.topic !== \"IRHub-8266-Sala/info/uptime\") {\n    return null;\n}\n\nnode.status({\n    fill: \"yellow\",\n    shape: \"ring\",\n    text: `🆙 uptime | ${msg.payload} | ${timestamp}`\n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 570,
+        "y": 80,
+        "wires": [
+            [
+                "9104ed370dedf92b"
+            ]
+        ]
+    },
+    {
+        "id": "9104ed370dedf92b",
+        "type": "debug",
+        "z": "4a48fb317c95e915",
+        "name": "debug 83",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 655,
+        "y": 80,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "c1ae6ff5570bf39e",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "5417fd04841c2795",
+        "name": "link out 98",
+        "mode": "link",
+        "links": [
+            "0151cdb28db18010",
+            "1f2d3f55f8c0436f",
+            "bec753d954149177",
+            "22b2fd2f62eb42fe",
+            "09f6da120902e778",
+            "a240909e45205169",
+            "09edf28df789355e",
+            "d090d6a43caaf547",
+            "501f7f1bdeab48ab"
+        ],
+        "x": 285,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "0151cdb28db18010",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "name": "link in 129",
+        "links": [
+            "c1ae6ff5570bf39e"
+        ],
+        "x": 485,
+        "y": 80,
+        "wires": [
+            [
+                "63d3ba1b4166d7f8"
+            ]
+        ]
+    },
+    {
+        "id": "1f2d3f55f8c0436f",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "name": "link in 130",
+        "links": [
+            "c1ae6ff5570bf39e"
+        ],
+        "x": 485,
+        "y": 140,
+        "wires": [
+            [
+                "3bb35112e53b5321"
+            ]
+        ]
+    },
+    {
+        "id": "b2e1053c371c4840",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "name": "/IR/DEC",
+        "func": "msg.topic = \"/IR/DEC\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1020,
+        "y": 940,
+        "wires": [
+            [
+                "05f0610ee93c6e78"
+            ]
+        ]
+    },
+    {
+        "id": "2311e1583c34cb32",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "name": "link in 620",
+        "links": [
+            "0adf0782cba1962c",
+            "99d49adb55a8ca91",
+            "d05548c9bb3ddaa9"
+        ],
+        "x": 925,
+        "y": 940,
+        "wires": [
+            [
+                "b2e1053c371c4840"
+            ]
+        ]
+    },
+    {
+        "id": "05f0610ee93c6e78",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "name": "link out 733",
+        "mode": "link",
+        "links": [
+            "ac0929018bb98527"
+        ],
+        "x": 1125,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "3b5f3310fcd7345d",
+        "type": "mqtt out",
+        "z": "4a48fb317c95e915",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "929c2467a3e43338",
+        "x": 1990,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "c4f9eb6adbf57d15",
+        "type": "debug",
+        "z": "4a48fb317c95e915",
+        "name": "debug 120",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1955,
+        "y": 560,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "61dc272ebac717a4",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "name": "IRHub-8266/command",
+        "func": "msg.topic = \"IRHub-8266-Sala/command\" + msg.topic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1800,
+        "y": 600,
+        "wires": [
+            [
+                "3b5f3310fcd7345d",
+                "c4f9eb6adbf57d15"
+            ]
+        ]
+    },
+    {
+        "id": "0adf0782cba1962c",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "name": "link out 734",
+        "mode": "link",
+        "links": [
+            "2311e1583c34cb32"
+        ],
+        "x": 1105,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "bd9a5f294f636b75",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "name": "LG - POWER ON",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "20DF23DC",
+        "payloadType": "str",
+        "x": 980,
+        "y": 1040,
+        "wires": [
+            [
+                "0adf0782cba1962c"
+            ]
+        ]
+    },
+    {
+        "id": "ed2c0d9f1e822f44",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "name": "LG - POWER OFF",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "20DFA35C",
+        "payloadType": "str",
+        "x": 970,
+        "y": 1080,
+        "wires": [
+            [
+                "0adf0782cba1962c"
+            ]
+        ]
+    },
+    {
+        "id": "9c2002bb85552498",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "name": "LG - POWER",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "20DF10EF",
+        "payloadType": "str",
+        "x": 990,
+        "y": 1000,
+        "wires": [
+            [
+                "0adf0782cba1962c"
+            ]
+        ]
+    },
+    {
+        "id": "ac0929018bb98527",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "name": "link in 621",
+        "links": [
+            "05f0610ee93c6e78",
+            "356aae8d07764f74"
+        ],
+        "x": 1665,
+        "y": 600,
+        "wires": [
+            [
+                "61dc272ebac717a4"
+            ]
+        ]
+    },
+    {
+        "id": "2b494cedb68cb838",
+        "type": "mqtt out",
+        "z": "4a48fb317c95e915",
+        "g": "cb06e28931beedd4",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "929c2467a3e43338",
+        "x": 1410,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "468b398a002d5499",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "test",
+        "payloadType": "str",
+        "x": 1225,
+        "y": 1140,
+        "wires": [
+            [
+                "0ac1dc71e7460abb"
+            ]
+        ],
+        "l": false
+    },
+    {
+        "id": "0ac1dc71e7460abb",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "name": "/IR/test",
+        "func": "msg.topic = \"/IR/test\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1320,
+        "y": 1140,
+        "wires": [
+            [
+                "356aae8d07764f74"
+            ]
+        ]
+    },
+    {
+        "id": "356aae8d07764f74",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "name": "link out 744",
+        "mode": "link",
+        "links": [
+            "ac0929018bb98527"
+        ],
+        "x": 1425,
+        "y": 1140,
+        "wires": []
+    },
+    {
+        "id": "c166c96c8e97c3c1",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "g": "cb06e28931beedd4",
+        "name": "IRHub-8266/",
+        "func": "msg.topic = \"IRHub-8266-Sala/\" + msg.topic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1430,
+        "y": 140,
+        "wires": [
+            [
+                "b7e3a671ab52e140"
+            ]
+        ]
+    },
+    {
+        "id": "72f7e14d40aac462",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "g": "cb06e28931beedd4",
+        "name": "link in 624",
+        "links": [
+            "c9435909364031c5",
+            "8f7dcad895afd937",
+            "74820d8516888624",
+            "20bfee89c3cdf211",
+            "ddf4a4d755b4f185",
+            "df5cf50a13bc4c8f",
+            "64dea736f5a17679"
+        ],
+        "x": 1325,
+        "y": 140,
+        "wires": [
+            [
+                "c166c96c8e97c3c1"
+            ]
+        ]
+    },
+    {
+        "id": "96ca0ef9edd96cb1",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "name": "TCL - POWER",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "D5F2A",
+        "payloadType": "str",
+        "x": 940,
+        "y": 760,
+        "wires": [
+            [
+                "1e3f3daf53e847b8"
+            ]
+        ]
+    },
+    {
+        "id": "3c627d63f80bcad7",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "name": "command/IR/NIKAI/HEX",
+        "func": "msg.topic = \"command/IR/NIKAI/HEX\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 720,
+        "wires": [
+            [
+                "c9435909364031c5"
+            ]
+        ]
+    },
+    {
+        "id": "c9435909364031c5",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "name": "link out 745",
+        "mode": "link",
+        "links": [
+            "72f7e14d40aac462"
+        ],
+        "x": 1115,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "1e3f3daf53e847b8",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "name": "link out 746",
+        "mode": "link",
+        "links": [
+            "9930ebd92386e1b8"
+        ],
+        "x": 1055,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "9930ebd92386e1b8",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "name": "link in 625",
+        "links": [
+            "1e3f3daf53e847b8",
+            "204673c357cfb787",
+            "7e85a099efcc38e9"
+        ],
+        "x": 815,
+        "y": 720,
+        "wires": [
+            [
+                "3c627d63f80bcad7"
+            ]
+        ]
+    },
+    {
+        "id": "82b47aabe026eda8",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "name": "TCL - Volume +",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "D0F2F",
+        "payloadType": "str",
+        "x": 940,
+        "y": 800,
+        "wires": [
+            [
+                "204673c357cfb787"
+            ]
+        ]
+    },
+    {
+        "id": "8f23d02e31d22fd0",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "name": "TCL - Volume -",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "D1F2E",
+        "payloadType": "str",
+        "x": 940,
+        "y": 840,
+        "wires": [
+            [
+                "7e85a099efcc38e9"
+            ]
+        ]
+    },
+    {
+        "id": "204673c357cfb787",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "name": "link out 747",
+        "mode": "link",
+        "links": [
+            "9930ebd92386e1b8"
+        ],
+        "x": 1055,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "7e85a099efcc38e9",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "name": "link out 748",
+        "mode": "link",
+        "links": [
+            "9930ebd92386e1b8"
+        ],
+        "x": 1055,
+        "y": 840,
+        "wires": []
+    },
+    {
+        "id": "936fcede289efe91",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "a0",
+        "payloadType": "str",
+        "x": 130,
+        "y": 240,
+        "wires": [
+            [
+                "361f2c2f86273d5f"
+            ]
+        ]
+    },
+    {
+        "id": "bb61922107fea560",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "a1",
+        "payloadType": "str",
+        "x": 130,
+        "y": 280,
+        "wires": [
+            [
+                "f375374aa706eb87"
+            ]
+        ]
+    },
+    {
+        "id": "f375374aa706eb87",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "link out 87",
+        "mode": "link",
+        "links": [
+            "501f7f1bdeab48ab"
+        ],
+        "x": 215,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "361f2c2f86273d5f",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "link out 93",
+        "mode": "link",
+        "links": [
+            "501f7f1bdeab48ab"
+        ],
+        "x": 215,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "11eff37c2711f45f",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "link out 94",
+        "mode": "link",
+        "links": [
+            "501f7f1bdeab48ab"
+        ],
+        "x": 215,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "5667307f019d29c9",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "a2",
+        "payloadType": "str",
+        "x": 130,
+        "y": 320,
+        "wires": [
+            [
+                "11eff37c2711f45f"
+            ]
+        ]
+    },
+    {
+        "id": "32236ea1b4ce6db0",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "link out 95",
+        "mode": "link",
+        "links": [
+            "501f7f1bdeab48ab"
+        ],
+        "x": 215,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "387f6fdaece66843",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "a3",
+        "payloadType": "str",
+        "x": 130,
+        "y": 360,
+        "wires": [
+            [
+                "32236ea1b4ce6db0"
+            ]
+        ]
+    },
+    {
+        "id": "0f099007dfa43dbc",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "link out 96",
+        "mode": "link",
+        "links": [
+            "501f7f1bdeab48ab"
+        ],
+        "x": 215,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "0134a24143580611",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "a4",
+        "payloadType": "str",
+        "x": 130,
+        "y": 400,
+        "wires": [
+            [
+                "0f099007dfa43dbc"
+            ]
+        ]
+    },
+    {
+        "id": "70e8b78d25324047",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "link out 97",
+        "mode": "link",
+        "links": [
+            "501f7f1bdeab48ab"
+        ],
+        "x": 215,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "6748e5d93160a097",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "a5",
+        "payloadType": "str",
+        "x": 130,
+        "y": 440,
+        "wires": [
+            [
+                "70e8b78d25324047"
+            ]
+        ]
+    },
+    {
+        "id": "d69d6198f34ce1a9",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "40d0af71a5e4d995",
+        "name": "toggle",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "toggle",
+        "payloadType": "str",
+        "x": 530,
+        "y": 240,
+        "wires": [
+            [
+                "47bdc8f909c13fa4"
+            ]
+        ]
+    },
+    {
+        "id": "f65c67fae75025f1",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "40d0af71a5e4d995",
+        "name": "off",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "on",
+        "payloadType": "str",
+        "x": 530,
+        "y": 280,
+        "wires": [
+            [
+                "c3d72d2356c097f3"
+            ]
+        ]
+    },
+    {
+        "id": "8047de16a77e56d9",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "40d0af71a5e4d995",
+        "name": "on",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "off",
+        "payloadType": "str",
+        "x": 530,
+        "y": 320,
+        "wires": [
+            [
+                "6ba174f41f7495c6"
+            ]
+        ]
+    },
+    {
+        "id": "1a9b014ca0df415a",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "g": "40d0af71a5e4d995",
+        "name": "command/LEDA",
+        "func": "const timestamp = global.get(\"now.timestamp\") ?? \"00/00/00 00:00:00\";\n\nif (!msg.topic) {\n    msg.topic = \"command/LEDA\"\n    return msg;\n}\n\nif (msg.topic === \"IRHub-8266-Sala/info/Outputs\") {\n    const estado = msg.payload.value[0];\n\n    const statusIcon = estado == 0 ? \"🟠\" : \"⚪️\";\n    const statusText = estado == 0 ? \"ON\" : \"OFF\";\n    const statusCor = estado == 0 ? \"Orange\" : \"gray\";\n\n    node.status({\n        fill: statusCor,\n        shape: \"dot\",\n        text: `${statusIcon} LED: ${statusText} | ${timestamp}`\n    });\n    return null;\n}\n\n\n\n\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 400,
+        "wires": [
+            [
+                "74820d8516888624"
+            ]
+        ]
+    },
+    {
+        "id": "74820d8516888624",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "40d0af71a5e4d995",
+        "name": "link out 735",
+        "mode": "link",
+        "links": [
+            "72f7e14d40aac462"
+        ],
+        "x": 715,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "afa1f421428edf24",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Power",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FFA25D",
+        "payload": "16753245",
+        "payloadType": "str",
+        "x": 1010,
+        "y": 1300,
+        "wires": [
+            [
+                "fc3413803b60f651"
+            ]
+        ]
+    },
+    {
+        "id": "c1e5f01dc97963f9",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "link out 736",
+        "mode": "link",
+        "links": [
+            "502d9639ac19e6bc"
+        ],
+        "x": 1185,
+        "y": 1740,
+        "wires": []
+    },
+    {
+        "id": "4f775dfbd74d5176",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Timer",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FFE21D",
+        "payload": "16769565",
+        "payloadType": "str",
+        "x": 1010,
+        "y": 1340,
+        "wires": [
+            [
+                "fc3413803b60f651"
+            ]
+        ]
+    },
+    {
+        "id": "b5c1dd32b3be1dd0",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Switch Nebulosa",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FF22DD",
+        "payload": "16720605",
+        "payloadType": "str",
+        "x": 980,
+        "y": 1420,
+        "wires": [
+            [
+                "04996fbf8a512b33"
+            ]
+        ]
+    },
+    {
+        "id": "14b5e3c5c451a7c5",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Nebulosa B-",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FFA857",
+        "payload": "16754775",
+        "payloadType": "str",
+        "x": 990,
+        "y": 1540,
+        "wires": [
+            [
+                "04996fbf8a512b33"
+            ]
+        ]
+    },
+    {
+        "id": "0c4e3a7e21420c0d",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Nebulosa S-",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FF02FD",
+        "payload": "16712445",
+        "payloadType": "str",
+        "x": 990,
+        "y": 1460,
+        "wires": [
+            [
+                "04996fbf8a512b33"
+            ]
+        ]
+    },
+    {
+        "id": "235b89157f90def2",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Estrela S-",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FF629D",
+        "payload": "16736925",
+        "payloadType": "str",
+        "x": 1000,
+        "y": 1780,
+        "wires": [
+            [
+                "c1e5f01dc97963f9"
+            ]
+        ]
+    },
+    {
+        "id": "31cf23f5f4f57d22",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Nebulosa S+",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FFC23D",
+        "payload": "16761405",
+        "payloadType": "str",
+        "x": 990,
+        "y": 1500,
+        "wires": [
+            [
+                "04996fbf8a512b33"
+            ]
+        ]
+    },
+    {
+        "id": "ab2f02e253f3ca39",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Nebulosa B+",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FF906F",
+        "payload": "16748655",
+        "payloadType": "str",
+        "x": 990,
+        "y": 1580,
+        "wires": [
+            [
+                "04996fbf8a512b33"
+            ]
+        ]
+    },
+    {
+        "id": "44355659619e51c8",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Estrela S+",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FF9867",
+        "payload": "16750695",
+        "payloadType": "str",
+        "x": 1000,
+        "y": 1820,
+        "wires": [
+            [
+                "c1e5f01dc97963f9"
+            ]
+        ]
+    },
+    {
+        "id": "b562982839b840ba",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Estrela B-",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FFE01F",
+        "payload": "16769055",
+        "payloadType": "str",
+        "x": 1000,
+        "y": 1700,
+        "wires": [
+            [
+                "c1e5f01dc97963f9"
+            ]
+        ]
+    },
+    {
+        "id": "b2e525516005dddf",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Estrela B+",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FFB04F",
+        "payload": "16756815",
+        "payloadType": "str",
+        "x": 1000,
+        "y": 1740,
+        "wires": [
+            [
+                "c1e5f01dc97963f9"
+            ]
+        ]
+    },
+    {
+        "id": "42786948e2104689",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - Switch Strela",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "FFFF00",
+        "payload": "16776960",
+        "payloadType": "str",
+        "x": 990,
+        "y": 1660,
+        "wires": [
+            [
+                "c1e5f01dc97963f9"
+            ]
+        ]
+    },
+    {
+        "id": "78c45b491fef2a8f",
+        "type": "comment",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "Astronauta - IR",
+        "info": "{\"DEC\":16753245,\"HEX\":\"FFA25D\"} POWER\n{\"DEC\":16769565,\"HEX\":\"FFE21D\"} TIMER\n\n{\"DEC\":16748655,\"HEX\":\"FF906F\"} Nebuloda B+\n{\"DEC\":16754775,\"HEX\":\"FFA857\"} Nebuloda B-\n{\"DEC\":16712445,\"HEX\":\"FF02FD\"} Nebuloda S-\n{\"DEC\":16761405,\"HEX\":\"FFC23D\"} Nebuloda S+\n{\"DEC\":16720605,\"HEX\":\"FF22DD\"} Nebulosa\n{\"DEC\":-22281499,\"HEX\":\"FEAC02E5\"}\n{\"DEC\":-1,\"HEX\":\"FFFFFFFF\"}\n\n{\"DEC\":16769055,\"HEX\":\"FFE01F\"} Strela B-\n{\"DEC\":16756815,\"HEX\":\"FFB04F\"} Strela B+\n{\"DEC\":16736925,\"HEX\":\"FF629D\"} Strela S-\n{\"DEC\":16750695,\"HEX\":\"FF9867\"} Strela S+\n{\"DEC\":16776960,\"HEX\":\"FFFF00\"} Strela\n{\"DEC\":-22281499,\"HEX\":\"FEAC02E5\"}\n{\"DEC\":-1,\"HEX\":\"FFFFFFFF\"}",
+        "x": 920,
+        "y": 1240,
+        "wires": []
+    },
+    {
+        "id": "fc3413803b60f651",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "link out 737",
+        "mode": "link",
+        "links": [
+            "502d9639ac19e6bc"
+        ],
+        "x": 1185,
+        "y": 1320,
+        "wires": []
+    },
+    {
+        "id": "04996fbf8a512b33",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "link out 738",
+        "mode": "link",
+        "links": [
+            "502d9639ac19e6bc"
+        ],
+        "x": 1185,
+        "y": 1500,
+        "wires": []
+    },
+    {
+        "id": "99d49adb55a8ca91",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "link out 739",
+        "mode": "link",
+        "links": [
+            "2311e1583c34cb32"
+        ],
+        "x": 1335,
+        "y": 1240,
+        "wires": []
+    },
+    {
+        "id": "502d9639ac19e6bc",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "g": "32eae25ae565dcb2",
+        "name": "link in 622",
+        "links": [
+            "fc3413803b60f651",
+            "04996fbf8a512b33",
+            "c1e5f01dc97963f9"
+        ],
+        "x": 1265,
+        "y": 1240,
+        "wires": [
+            [
+                "99d49adb55a8ca91"
+            ]
+        ]
+    },
+    {
+        "id": "9723db06d9dcad11",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "LG - POWER",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "551489775",
+        "payloadType": "str",
+        "x": 1570,
+        "y": 1260,
+        "wires": [
+            [
+                "7d566e8715f7ef98"
+            ]
+        ]
+    },
+    {
+        "id": "2f94a281156b3978",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "LG - INPUT",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "551538735",
+        "payloadType": "str",
+        "x": 1570,
+        "y": 1380,
+        "wires": [
+            [
+                "7d566e8715f7ef98"
+            ]
+        ]
+    },
+    {
+        "id": "ef4c5b582b8f07f3",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "LG - Volume +",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "551502015",
+        "payloadType": "str",
+        "x": 1570,
+        "y": 1420,
+        "wires": [
+            [
+                "7d566e8715f7ef98"
+            ]
+        ]
+    },
+    {
+        "id": "40df49d61680c43a",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "LG - Volume -",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "551534655",
+        "payloadType": "str",
+        "x": 1570,
+        "y": 1460,
+        "wires": [
+            [
+                "7d566e8715f7ef98"
+            ]
+        ]
+    },
+    {
+        "id": "dcb9cbea2bf53815",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "LG - Back",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "551490795",
+        "payloadType": "str",
+        "x": 1560,
+        "y": 1500,
+        "wires": [
+            [
+                "7d566e8715f7ef98"
+            ]
+        ]
+    },
+    {
+        "id": "d89ef9b41d61e80c",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "LG - Exit",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "551541285",
+        "payloadType": "str",
+        "x": 1560,
+        "y": 1540,
+        "wires": [
+            [
+                "7d566e8715f7ef98"
+            ]
+        ]
+    },
+    {
+        "id": "686ed4f1231ac6dd",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "LG - POWER ON",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "20DF23DC",
+        "payloadType": "str",
+        "x": 1920,
+        "y": 1380,
+        "wires": [
+            [
+                "a0db86132cba03a3"
+            ]
+        ]
+    },
+    {
+        "id": "59eef432b2fc5e96",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "LG - POWER OFF",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "20DFA35C",
+        "payloadType": "str",
+        "x": 1910,
+        "y": 1420,
+        "wires": [
+            [
+                "a0db86132cba03a3"
+            ]
+        ]
+    },
+    {
+        "id": "0551d772bb1ecf4c",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "LG - POWER",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "20DF10EF",
+        "payloadType": "str",
+        "x": 1930,
+        "y": 1340,
+        "wires": [
+            [
+                "a0db86132cba03a3"
+            ]
+        ]
+    },
+    {
+        "id": "d99aa46d4e97df12",
+        "type": "comment",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "Controle LG",
+        "info": "# Controle LG\n\n[link](https://tasmota.github.io/docs/Codes-for-IR-Remotes/#lg-55uh8509-tv)\n\n|button|code|\n|---|---|\n|ON/OFF|0x20DF10EF|\n|TV|0x20DF0FF0|\n|Ratio|0x20DF9E61|\n|Input|0x20DFD02F|\n|Energy|0x20DFA956|\n|Key 1|0x20DF8877|\n|Key 2|0x20DF48B7|\n|Key 3|0x20DFC837|\n|Key 4|0x20DF28D7|\n|Key 5|0x20DFA857|\n|Key 6|0x20DF6897|\n|Key 7|0x20DFE817|\n|Key 8|0x20DF18E7|\n|Key 9|0x20DF9867|\n|List|0x20DFCA35|\n|Key 0|0x20DF08F7|\n|Q.View|0x20DF58A7|\n|Vol+|0x20DF40BF|\n|Vol-|0x20DFC03F|\n|Vol-|0x20DFCE31|\n|Fav|0x20DF7887|\n|3D|0x20DF3BC4|\n|Mute|0x20DF906F|\n|P+|0x20DF00FF|\n|P-|0x20DF807F|\n|Settings|0x20DFC23D|\n|Info|0x20DF55AA|\n|Q.Menu|0x20DFA25D|\n|Left|0x20DFE01F|\n|Right|0x20DF609F|\n|Up|0x20DF02FD|\n|Down|0x20DF827D|\n|OK|0x20DF22DD|\n|Back|0x20DF14EB|\n|Guide|0x20DFD52A|\n|Exit|0x20DFDA25|\n|Red|0x20DF4EB1|\n|Green|0x20DF8E71|\n|Yellow|0x20DFC639|\n|Blue|0x20DF8679|\n|Text|0x20DF04FB|\n|T.Opt|0x20DF847B|\n|Subtitle|0x20DF9C63|\n|Stop|0x20DF8D72|\n|Play|0x20DF0DF2|\n|Pause|0x20DF5DA2|\n|Backward|0x20DFF10E|\n|Forward|0x20DF718E|\n|Simplink|0x20DF7E81|\n|AD|0x20DF8976|\n|AV Mode|0x20DF0CF3|\n|Live TV|0x20DF3EC1|\n|Live TV|0x20DF42BD|\n|Status|0x20DF35CA|\n|Audio Language|0x20DF50AF|\n|Shortmenu|0x20DF57A8|\n|AV|0x20DF5AA5|\n|online manual|0x20DF5EA1|\n|Volume to 50|0x20DF619E|\n|Volume to 80|0x20DF21DE|\n|Volume to 100|0x20DFE11E|\n|Radio/TV|0x20DF6B94|\n|doze function|0x20DF708F|\n|Display off|0x20DFA35C|\n|Standby|0x20DFD728|\n|Power on|0x20DF23DC|\n|Settings of remote|0x20DFB44B|\n|Program guide|0x20DF956A|\n|Radio/TV|0x20DFF00F|\n|HDMI 1|0x20DF738C|\n|HDMI 2|0x20DF33CC|\n|HDMI 3|0x20DF9768|\n|Component|0x20DFFD02|\n|Live Zoom|0x20DFF50A|\n|Input info|0x20DFF20D|\n|Picture mode|0x20DFB24D|\n|Recordings|0x20DF09F6|\n|Audio mode|0x20DF4AB5|\n|Register magic remote|0x20DF7B84|\n|directly register magic remote|0x20DFAE51|\n|Subtitles|0x20DF1CE3|\n|Presentation in shop|0x20DFCC33|\n|Start recording|0x20DFBD42|\n|LG TV Plus|0x20DFAD52|\n|Sports mode|0x20DFDD22|\n|Search|0x20DF1EE1|\n|Warning: instart|0x20DFDF20|\n|Warning: Poweronly|0x20DF7F80|\n|Warning: Easy adjust|0x20DFFF00|\n|Warning: instop|0x20DF5FA0|\n|Enter Password|0x20DF5FA0|\n|Warning: Reset to factory|0x20DF3FC0|",
+        "x": 1570,
+        "y": 1220,
+        "wires": []
+    },
+    {
+        "id": "acdb1eb198b03f61",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "LG - POWER ON",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "551494620",
+        "payloadType": "str",
+        "x": 1560,
+        "y": 1300,
+        "wires": [
+            [
+                "7d566e8715f7ef98"
+            ]
+        ]
+    },
+    {
+        "id": "0de7e966add82f59",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "LG - POWER OFF",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "551527260",
+        "payloadType": "str",
+        "x": 1550,
+        "y": 1340,
+        "wires": [
+            [
+                "7d566e8715f7ef98"
+            ]
+        ]
+    },
+    {
+        "id": "5384189ba78372fe",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "AOC - POWER",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "12419199",
+        "payloadType": "str",
+        "x": 1580,
+        "y": 1660,
+        "wires": [
+            [
+                "dd0784207197823c"
+            ]
+        ]
+    },
+    {
+        "id": "f2d9044b964c12c6",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "AOC - Volume +",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "12398799",
+        "payloadType": "str",
+        "x": 1580,
+        "y": 1700,
+        "wires": [
+            [
+                "dd0784207197823c"
+            ]
+        ]
+    },
+    {
+        "id": "d896f097b603aa39",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "AOC - Volume -",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "12388599",
+        "payloadType": "str",
+        "x": 1580,
+        "y": 1740,
+        "wires": [
+            [
+                "dd0784207197823c"
+            ]
+        ]
+    },
+    {
+        "id": "9ab71a8d6f1144e7",
+        "type": "comment",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "",
+        "info": "POWER:      {\"DEC\":12419199,\"HEX\":\"BD807F\"}\\\nVomule - :  {\"DEC\":12388599,\"HEX\":\"BD08F7\"}\\\nVomule + :  {\"DEC\":12398799,\"HEX\":\"BD30CF\"}\\\nCH -:       {\"DEC\":12400839,\"HEX\":\"BD38C7\"}\\\nCH +:       {\"DEC\":12392679,\"HEX\":\"BD18E7\"}\\\nMudo:       {\"DEC\":12394719,\"HEX\":\"BD20DF\"}\\\nSmart TV:   {\"DEC\":12421749,\"HEX\":\"BD8A75\"}\\\n\nCódigo rejeitado: não é NEC\nCódigo HEX: BD807F\nódigo DEC: 12419199\nProtocol  : NEC\nCode      : 0xBD807F (32 Bits)\n\n\n0:BD807F,\n1:BDA857, \n2:BD6897, \n3:BDE817, \n4:BD9867, \n5:BD58A7, \n6:BDD827, \n7:BDB847, \n8:BD7887, \n9:BDF807, \n10:BDD22D, \n11:BD827D, \n12:BD22DD, \n13:BDEA15, \n15:BD40BF, \n14:BDD02F, \n17:BDB04F, \n16:BD926D, \n18:BD52AD, \n20:BDF00F, \n21:BDE01F, \n19:BDA05F, \n42:BD20DF, \n39:BD10EF, \n40:BD18E7, \n43:BD38C7, \n38:BD30CF, \n41:BD08F7, \n34:BD32CD, \n35:BDB24D, \n36:BD728D, \n37:BDF20D, \n25:BD0AF5, \n22:BD4AB5, \n23:BDB649, \n24:BD0AF5",
+        "x": 1600,
+        "y": 1620,
+        "wires": []
+    },
+    {
+        "id": "b8847f3336897547",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "AOC - Mudo",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "12394719",
+        "payloadType": "str",
+        "x": 1570,
+        "y": 1780,
+        "wires": [
+            [
+                "dd0784207197823c"
+            ]
+        ]
+    },
+    {
+        "id": "91d0b0352e2b6310",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "AOC - Smart TV",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "12421749",
+        "payloadType": "str",
+        "x": 1580,
+        "y": 1820,
+        "wires": [
+            [
+                "dd0784207197823c"
+            ]
+        ]
+    },
+    {
+        "id": "d05548c9bb3ddaa9",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "link out 740",
+        "mode": "link",
+        "links": [
+            "2311e1583c34cb32"
+        ],
+        "x": 2015,
+        "y": 1220,
+        "wires": []
+    },
+    {
+        "id": "a0db86132cba03a3",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "link out 741",
+        "mode": "link",
+        "links": [],
+        "x": 2045,
+        "y": 1380,
+        "wires": []
+    },
+    {
+        "id": "7d566e8715f7ef98",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "link out 742",
+        "mode": "link",
+        "links": [
+            "d2dda57ee2df2b4f"
+        ],
+        "x": 1715,
+        "y": 1400,
+        "wires": []
+    },
+    {
+        "id": "d2dda57ee2df2b4f",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "link in 623",
+        "links": [
+            "7d566e8715f7ef98",
+            "dd0784207197823c"
+        ],
+        "x": 1945,
+        "y": 1220,
+        "wires": [
+            [
+                "d05548c9bb3ddaa9"
+            ]
+        ]
+    },
+    {
+        "id": "dd0784207197823c",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "ee9e901666325229",
+        "name": "link out 743",
+        "mode": "link",
+        "links": [
+            "d2dda57ee2df2b4f"
+        ],
+        "x": 1725,
+        "y": 1740,
+        "wires": []
+    },
+    {
+        "id": "cc2af01511d4dea0",
+        "type": "comment",
+        "z": "4a48fb317c95e915",
+        "g": "6e3af5e4fbc74a38",
+        "name": "",
+        "info": "/command               \n/command/LEDA          \n/command/D6            \n/command/D8            \n/command/IR/typeSendCod\n/command/IR/DEC        \n/command/IR/HEX      ",
+        "x": 120,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "9f7cba3710a84f38",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "f0c8ff8331fcad58",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "b0",
+        "payloadType": "str",
+        "x": 140,
+        "y": 606.6666666666666,
+        "wires": [
+            [
+                "faaabdf7ec753944"
+            ]
+        ]
+    },
+    {
+        "id": "7bab6170fbadbdd0",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "f0c8ff8331fcad58",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "b1",
+        "payloadType": "str",
+        "x": 140,
+        "y": 646.6666666666666,
+        "wires": [
+            [
+                "868512c3eef95c4c"
+            ]
+        ]
+    },
+    {
+        "id": "868512c3eef95c4c",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "f0c8ff8331fcad58",
+        "name": "link out 87",
+        "mode": "link",
+        "links": [
+            "bec753d954149177"
+        ],
+        "x": 225,
+        "y": 646.6666666666666,
+        "wires": []
+    },
+    {
+        "id": "faaabdf7ec753944",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "f0c8ff8331fcad58",
+        "name": "link out 93",
+        "mode": "link",
+        "links": [
+            "bec753d954149177"
+        ],
+        "x": 225,
+        "y": 606.6666666666666,
+        "wires": []
+    },
+    {
+        "id": "4214f67f0f450455",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "c0",
+        "payloadType": "str",
+        "x": 130,
+        "y": 853.3333333333333,
+        "wires": [
+            [
+                "62bbba12ad04422c"
+            ]
+        ]
+    },
+    {
+        "id": "9d838030dbf6ce10",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "c1",
+        "payloadType": "str",
+        "x": 130,
+        "y": 893.3333333333333,
+        "wires": [
+            [
+                "4770b30be24ecdbc"
+            ]
+        ]
+    },
+    {
+        "id": "4770b30be24ecdbc",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "link out 87",
+        "mode": "link",
+        "links": [
+            "a240909e45205169"
+        ],
+        "x": 215,
+        "y": 893.3333333333333,
+        "wires": []
+    },
+    {
+        "id": "62bbba12ad04422c",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "link out 93",
+        "mode": "link",
+        "links": [
+            "a240909e45205169"
+        ],
+        "x": 215,
+        "y": 853.3333333333333,
+        "wires": []
+    },
+    {
+        "id": "e9ec37d5dc609809",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "link out 94",
+        "mode": "link",
+        "links": [
+            "a240909e45205169"
+        ],
+        "x": 215,
+        "y": 933.3333333333333,
+        "wires": []
+    },
+    {
+        "id": "81e77f756b1ddf30",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "c2",
+        "payloadType": "str",
+        "x": 130,
+        "y": 933.3333333333333,
+        "wires": [
+            [
+                "e9ec37d5dc609809"
+            ]
+        ]
+    },
+    {
+        "id": "1f299b5d5e2cc9de",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "link out 95",
+        "mode": "link",
+        "links": [
+            "a240909e45205169"
+        ],
+        "x": 215,
+        "y": 973.3333333333333,
+        "wires": []
+    },
+    {
+        "id": "1ff341a15845c675",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "c3",
+        "payloadType": "str",
+        "x": 130,
+        "y": 973.3333333333333,
+        "wires": [
+            [
+                "1f299b5d5e2cc9de"
+            ]
+        ]
+    },
+    {
+        "id": "743f9fca8eb9a3ad",
+        "type": "comment",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "",
+        "info": "",
+        "x": 120,
+        "y": 813.3333333333333,
+        "wires": []
+    },
+    {
+        "id": "b9be515909c3f17f",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "afa0df6a0ee2942c",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "d0",
+        "payloadType": "str",
+        "x": 130,
+        "y": 1160,
+        "wires": [
+            [
+                "c0df6e7ab7a7384a"
+            ]
+        ]
+    },
+    {
+        "id": "6fcdbb87bce1485f",
+        "type": "inject",
+        "z": "4a48fb317c95e915",
+        "g": "afa0df6a0ee2942c",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "d1",
+        "payloadType": "str",
+        "x": 130,
+        "y": 1200,
+        "wires": [
+            [
+                "e5f1eef1096b4ba8"
+            ]
+        ]
+    },
+    {
+        "id": "e5f1eef1096b4ba8",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "afa0df6a0ee2942c",
+        "name": "link out 732",
+        "mode": "link",
+        "links": [
+            "09f6da120902e778"
+        ],
+        "x": 215,
+        "y": 1200,
+        "wires": []
+    },
+    {
+        "id": "c0df6e7ab7a7384a",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "afa0df6a0ee2942c",
+        "name": "link out 733",
+        "mode": "link",
+        "links": [
+            "09f6da120902e778"
+        ],
+        "x": 215,
+        "y": 1160,
+        "wires": []
+    },
+    {
+        "id": "fb41312c2d6d5023",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "g": "f0c8ff8331fcad58",
+        "name": "command",
+        "func": "const timestamp = global.get(\"now.timestamp\") ?? \"00/00/00 00:00:00\";\n\nif (!msg.topic) {\n    msg.topic = \"command\"\n    return msg;\n}\n\nif (msg.topic === \"IRHub-8266-Sala/IR/typeSendCod\") {\n    const estado = msg.payload.HabilitaTeste;\n\n    const statusText = estado == 1 ? \"Habilitado\" : \"Desabilitado\";\n    const statusCor = estado == 1 ? \"yellow\" : \"gray\";\n\n    node.status({\n        fill: statusCor,\n        shape: \"dot\",\n        text: `🔄️ Teste de Emissor IR: ${statusText} | ${timestamp}`\n    });\n    return null;\n}\n\n\n\n\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 170,
+        "y": 706.6666666666666,
+        "wires": [
+            [
+                "8f7dcad895afd937"
+            ]
+        ]
+    },
+    {
+        "id": "bec753d954149177",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "g": "f0c8ff8331fcad58",
+        "name": "link in 626",
+        "links": [
+            "c1ae6ff5570bf39e",
+            "868512c3eef95c4c",
+            "faaabdf7ec753944"
+        ],
+        "x": 75,
+        "y": 706.6666666666666,
+        "wires": [
+            [
+                "fb41312c2d6d5023"
+            ]
+        ]
+    },
+    {
+        "id": "8f7dcad895afd937",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "f0c8ff8331fcad58",
+        "name": "link out 749",
+        "mode": "link",
+        "links": [
+            "72f7e14d40aac462"
+        ],
+        "x": 265,
+        "y": 706.6666666666666,
+        "wires": []
+    },
+    {
+        "id": "bf6ac887557993ff",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "g": "cb06e28931beedd4",
+        "name": "link in 627",
+        "links": [
+            "b7e3a671ab52e140"
+        ],
+        "x": 1325,
+        "y": 200,
+        "wires": [
+            [
+                "2b494cedb68cb838"
+            ]
+        ]
+    },
+    {
+        "id": "b7e3a671ab52e140",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "cb06e28931beedd4",
+        "name": "link out 750",
+        "mode": "link",
+        "links": [
+            "bf6ac887557993ff",
+            "67c63b81c7bd375b"
+        ],
+        "x": 1535,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "a699260020ead74e",
+        "type": "debug",
+        "z": "4a48fb317c95e915",
+        "g": "cb06e28931beedd4",
+        "name": "debug 127",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1535,
+        "y": 100,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "67c63b81c7bd375b",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "g": "cb06e28931beedd4",
+        "name": "link in 629",
+        "links": [
+            "b7e3a671ab52e140"
+        ],
+        "x": 1485,
+        "y": 100,
+        "wires": [
+            [
+                "a699260020ead74e"
+            ]
+        ]
+    },
+    {
+        "id": "ddf4a4d755b4f185",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "afa0df6a0ee2942c",
+        "name": "link out 754",
+        "mode": "link",
+        "links": [
+            "72f7e14d40aac462"
+        ],
+        "x": 275,
+        "y": 1260,
+        "wires": []
+    },
+    {
+        "id": "1c894f92b0fb8bf0",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "g": "afa0df6a0ee2942c",
+        "name": "command",
+        "func": "const timestamp = global.get(\"now.timestamp\") ?? \"00/00/00 00:00:00\";\n\nif (!msg.topic) {\n    msg.topic = \"command\"\n    return msg;\n}\n\nif (msg.topic === \"IRHub-8266-Sala/IR/typeSendCod\") {\n    const estado = msg.payload.HabilitaReceive;\n\n    const statusText = estado == 1 ? \"Habilitado\" : \"Desabilitado\";\n    const statusCor = estado == 1 ? \"yellow\" : \"gray\";\n\n    node.status({\n        fill: statusCor,\n        shape: \"dot\",\n        text: `🔄️ Emissor IR: ${statusText} | ${timestamp}`\n    });\n    return null;\n}\n\n\n\n\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 180,
+        "y": 1260,
+        "wires": [
+            [
+                "ddf4a4d755b4f185"
+            ]
+        ]
+    },
+    {
+        "id": "09f6da120902e778",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "g": "afa0df6a0ee2942c",
+        "name": "link in 630",
+        "links": [
+            "e5f1eef1096b4ba8",
+            "c0df6e7ab7a7384a",
+            "c1ae6ff5570bf39e"
+        ],
+        "x": 85,
+        "y": 1260,
+        "wires": [
+            [
+                "1c894f92b0fb8bf0"
+            ]
+        ]
+    },
+    {
+        "id": "a240909e45205169",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "link in 631",
+        "links": [
+            "62bbba12ad04422c",
+            "4770b30be24ecdbc",
+            "e9ec37d5dc609809",
+            "1f299b5d5e2cc9de",
+            "c1ae6ff5570bf39e"
+        ],
+        "x": 75,
+        "y": 1053.3333333333333,
+        "wires": [
+            [
+                "ca4b0b4ea1042a16"
+            ]
+        ]
+    },
+    {
+        "id": "ca4b0b4ea1042a16",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "command",
+        "func": "// Controle do envio do código IR recebido.\n/*  typeSendCod       Feedback\n        0           Não envia nada.\n        1           Somente NEC.\n        2           NEC e 24bits.\n        3           NEC e 24bits e DESCONHECIDOS */\n\nconst timestamp = global.get(\"now.timestamp\") ?? \"00/00/00 00:00:00\";\n\nif (!msg.topic) {\n    msg.topic = \"command\"\n    return msg;\n}\n\nif (msg.topic === \"IRHub-8266-Sala/IR/typeSendCod\") {\n    const estado = msg.payload.typeSendCod;\n\n    let statusText = \"\";\n    let statusCor = \"\";\n    let statusIcon = \"\";\n    if (estado === 0) {\n        statusText = \"Desabilitado\";\n        statusCor = \"gray\";\n        statusIcon = \"❗️\";\n    } else if (estado === 1) {\n        statusText = \"NEC\";\n        statusCor = \"yellow\";\n        statusIcon = \"🟡\";\n    } else if (estado === 2) {\n        statusText = \"NEC e 24bits\";\n        statusCor = \"blue\";\n        statusIcon = \"🔵\";\n    } else if (estado === 3) {\n        statusText = \"NEC e 24bits e DESCONHECIDOS\";\n        statusCor = \"blue\";\n        statusIcon = \"🟠\";\n    } else {\n        statusText = \"DESCONHECIDO!\";\n        statusCor = \"red\";\n        statusIcon = \"❌\";\n    }\n\n    node.status({\n        fill: statusCor,\n        shape: \"dot\",\n        text: `${statusIcon} Código IR: ${statusText} | ${timestamp}`\n    });\n    return null;\n}\n\n\n\n\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 170,
+        "y": 1053.3333333333333,
+        "wires": [
+            [
+                "df5cf50a13bc4c8f"
+            ]
+        ]
+    },
+    {
+        "id": "df5cf50a13bc4c8f",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "b998867203736964",
+        "name": "link out 755",
+        "mode": "link",
+        "links": [
+            "72f7e14d40aac462"
+        ],
+        "x": 265,
+        "y": 1053.3333333333333,
+        "wires": []
+    },
+    {
+        "id": "47bdc8f909c13fa4",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "40d0af71a5e4d995",
+        "name": "link out 751",
+        "mode": "link",
+        "links": [
+            "d090d6a43caaf547"
+        ],
+        "x": 625,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "c3d72d2356c097f3",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "40d0af71a5e4d995",
+        "name": "link out 752",
+        "mode": "link",
+        "links": [
+            "d090d6a43caaf547"
+        ],
+        "x": 625,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "6ba174f41f7495c6",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "40d0af71a5e4d995",
+        "name": "link out 753",
+        "mode": "link",
+        "links": [
+            "d090d6a43caaf547"
+        ],
+        "x": 625,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "d090d6a43caaf547",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "g": "40d0af71a5e4d995",
+        "name": "link in 628",
+        "links": [
+            "47bdc8f909c13fa4",
+            "c3d72d2356c097f3",
+            "6ba174f41f7495c6",
+            "c1ae6ff5570bf39e"
+        ],
+        "x": 485,
+        "y": 400,
+        "wires": [
+            [
+                "1a9b014ca0df415a"
+            ]
+        ]
+    },
+    {
+        "id": "e0b95e2e2d518ef6",
+        "type": "debug",
+        "z": "4a48fb317c95e915",
+        "g": "5417fd04841c2795",
+        "name": "debug 128",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 285,
+        "y": 100,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "09edf28df789355e",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "g": "5417fd04841c2795",
+        "name": "link in 632",
+        "links": [
+            "c1ae6ff5570bf39e"
+        ],
+        "x": 225,
+        "y": 100,
+        "wires": [
+            [
+                "e0b95e2e2d518ef6"
+            ]
+        ]
+    },
+    {
+        "id": "501f7f1bdeab48ab",
+        "type": "link in",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "link in 44",
+        "links": [
+            "f375374aa706eb87",
+            "361f2c2f86273d5f",
+            "11eff37c2711f45f",
+            "32236ea1b4ce6db0",
+            "0f099007dfa43dbc",
+            "70e8b78d25324047",
+            "c1ae6ff5570bf39e"
+        ],
+        "x": 125,
+        "y": 500,
+        "wires": [
+            [
+                "d9f318775ddb55bb"
+            ]
+        ]
+    },
+    {
+        "id": "64dea736f5a17679",
+        "type": "link out",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "link out 756",
+        "mode": "link",
+        "links": [
+            "72f7e14d40aac462"
+        ],
+        "x": 315,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "d9f318775ddb55bb",
+        "type": "function",
+        "z": "4a48fb317c95e915",
+        "g": "435e8e075e9b899b",
+        "name": "command",
+        "func": "const timestamp = global.get(\"now.timestamp\") ?? \"00/00/00 00:00:00\";\n\nif (!msg.topic) {\n    msg.topic = \"command\"\n    return msg;\n}\n\nif (msg.topic === \"IRHub-8266-Sala/command\" || msg.topic === \"IRHub-8266-Sala/command/IR/DEC\") {\n    return null;\n}\n\nconst statusText = \"Topic recebido!\";\nconst statusCor = \"yellow\";\n\nnode.status({\n    fill: statusCor,\n    shape: \"rig\",\n    text: `🔄️ ${msg.topic} | ${statusText} | ${timestamp}`\n});\n\nreturn null;\n\n\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 220,
+        "y": 500,
+        "wires": [
+            [
+                "64dea736f5a17679"
+            ]
+        ]
+    },
+    {
+        "id": "929c2467a3e43338",
+        "type": "mqtt-broker",
+        "name": "MQTT Server - 192.168.99.15",
+        "broker": "192.168.99.15",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

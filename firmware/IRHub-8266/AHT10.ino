@@ -5,6 +5,10 @@
 
 
 // void AHT10Setup() {
+// Serial.println();
+// Serial.println("=================================");
+// Serial.println("  Configurando AHT10  ");
+// Serial.println("=================================");
 //   Wire.begin(12, 13);
 //   if (!aht.begin(&Wire)) {
 //     Serial.println("Falha ao iniciar AHT10");
