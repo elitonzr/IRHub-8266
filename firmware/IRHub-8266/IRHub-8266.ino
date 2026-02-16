@@ -28,14 +28,39 @@ IPAddress subnet(255, 255, 255, 0);  // Mascara de rede
 // IPAddress gateway(140, 10, 100, 1);   // Gateway de conexão
 // IPAddress subnet(255, 255, 0, 0);     // Mascara de rede
 
-// MQTT configuração
+/************ MQTT ************/
 #define mqtt_server "192.168.99.15"  //
 // #define mqtt_server "140.10.100.3"       //
+
+// TOPICS MQTT
+char topic_info_status[250];
+char topic_info_software[250];
+char topic_info_network[250];
+char topic_info_mqtt[250];
+char topic_info_uptime[250];
+char topic_info_outputs[64];  // "%s/info/Outputs"
+char topic_ir_type[250];  // "%s/IR/typeSendCod"
+char topic_ir_test[64];
+
+char topic_command[64];
+char topic_command_led[64];
+char topic_command_ir_prefix[64];
+char topic_ir_dec[64];
+char topic_ir_hex[64];
+char topic_ir_info[64];
+
+// BUFFERS
+char MQTT_Topic[250];
+char MQTT_Msg[250];
+
+// MQTT cliente
+WiFiClient espClient;
+PubSubClient mqtt_client(espClient);
 
 int mqttErro = 0;  // Variável para armazenar erro de conexão do MQTT.
 int mqttOK = 0;    // Variável para armazenar número de conexãos do MQTT.
 
-String myTopic = "IRHub-8266-" + local;   //
+String myTopic = "IRHub-8266-" + local;  //
 String mqtt_user = "homeassistant";      //
 String mqtt_password = "homeassistant";  //
 String mqtt_client_id = myTopic;         // Este texto é concatenado com ChipId para obter client_id exclusivo
@@ -49,45 +74,17 @@ String ArrayMQTTtopic[] = {
   myTopic + "/command/IR/NIKAI/HEX",    //
 };
 
-char MQTT_Topic[250];
-char MQTT_Msg[250];
-
-/************ BUFFERS ************/
-// char MQTT_Topic[128];
-// char MQTT_Msg[MAX_PAYLOAD];
-
-/************ TOPICS MQTT ************/
-char topic_command[64];
-char topic_command_led[64];
-char topic_command_ir_prefix[64];
-char topic_ir_dec[64];
-char topic_ir_hex[64];
-char topic_ir_type[250];  // "%s/IR/typeSendCod"
-char topic_ir_info[64];
-
-char topic_info_status[250];
-char topic_info_software[250];
-char topic_info_network[250];
-char topic_info_mqtt[250];
-char topic_info_uptime[250];
-char topic_info_outputs[64];  // "%s/info/Outputs"
-
-char topic_ir_test[64];
-
-
-// MQTT cliente
-WiFiClient espClient;
-PubSubClient mqtt_client(espClient);
-
+/************ Server ************/
 ESP8266WebServer server(80);  // server na porta 80
 
+/************ Telnet ************/
 // Necessário para fazer com que o software Arduino detecte automaticamente o dispositivo OTA
 WiFiServer telnetServer(8266);
 
 // telnet cliente
 WiFiClient telnetClient;
 
-
+/************ Variáveis de tempo ************/
 unsigned long lastMsg = 0;        // Armazena tempo do ultimo envio de Feedback info software e network.
 unsigned long lastMsgUptime = 0;  // Armazena tempo do ultimo envio de Feedback uptime.
 unsigned long lastMsgTEST = 0;    // Armazena tempo do ultimo envio de Feedback temperatura.
@@ -95,17 +92,16 @@ unsigned long lastMsgTEST = 0;    // Armazena tempo do ultimo envio de Feedback 
 #define LEDA 2           // LED A GPIO02
 boolean estLED = false;  //
 
-/************ CONFIGURAÇÃO IR ************/
-// Nota: GPIO 16 não funcionará no ESP8266 pois não possui interrupções.
-// Nota: GPIO 14 não funcionará no ESP32-C3, pois causa a reinicialização da placa.
-
-const uint16_t kIrLed = 4;     // ⭐ Emissor IR - GPIO4 (D2)
-const uint16_t kRecvPin = 14;  // ⭐ Receptor IR - GPIO14 (D5)
+/************ IR ************/
+// Configuração
+const uint16_t kIrLed = 4;     // Emissor IR - GPIO4 (D2)
+const uint16_t kRecvPin = 14;  // Receptor IR - GPIO14 (D5)
 
 IRsend irsend(kIrLed);
 IRrecv irrecv(kRecvPin);
 decode_results results;
 
+// Auxiliares
 boolean enviandoCod = false;     // Sinalizador para evitar recepção de IR durante transmissão.
 boolean HabilitaTeste = false;   // Sinalizador para evitar recepção de IR durante transmissão.
 boolean HabilitaReceive = true;  // Sinalizador para ligar ou deligar recepção de IR.
@@ -241,7 +237,9 @@ String getFormattedUptime() {
 }
 
 /************ CALLBACK ************/
-// Função principal de callback MQTT
+// ======================================================
+// Callback principal do MQTT
+// ======================================================
 void callback(char* topic, byte* payload, unsigned int length) {
   // Exibe o tópico e a mensagem recebida no monitor serial
   Serial.print("A mensagem chegou [");
@@ -268,7 +266,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
     memcpy(comando, payload, length);  // Copia o payload para o buffer
     comando[length] = '\0';            // Finaliza a string com null terminator
     controlaPino(LEDA, comando);       // Processa os comandos do LED (on, off, toggle, blink)
-    estLED = !digitalRead(LEDA);
+    estLED = digitalRead(LEDA);
+    feedback(4);
 
   } else if (topicStr == myTopic + "/command/IR/test") {
 
@@ -478,8 +477,6 @@ void processaComando(byte* payload) {
 /************ FEEDBACK ************/
 
 void feedback(int ops) {
-
-  String topic = myTopic;
 
   switch (ops) {
       // --------------------------------------------------

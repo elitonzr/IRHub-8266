@@ -1,0 +1,169 @@
+// ======================================================
+// Callback principal do MQTT
+// ======================================================
+void callback(char* topic, byte* payload, unsigned int length) {
+
+  // Proteção contra payload vazio
+  if (length == 0) return;
+
+  // Copia o payload para um buffer fixo e adiciona terminador nulo
+  char mensagem[MAX_PAYLOAD];
+  unsigned int copyLen = (length < (MAX_PAYLOAD - 1)) ? length : (MAX_PAYLOAD - 1);
+
+  memcpy(mensagem, payload, copyLen);
+  mensagem[copyLen] = '\0';
+
+  Serial.println(mensagem);
+  Serial.println();
+
+  // Comando geral
+  if (strcmp(topic, topic_command) == 0) {
+
+    processaComando(payload, length);
+
+  }
+  // Controle de LED
+  else if (strcmp(topic, topic_command_led) == 0) {
+
+    char comando[MAX_PAYLOAD];
+    memcpy(comando, mensagem, copyLen);
+    comando[copyLen] = '\0';
+
+    controlaPino(LEDA, comando);
+
+    // Atualiza estado real do pino
+    estLED = digitalRead(LEDA);
+  }
+  // Comandos IR
+  else if (strncmp(topic, topic_command_ir_prefix,
+                   strlen(topic_command_ir_prefix)) == 0) {
+
+    processaIR(topic, payload, length);
+  }
+}
+
+
+// ======================================================
+// Controle de pino digital (sem uso de String)
+// ======================================================
+void controlaPino(int pino, const char* comando) {
+
+  // Buffer local pequeno para normalizar comando
+  char cmd[16];
+  size_t len = strlen(comando);
+  if (len >= sizeof(cmd)) len = sizeof(cmd) - 1;
+
+  // Converte para minúsculo manualmente
+  for (size_t i = 0; i < len; i++) {
+    cmd[i] = tolower(comando[i]);
+  }
+  cmd[len] = '\0';
+
+  if (strcmp(cmd, "toggle") == 0) {
+    digitalWrite(pino, !digitalRead(pino));
+  }
+  else if (strcmp(cmd, "on") == 0) {
+    digitalWrite(pino, HIGH);
+  }
+  else if (strcmp(cmd, "off") == 0) {
+    digitalWrite(pino, LOW);
+  }
+  else {
+    Serial.println("Comando inválido para pino.");
+    return;
+  }
+
+  feedback(2);
+}
+
+
+// ======================================================
+// Processamento de comandos IR
+// ======================================================
+void processaIR(const char* topic, byte* payload, unsigned int length) {
+
+  if (length == 0) return;
+
+  char buffer[MAX_PAYLOAD];
+  unsigned int copyLen = (length < (MAX_PAYLOAD - 1)) ? length : (MAX_PAYLOAD - 1);
+
+  memcpy(buffer, payload, copyLen);
+  buffer[copyLen] = '\0';
+
+  // ---------- IR decimal ----------
+  if (strcmp(topic, topic_ir_dec) == 0) {
+
+    char* endPtr;
+    long tecla = strtol(buffer, &endPtr, 10);
+
+    // Valida se a conversão foi válida
+    if (*endPtr != '\0') return;
+
+    enviandoCod = true;
+    irsend.sendNEC(tecla, 32);
+
+    char mqttMsg[50];
+    snprintf(mqttMsg, sizeof(mqttMsg),
+             "Codigo IR enviado: %ld", tecla);
+
+    mqtt_client.publish(topic_ir_info, mqttMsg);
+  }
+
+  // ---------- IR hexadecimal ----------
+  else if (strcmp(topic, topic_ir_hex) == 0) {
+
+    char* endPtr;
+    uint32_t irCode = strtoul(buffer, &endPtr, 16);
+
+    if (*endPtr != '\0') return;
+
+    enviandoCod = true;
+    irsend.sendNEC(irCode, 32);
+
+    char mqttMsg[50];
+    snprintf(mqttMsg, sizeof(mqttMsg),
+             "Codigo IR enviado: 0x%X", irCode);
+
+    mqtt_client.publish(topic_ir_info, mqttMsg);
+  }
+
+  // ---------- Alteração de modo ----------
+  else if (strcmp(topic, topic_ir_type) == 0) {
+
+    processaComando(payload, length);
+    feedback(10);
+  }
+}
+
+
+// ======================================================
+// Processamento de comandos gerais
+// ======================================================
+void processaComando(byte* payload, unsigned int length) {
+
+  // Garante pelo menos dois caracteres
+  if (length < 2) return;
+
+  char cmd = (char)payload[0];
+  int valor = payload[1] - '0';
+
+  if (cmd == 'a') {
+    feedback(valor);
+  }
+  else if (cmd == 'b') {
+
+    if (valor < 3) {
+      typeSendCod = valor;
+    } else {
+      ControleIRSend();
+    }
+  }
+  else if (cmd == 'c') {
+    typeSendCod = valor;
+  }
+  else if (cmd == '1') {
+    HabilitaReceive = !HabilitaReceive;
+    feedback(2);
+    feedback(9);
+  }
+}

@@ -1,6 +1,6 @@
 void setup_mqtt() {
   Serial.println("================= Configurando o servidor MQTT =================");
-  
+
   Serial.println("   Criando Tópicos");
   snprintf(topic_info_status, sizeof(topic_info_status), "%s/info/status", myTopic.c_str());
   snprintf(topic_info_software, sizeof(topic_info_software), "%s/info/software", myTopic.c_str());

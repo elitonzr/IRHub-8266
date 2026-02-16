@@ -1,7 +1,17 @@
-
 /************ AHT10 ************/
-// void lerSensorAHT10() {
+// Adafruit_AHTX0 aht;  // Endereço I2C 0x38
+// float umidade;       // Variável para armazenar a umidade
+// float temperatura;   // Variável para armazenar a temperatura
 
+
+// void AHT10Setup() {
+//   Wire.begin(12, 13);
+//   if (!aht.begin(&Wire)) {
+//     Serial.println("Falha ao iniciar AHT10");
+//   }
+// }
+
+// void lerSensorAHT10() {
 //   /*==================================
 //   Configuração e descrições dos pinos
 
