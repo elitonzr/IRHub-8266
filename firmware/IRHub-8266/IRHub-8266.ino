@@ -9,29 +9,43 @@
 #include <IRrecv.h>            // Biblioteca para funcionamento do IR
 #include <IRsend.h>            // Biblioteca para funcionamento do IR
 #include <IRutils.h>           // Biblioteca para funcionamento do IR
+#include <Adafruit_AHTX0.h>
+
+/************ ARQUIVOS AUXILIARES ************/
+#include "globals.h"
+#include "credentials.h"
+#include "webpage.h"
 
 /************ CREDENCIAIS ************/
-String local = "Sala";
-
-// Definição de Rede Wifi
-// #define wifi_ssid "You_shall_not_pass"  //
-// #define wifi_password "felicidade42"    //
-#define wifi_ssid "INFIBRA MANUT 03"  //
-#define wifi_password "manut0109"     //
+// Rede Wi-Fi
+#define wifi_ssid WIFI_SSID
+#define wifi_password WIFI_PASSWORD
 
 // Definição de IP Fixo
-// IPAddress ip(192, 168, 99, 21);      // IP do esp8266-IR-Sala
-// IPAddress gateway(192, 168, 99, 1);  // Gateway de conexão
-// IPAddress subnet(255, 255, 255, 0);  // Mascara de rede
+IPAddress ip = STATIC_IP;
+IPAddress gateway = GATEWAY_IP;
+IPAddress subnet = SUBNET_MASK;
 
-IPAddress ip(140, 10, 100, 253);     // IP do esp8266-IR-Sala
-IPAddress gateway(140, 10, 100, 1);  // Gateway de conexão
-IPAddress subnet(255, 255, 0, 0);    // Mascara de rede
+/************ Telnet ************/
+// Necessário para fazer com que o software Arduino detecte automaticamente o dispositivo OTA
+WiFiServer telnetServer(8266);
+WiFiClient telnetClient;
 
-/************ MQTT ************/
-// #define mqtt_server "192.168.99.15"  //
-#define mqtt_server "140.10.100.3"  //
-#define MAX_PAYLOAD 250
+/************ Web Server ************/
+ESP8266WebServer server(80);  // server na porta 80
+
+// /************ MQTT configuração ************/
+#define mqtt_server MQTT_SERVER
+String mqtt_user = MQTT_USER;
+String mqtt_password = MQTT_PASSWORD;
+String myTopic = String(MQTT_ID) + String(GRUPO);  //
+
+// MQTT cliente
+WiFiClient espClient;
+PubSubClient mqtt_client(espClient);
+
+int mqttErro = 0;  // Variável para armazenar erro de conexão do MQTT.
+int mqttOK = 0;    // Variável para armazenar número de conexãos do MQTT.
 
 // TOPICS MQTT
 char topic_info_status[250];
@@ -56,31 +70,9 @@ char topic_command_ir_info[64];
 char topic_command_ir_prefix[64];
 
 // BUFFERS
+#define MAX_PAYLOAD 250
 char MQTT_Topic[MAX_PAYLOAD];
 char MQTT_Msg[MAX_PAYLOAD];
-
-// MQTT cliente
-WiFiClient espClient;
-PubSubClient mqtt_client(espClient);
-
-int mqttErro = 0;  // Variável para armazenar erro de conexão do MQTT.
-int mqttOK = 0;    // Variável para armazenar número de conexãos do MQTT.
-
-String myTopic = "IRHub-8266-" + local;  //
-String mqtt_user = "homeassistant";      //
-String mqtt_password = "homeassistant";  //
-String mqtt_client_id = myTopic;         // Este texto é concatenado com ChipId para obter client_id exclusivo
-
-/************ Server ************/
-#include "webpage.h"
-ESP8266WebServer server(80);  // server na porta 80
-
-/************ Telnet ************/
-// Necessário para fazer com que o software Arduino detecte automaticamente o dispositivo OTA
-WiFiServer telnetServer(8266);
-
-// telnet cliente
-WiFiClient telnetClient;
 
 /************ Variáveis de tempo ************/
 unsigned long lastMsg = 0;        // Armazena tempo do ultimo envio de Feedback info software e network.
@@ -99,6 +91,11 @@ IRsend irsend(kIrLed);
 IRrecv irrecv(kRecvPin);
 decode_results results;
 
+/************ AHT10 ************/
+Adafruit_AHTX0 aht;  // Endereço I2C 0x38
+float umidade;       // Variável para armazenar a umidade
+float temperatura;   // Variável para armazenar a temperatura
+
 // Auxiliares
 boolean enviandoCod = false;     // Sinalizador para evitar recepção de IR durante transmissão.
 boolean HabilitaTeste = false;   // Sinalizador para evitar recepção de IR durante transmissão.
@@ -109,10 +106,25 @@ int typeSendCod = 2;             // Sinalizador para controlar tipo de recepçã
 void setup() {
 
   Serial.begin(115200);
+
+  Serial.println();
+  Serial.println("=================================");
+  Serial.println("         Iniciando Setup         ");
+  Serial.println("=================================");
+  Serial.println();
+  Serial.println("================= Informações de compilação =================");
+  Serial.println("Data e hora: " + buildDateTime);
+  Serial.println("Versão do compilador: " + buildVersion);
+  Serial.println("Arquivo fonte: " + buildFile);
+  Serial.println();
+  Serial.println("\nIniciando ESP8266...");
+  Serial.println();
+
   setup_IR();      // inicializa IR
   setup_wifi();    // inicializa WiFi
   setup_ota();     // inicializa OTA
   setup_mqtt();    // inicializa MQTT
+  AHT10Setup();    // Inicializa o servidor
   setup_server();  // Inicializa o servidor
 
   pinMode(LEDA, OUTPUT);  // LED A GPIO02
@@ -122,11 +134,11 @@ void setup() {
     delay(500);                              // Espera 0,5 Segundo.
   }
 
+  Serial.println("Setup Concluído!");  // Imprime texto na serial.
   Serial.println();
   Serial.println("=================================");
   Serial.println("         Sistema pronto          ");
   Serial.println("=================================");
-  Serial.println("Setup Concluído!");  // Imprime texto na serial.
   Serial.println();
 }
 
@@ -147,7 +159,7 @@ void loop() {
 
     if (now - lastMsgTEST > 20000) {
       lastMsgTEST = now;
-      testarDesligamentoUniversal();
+      desligamentoUniversal();
       // testeIR();
     }
   }

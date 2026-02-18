@@ -3,7 +3,7 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monitor IRHub-8266</title>
+<title>IRHub-8266</title>
 <link href="https://fonts.googleapis.com/css?family=Inter:300,400,600" rel="stylesheet">
 <style>
 body {
@@ -45,7 +45,7 @@ h1 {
 <body>
 
 <div class="card">
-  <h1>ESP8266 Monitor</h1>
+  <h1>IRHub-8266</h1>
   <div class="label">Uptime</div>
   <div class="value"><span id="uptime">--</span></div>
 </div>

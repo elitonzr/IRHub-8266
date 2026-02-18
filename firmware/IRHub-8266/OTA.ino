@@ -5,8 +5,7 @@ void setup_ota() {
   Serial.println("  Configurando OTA device  ");
   Serial.println("=================================");
   Serial.println("...");
-  mqtt_client_id = mqtt_client_id + ESP.getChipId();
-  ArduinoOTA.setHostname(mqtt_client_id.c_str());
+  ArduinoOTA.setHostname(clenteID.c_str());
 
   // Sem autenticação por padrão
   ArduinoOTA.setPassword("admin123");

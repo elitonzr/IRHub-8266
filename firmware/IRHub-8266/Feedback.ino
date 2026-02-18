@@ -18,6 +18,22 @@ void feedback(int ops) {
           ************************************************************/
         mqtt_client.publish(topic_info_status, "online", true);
 
+        // // Monta o tópico com segurança
+        // char topic[128];
+        // snprintf(topic, sizeof(topic), "%s/info/BuildInfo", mqtt_client_id.c_str());
+
+        // // Prepara JSON
+        // StaticJsonDocument<256> doc;
+        // doc["chip_id"] = chipID;
+        // doc["MQTT Client ID"] = mqtt_client_id;
+        // doc["version"] = buildVersion;
+        // doc["build_file"] = buildFile;
+
+        // // Serializa JSON e publica
+        // char buffer[256];
+        // serializeJson(doc, buffer);
+        // mqtt_client.publish(topic, buffer);
+
 
         /************************************************************
         * INFO SOFTWARE
@@ -33,11 +49,11 @@ void feedback(int ops) {
           "\"hora\":\"%s\","
           "\"file\":\"%s\","
           "\"mqtt_client_id\":\"%s\"}",
-          __VERSION__,            // Versão do compilador
-          __DATE__,               // Data da compilação
-          __TIME__,               // Hora da compilação
-          __FILE__,               // Arquivo compilado
-          mqtt_client_id.c_str()  // Client ID MQTT
+          __VERSION__,      // Versão do compilador
+          __DATE__,         // Data da compilação
+          __TIME__,         // Hora da compilação
+          __FILE__,         // Arquivo compilado
+          clenteID.c_str()  // Client ID MQTT
         );
 
         // Publica somente se o JSON coube no buffer

@@ -24,20 +24,18 @@ void setup_mqtt() {
   snprintf(topic_command_ir_nikai_dec, sizeof(topic_command_ir_nikai_dec), "%s/command/IR/NIKAI/DEC", myTopic.c_str());
   snprintf(topic_command_ir_nikai_hex, sizeof(topic_command_ir_nikai_hex), "%s/command/IR/NIKAI/HEX", myTopic.c_str());
 
-  // String ArrayMQTTtopic[] = {
-  //   myTopic + "/command",                 //
-  //   myTopic + "/command/LEDA",            //
-  //   myTopic + "/command/IR/typeSendCod",  //
-  //   myTopic + "/command/IR/NEC/DEC",      //
-  //   myTopic + "/command/IR/NEC/HEX",      //
-  //   myTopic + "/command/IR/NIKAI/DEC",    //
-  //   myTopic + "/command/IR/NIKAI/HEX",    //
-  // };
-
   mqtt_client.setServer(mqtt_server, 1883);
   mqtt_client.setCallback(callback);
-  Serial.printf("   IP do servidor: %s\r\n", mqtt_server);
-  Serial.println("   ID do cliente: " + mqtt_client_id);
+
+  Serial.println("   Tópicos Criados");
+  Serial.print("   IP do servidor: ");
+  Serial.println(mqtt_server);
+  Serial.print("    ID do cliente: ");
+  Serial.println(clenteID);
+  Serial.print(" Tópico principal: ");
+  Serial.print(myTopic);
+  Serial.println("/#");
+  Serial.println();
   Serial.println("   MQTT configurado!");
   Serial.println();
 }
@@ -64,31 +62,31 @@ void mqtt_reconnect() {
 
   // Loop até reconectar
   while (!mqtt_client.connected()) {
-    debugPrintln("Tentando conexão MQTT...");
+    Serial.println("Tentando conexão MQTT...");
 
     String status_topic = myTopic + "/info/status";
 
     // --- Tenta conectar com Last Will e autenticação ---
     bool conectado = mqtt_client.connect(
-      mqtt_client_id.c_str(),  // ID do cliente
-      mqtt_user.c_str(),       // Usuário
-      mqtt_password.c_str(),   // Senha
-      status_topic.c_str(),    // Tópico do Last Will
-      1,                       // QoS
-      true,                    // Retain
-      "offline"                // Mensagem LWT
+      clenteID.c_str(),       // ID do cliente
+      mqtt_user.c_str(),      // Usuário
+      mqtt_password.c_str(),  // Senha
+      status_topic.c_str(),   // Tópico do Last Will
+      1,                      // QoS
+      true,                   // Retain
+      "offline"               // Mensagem LWT
     );
 
     if (conectado) {
       mqttOK++;
-      debugPrintln("Conectado ao broker MQTT.");
+      Serial.println("Conectado ao broker MQTT.");
 
       // Publica birth message
       status_topic.toCharArray(MQTT_Topic, 110);
       mqtt_client.publish(MQTT_Topic, "online", false);
 
       // Subscriptions
-      debugPrintln("Assinando os seguintes tópicos:");
+      Serial.println("Assinando os seguintes tópicos:");
 
       mqtt_client.subscribe(topic_command);
       mqtt_client.subscribe(topic_command_led);
@@ -98,29 +96,23 @@ void mqtt_reconnect() {
       mqtt_client.subscribe(topic_command_ir_nikai_dec);
       mqtt_client.subscribe(topic_command_ir_nikai_hex);
 
-      debugPrint("Tópico 1: ");
-      debugPrintln(topic_command);
-      debugPrint("Tópico 2: ");
-      debugPrintln(topic_command_led);
-      debugPrint("Tópico 3: ");
-      debugPrintln(topic_command_ir_typeSendCod);
-      debugPrint("Tópico 4: ");
-      debugPrintln(topic_command_ir_nec_dec);
-      debugPrint("Tópico 5: ");
-      debugPrintln(topic_command_ir_nec_hex);
-      debugPrint("Tópico 6: ");
-      debugPrintln(topic_command_ir_nikai_dec);
-      debugPrint("Tópico 7: ");
-      debugPrintln(topic_command_ir_nikai_hex);
-
-      // for (int i = 0; i < sizeof(ArrayMQTTtopic) / sizeof(ArrayMQTTtopic[0]); i++) {
-      //   mqtt_client.subscribe(ArrayMQTTtopic[i].c_str());
-      //   debugPrint("Tópico " + String(i + 1) + ": ");
-      //   debugPrintln(ArrayMQTTtopic[i]);
-      // }
+      Serial.print("Tópico 1: ");
+      Serial.println(topic_command);
+      Serial.print("Tópico 2: ");
+      Serial.println(topic_command_led);
+      Serial.print("Tópico 3: ");
+      Serial.println(topic_command_ir_typeSendCod);
+      Serial.print("Tópico 4: ");
+      Serial.println(topic_command_ir_nec_dec);
+      Serial.print("Tópico 5: ");
+      Serial.println(topic_command_ir_nec_hex);
+      Serial.print("Tópico 6: ");
+      Serial.println(topic_command_ir_nikai_dec);
+      Serial.print("Tópico 7: ");
+      Serial.println(topic_command_ir_nikai_hex);
 
       // Publica os feedbacks iniciais
-      debugPrintln("Publicando os feedbacks iniciais...");
+      Serial.println("Publicando os feedbacks iniciais...");
       feedback(0);
       feedback(1);
       feedback(2);
@@ -132,8 +124,8 @@ void mqtt_reconnect() {
       mqttErro++;
       mqttOK = 0;
 
-      debugPrint("Falha MQTT. rc=");
-      debugPrintln(String(mqtt_client.state()));
+      Serial.print("Falha MQTT. rc=");
+      Serial.println(String(mqtt_client.state()));
 
       delay(5000);
     }
