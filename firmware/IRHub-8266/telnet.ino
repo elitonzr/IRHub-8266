@@ -1,0 +1,127 @@
+/************ TELNET CLI ************/
+
+#define TELNET_BUFFER 64
+char telnetBuffer[TELNET_BUFFER];
+
+void processTelnetCommand(char* cmd);
+
+void handleTelnet() {
+
+  if (!telnetClient || !telnetClient.connected())
+    return;
+
+  if (!telnetClient.available())
+    return;
+
+  size_t len = telnetClient.readBytesUntil('\n',
+                                           telnetBuffer,
+                                           TELNET_BUFFER - 1);
+
+  if (len == 0)
+    return;
+
+  telnetBuffer[len] = '\0';
+
+  // Remove \r se existir
+  char* p = strchr(telnetBuffer, '\r');
+  if (p) *p = '\0';
+
+  // Converte para minúsculo
+  for (size_t i = 0; i < strlen(telnetBuffer); i++)
+    telnetBuffer[i] = tolower(telnetBuffer[i]);
+
+  debugPrintln(" ");
+  debugPrint("[Telnet] > ");
+  debugPrintln(telnetBuffer);
+
+  processTelnetCommand(telnetBuffer);
+
+  debugPrint("> ");  // Prompt estilo CLI
+}
+
+void processTelnetCommand(char* cmd) {
+
+  if (strcmp(cmd, "status") == 0) {
+
+    debugPrintln("=== STATUS ===");
+    debugPrint("Uptime: ");
+    debugPrintln(getFormattedUptime());
+
+    debugPrint("AHT10: ");
+    debugPrintln(estadoAHT10 == AHT10_ONLINE ? "online" : "offline");
+
+    debugPrint("IR Mode: ");
+    debugPrintln(cmdIRModeToString());
+
+    feedback(3);
+  }
+
+  else if (strcmp(cmd, "info") == 0) {
+
+    debugPrintln("=== BUILD INFO ===");
+    debugPrint("Data/Hora: ");
+    debugPrintln(buildDateTime);
+
+    debugPrint("Compilador: ");
+    debugPrintln(buildVersion);
+
+    debugPrint("Arquivo: ");
+    debugPrintln(buildFile);
+
+    debugPrintln("=== MQTT ===");
+    debugPrintln(topic_command);
+    debugPrintln(topic_command_led);
+    debugPrintln(topic_command_ir_typeSendCod);
+    debugPrintln(topic_command_ir_nec_dec);
+    debugPrintln(topic_command_ir_nec_hex);
+    debugPrintln(topic_command_ir_nikai_dec);
+    debugPrintln(topic_command_ir_nikai_hex);
+  }
+
+  else if (strcmp(cmd, "testeir") == 0) {
+
+    debugPrintln("Executando desligamento universal...");
+    desligamentoUniversal();
+  }
+
+  else if (strcmp(cmd, "reboot") == 0) {
+
+    debugPrintln("Reiniciando...");
+    delay(1000);
+    ESP.restart();
+  }
+
+  else if (strcmp(cmd, "heap") == 0) {
+
+    debugPrint("Heap livre: ");
+    debugPrintln(ESP.getFreeHeap());
+  }
+
+  else if (strcmp(cmd, "help") == 0) {
+
+    debugPrintln("=== COMANDOS DISPONIVEIS ===");
+    debugPrintln("status   -> Mostra estado geral");
+    debugPrintln("info     -> Informacoes de compilacao");
+    debugPrintln("testeIR  -> Envia desligamento universal");
+    debugPrintln("heap     -> Mostra memoria livre");
+    debugPrintln("reboot   -> Reinicia o dispositivo");
+    debugPrintln("help     -> Mostra esta lista");
+  }
+
+  else {
+
+    debugPrint("Comando desconhecido: ");
+    debugPrintln(cmd);
+    debugPrintln("Digite 'help' para lista de comandos.");
+  }
+}
+
+const char* cmdIRModeToString() {
+  switch (estadoIRRecepitor) {
+    case IR_DESABILITADO: return "disabled";
+    case IR_NEC: return "nec";
+    case IR_NECe24bits: return "nec_nikai_24";
+    case IR_TUDO: return "all";
+    default: return "unknown";
+  }
+}

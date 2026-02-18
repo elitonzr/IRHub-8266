@@ -14,7 +14,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   mensagem[copyLen] = '\0';
 
   // Exibe o tópico e a mensagem recebida no monitor serial
-  debugPrint("A mensagem chegou [");
+  debugPrint("topic [");
   debugPrint(topic);
   debugPrint("] ");
   debugPrintln(mensagem);  // Imprime a mensagem completa de uma vez só

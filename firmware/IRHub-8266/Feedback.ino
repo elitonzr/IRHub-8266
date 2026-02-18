@@ -134,7 +134,7 @@ void feedback(int ops) {
         //          "%d", typeSendCod);
 
         snprintf(MQTT_Msg, sizeof(MQTT_Msg),
-                 "{\"typeSendCod\":%d,\"HabilitaReceive\":%d,\"HabilitaTeste\":%d}", typeSendCod, HabilitaReceive, HabilitaTeste);
+                 "{\"HabilitaReceive\":%d,\"HabilitaTeste\":%d}", HabilitaReceive, HabilitaTeste);
 
         // Publica diretamente no tópico já montado
         mqtt_client.publish(topic_ir_type, MQTT_Msg);
@@ -149,7 +149,7 @@ void feedback(int ops) {
     // --------------------------------------------------
     case 3:
       {
-        // lerSensorAHT10();
+        lerSensorAHT10();
         break;
       }
 

@@ -11,14 +11,25 @@ void setup_mqtt() {
   snprintf(topic_info_mqtt, sizeof(topic_info_mqtt), "%s/info/mqtt", myTopic.c_str());
   snprintf(topic_info_uptime, sizeof(topic_info_uptime), "%s/info/uptime", myTopic.c_str());
   snprintf(topic_info_outputs, sizeof(topic_info_outputs), "%s/info/Outputs", myTopic.c_str());
+
+
+  snprintf(topic_sensor_status, sizeof(topic_sensor_status), "%s/sensor/status", myTopic.c_str());
+  snprintf(topic_sensor_AHT10, sizeof(topic_sensor_AHT10), "%s/sensor/AHT10", myTopic.c_str());
+
+  //IR
   snprintf(topic_ir_type, sizeof(topic_ir_type), "%s/IR/typeSendCod", myTopic.c_str());
   snprintf(topic_ir_info, sizeof(topic_ir_info), "%s/info/IR", myTopic.c_str());
   snprintf(topic_ir_test, sizeof(topic_ir_test), "%s/command/IR/test", myTopic.c_str());
 
-  // Subscriptions
+  snprintf(topic_sensor_ir_status, sizeof(topic_sensor_ir_status), "%s/sensor/IR/status", myTopic.c_str());
+  snprintf(topic_sensor_ir_receptor, sizeof(topic_sensor_ir_receptor), "%s/sensor/IR/receptor", myTopic.c_str());
+
+  /************ Subscriptions ************/
   snprintf(topic_command, sizeof(topic_command), "%s/command", myTopic.c_str());
   snprintf(topic_command_led, sizeof(topic_command_led), "%s/command/LEDA", myTopic.c_str());
   snprintf(topic_command_ir_typeSendCod, sizeof(topic_command_ir_typeSendCod), "%s/command/IR/typeSendCod", myTopic.c_str());
+
+  //IR
   snprintf(topic_command_ir_nec_dec, sizeof(topic_command_ir_nec_dec), "%s/command/IR/NEC/DEC", myTopic.c_str());
   snprintf(topic_command_ir_nec_hex, sizeof(topic_command_ir_nec_hex), "%s/command/IR/NEC/HEX", myTopic.c_str());
   snprintf(topic_command_ir_nikai_dec, sizeof(topic_command_ir_nikai_dec), "%s/command/IR/NIKAI/DEC", myTopic.c_str());

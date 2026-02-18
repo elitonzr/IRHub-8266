@@ -1,8 +1,10 @@
 /************ AHT10 ************/
-// Adafruit_AHTX0 aht;  // Endereço I2C 0x38
-// float umidade;       // Variável para armazenar a umidade
-// float temperatura;   // Variável para armazenar a temperatura
-
+// Adafruit_AHTX0 aht;           // Endereço I2C 0x38
+// float umidade;                // Variável para armazenar a umidade
+// float temperatura;            // Variável para armazenar a temperatura
+// boolean estadoAHT10 = false;  // Flag para indicar que sensor está AHT10 conectado
+// SDA = GPIO12
+// SCL = GPIO13
 
 void AHT10Setup() {
   Serial.println();
@@ -13,44 +15,81 @@ void AHT10Setup() {
   Wire.begin(12, 13);
   if (!aht.begin(&Wire)) {
     Serial.println("   Falha ao detectar o AHT10.");
+    estadoAHT10 = AHT10_OFFLINE;
   } else {
     Serial.println("   AHT10 Detectado com sucesso!");
+    estadoAHT10 = AHT10_ONLINE;
   }
 }
 
 void lerSensorAHT10() {
-  /*==================================
-  Configuração e descrições dos pinos
-
-  Pin Número 	  Nome 	    Descrição
-  1 	          VDD 	    Fonte de alimentação (2,2 V a 5,5 V)
-  2 	          SDA 	    I2C Data line
-  3 	          GND 	    Ground
-  4 	          SCL 	    I2C Clock line
-  ==================================*/
+  if (estadoAHT10 != AHT10_ONLINE) {
+    // mqtt_client.publish(topic_ir_info, "AHT10 AHT10 OFFLINE", false);
+    publicarEstadoAHT10();
+    return;
+  }
 
   sensors_event_t humidity, temp;
-  aht.getEvent(&humidity, &temp);  // Lê os dados do sensor
+  aht.getEvent(&humidity, &temp);
+
+  if (!leituraAHT10Valida(temp.temperature, humidity.relative_humidity)) {
+
+    estadoAHT10 = AHT10_ERROR;
+    publicarEstadoAHT10();
+    return;
+  }
 
   temperatura = temp.temperature;
   umidade = humidity.relative_humidity;
 
-  Serial.print("Temperatura: ");
-  Serial.print(temperatura);
-  Serial.println(" °C");
-  Serial.print("Umidade: ");
-  Serial.print(umidade);
-  Serial.println(" %");
+  Serial.printf("Temperatura: %.1f °C\n", temperatura);
+  Serial.printf("Umidade: %.1f %%\n", umidade);
 
-  String topic = myTopic;
+  debugPrintln("Temperatura: ");
+  debugPrint(temperatura);
+  debugPrintln("Umidade: ");
+  debugPrint(umidade);
 
-  topic = myTopic + "/sensores/temperatura";
-  snprintf(MQTT_Msg, 250, "%2.1f", temperatura);
-  topic.toCharArray(MQTT_Topic, 110);
-  mqtt_client.publish(MQTT_Topic, MQTT_Msg);
+  int len = snprintf(
+    MQTT_Msg,
+    sizeof(MQTT_Msg),
+    "{\"temperatura\":%.1f,\"umidade\":%.1f}",
+    temperatura,
+    umidade);
 
-  topic = myTopic + "/sensores/umidade";
-  snprintf(MQTT_Msg, 250, "%2.1f", umidade);
-  topic.toCharArray(MQTT_Topic, 110);
-  mqtt_client.publish(MQTT_Topic, MQTT_Msg);
+  if (len > 0 && len < sizeof(MQTT_Msg)) {
+    mqtt_client.publish(topic_sensor_AHT10, MQTT_Msg);
+  }
+
+  estadoAHT10 = AHT10_ONLINE;
+  // publicarEstadoAHT10();
+}
+
+// Função dedicada para validar dados físicos
+bool leituraAHT10Valida(float temp, float umid) {
+  if (isnan(temp) || isnan(umid)) return false;
+
+  // Limites físicos plausíveis do AHT10
+  if (temp < -40.0 || temp > 85.0) return false;
+  if (umid < 0.0 || umid > 100.0) return false;
+
+  return true;
+}
+
+void publicarEstadoAHT10() {
+  const char* status;
+
+  switch (estadoAHT10) {
+    case AHT10_ONLINE:
+      status = "AHT10 Status: online";
+      break;
+    case AHT10_ERROR:
+      status = "AHT10 Status: error";
+      break;
+    default:
+      status = "AHT10 Status: offline";
+  }
+
+  mqtt_client.publish(topic_sensor_status, status, true);
+  debugPrintln(status);
 }
