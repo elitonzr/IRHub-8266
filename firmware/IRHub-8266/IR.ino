@@ -54,75 +54,19 @@ void myIRdecoder() {
 
           publishIR("NEC", tecla);
 
-          // len = snprintf(
-          //   MQTT_Msg,
-          //   sizeof(MQTT_Msg),
-          //   "{\"Protocolo\":\"NEC\",\"DEC\":%lu,\"HEX\":\"%lX\"}",
-          //   tecla,
-          //   results.value);
-
-          // if (len > 0 && len < sizeof(MQTT_Msg)) {
-          //   mqtt_client.publish(topic_sensor_ir_receptor, MQTT_Msg);
-          // }
-
-          // Descomentar para imprimir na serial.
-          // SerialPublish(MQTT_Topic, MQTT_Msg);  // Imprime o tópico e mensagem enviada via MQTT.
-
         } else if (results.decode_type == NIKAI && results.bits == 24 && estadoIRRecepitor == IR_NECe24bits) {  //typeSendCod >= 2
 
           publishIR("NIKAI", tecla);
-
-          // len = snprintf(
-          //   MQTT_Msg,
-          //   sizeof(MQTT_Msg),
-          //   "{\"Protocolo\":\"NIKAI\",\"DEC\":%lu,\"HEX\":\"%lX\"}",
-          //   tecla,
-          //   results.value);
-
-          // if (len > 0 && len < sizeof(MQTT_Msg)) {
-          //   mqtt_client.publish(topic_sensor_ir_receptor, MQTT_Msg);
-          // }
-
-          // Descomentar para imprimir na serial.
-          // SerialPublish(MQTT_Topic, MQTT_Msg);  // Imprime o tópico e mensagem enviada via MQTT.
 
           // Caso Código for AOC de 24bits.
         } else if (bitLength == 24 && estadoIRRecepitor == IR_NECe24bits) {  //typeSendCod >= 2
 
           publishIR("AOC", tecla);
 
-          // len = snprintf(
-          //   MQTT_Msg,
-          //   sizeof(MQTT_Msg),
-          //   "{\"Protocolo\":\"AOC\",\"DEC\":%lu,\"HEX\":\"%lX\"}",
-          //   tecla,
-          //   results.value);
-
-          // if (len > 0 && len < sizeof(MQTT_Msg)) {
-          //   mqtt_client.publish(topic_sensor_ir_receptor, MQTT_Msg);
-          // }
-
-          // Descomentar para imprimir na serial.
-          // SerialPublish(MQTT_Topic, MQTT_Msg);  // Imprime o tópico e mensagem enviada via MQTT.
-
           // Caso Código for Desconhecido.
         } else if (estadoIRRecepitor == IR_TUDO) {  //typeSendCod == 3
 
           publishIR("DESCONHECIDO", tecla);
-
-          // len = snprintf(
-          //   MQTT_Msg,
-          //   sizeof(MQTT_Msg),
-          //   "{\"Protocolo\":\"DESCONHECIDO\",\"DEC\":%lu,\"HEX\":\"%lX\"}",
-          //   tecla,
-          //   results.value);
-
-          // if (len > 0 && len < sizeof(MQTT_Msg)) {
-          //   mqtt_client.publish(topic_sensor_ir_receptor, MQTT_Msg);
-          // }
-
-          // Descomentar para imprimir na serial.
-          // SerialPublish(MQTT_Topic, MQTT_Msg);  // Imprime o tópico e mensagem enviada via MQTT.
         }
       }
       irrecv.resume();  // Receba o próximo valor
@@ -171,11 +115,10 @@ void publishIR(const char* protocolo, unsigned long tecla) {
     "{\"protocol\":\"%s\",\"dec\":%lu,\"hex\":\"%lX\"}",
     protocolo,
     tecla,
-    tecla
-  );
+    tecla);
 
   if (len <= 0 || len >= sizeof(MQTT_Msg)) {
-    debugPrintln("❌ Erro ao montar payload IR");
+    debugPrintln("Erro ao montar payload IR");
     return;
   }
 
@@ -240,4 +183,51 @@ void publicarEstadoIR() {
 
   mqtt_client.publish(topic_sensor_ir_status, status, true);
   debugPrintln(status);
+}
+
+void desligamentoUniversal() {
+
+  debugPrintln(" ");
+  debugPrintln("=====================================================");
+  debugPrintln("      Iniciando teste universal de desligamento      ");
+  debugPrintln("=====================================================");
+
+  // ===== NEC (LG / Samsung / genéricos) =====
+  debugPrintln("Enviando: NEC LG...");
+  irsend.sendNEC(0x20DF10EF, 32);  // LG Power comum
+  delay(5000);
+
+  debugPrintln("Enviando: NEC Samsung...");
+  irsend.sendNEC(0xE0E040BF, 32);  // Samsung Power comum
+  delay(5000);
+
+  debugPrintln("Enviando: NEC Genérico...");
+  irsend.sendNEC(0x00FF02FD, 32);  // Código NEC genérico
+  delay(5000);
+
+  // ===== NIKAY TCL =====
+  debugPrintln("Enviando: NIKAY TCL...");
+  irsend.sendNikai(0xD5F2A, 24);  // Power comum 0xd5f2a
+  delay(5000);
+
+  // ===== Sony SIRC =====
+  debugPrintln("Enviando: Sony SIRC...");
+  irsend.sendSony(0xA90, 12);  // Sony Power comum (12 bits)
+  delay(5000);
+
+  // ===== RC5 (Philips e similares) =====
+  debugPrintln("Enviando: RC5...");
+  irsend.sendRC5(0x0C, 12);  // RC5 Power comum
+  delay(5000);
+
+  // ===== Panasonic =====
+  debugPrintln("Enviando: Panasonic...");
+  irsend.sendPanasonic(0x4004, 0x100BCBD);  // Exemplo comum
+  delay(5000);
+
+  debugPrintln("Teste universal finalizado.");
+  debugPrintln("=====================================================");
+  debugPrintln(" ");
+
+  HabilitaTeste = false;
 }

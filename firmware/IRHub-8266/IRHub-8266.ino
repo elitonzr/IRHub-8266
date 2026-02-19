@@ -10,6 +10,7 @@
 #include <IRsend.h>            // Biblioteca para funcionamento do IR
 #include <IRutils.h>           // Biblioteca para funcionamento do IR
 #include <Adafruit_AHTX0.h>
+#include <ArduinoJson.h>
 
 /************ ARQUIVOS AUXILIARES ************/
 #include "globals.h"
@@ -49,6 +50,7 @@ int mqttOK = 0;    // Variável para armazenar número de conexãos do MQTT.
 
 // TOPICS MQTT
 char topic_info_status[250];
+char topic_info_Build[250];
 char topic_info_software[250];
 char topic_info_network[250];
 char topic_info_mqtt[250];
@@ -64,10 +66,6 @@ char topic_sensor_status[64];
 //IR
 char topic_sensor_ir_receptor[64];
 char topic_sensor_ir_status[64];
-// char topic_sensor_ir_nec[64];
-// char topic_sensor_ir_nikai[64];
-// char topic_sensor_ir_24bits[64];
-// char topic_sensor_ir_desconhecido[64];
 
 // TOPICS MQTT Subscriptions
 char topic_command[64];
@@ -86,11 +84,7 @@ char topic_command_ir_nikai_hex[64];
 char MQTT_Topic[MAX_PAYLOAD];
 char MQTT_Msg[MAX_PAYLOAD];
 
-/************ Variáveis de tempo ************/
-// unsigned long lastMsg = 0;        // Armazena tempo do ultimo envio de Feedback info software e network.
-// unsigned long lastMsgUptime = 0;  // Armazena tempo do ultimo envio de Feedback uptime.
-// unsigned long lastMsgTEST = 0;    // Armazena tempo do ultimo envio de Feedback temperatura.
-
+/************ LED ************/
 #define LEDA 2           // LED A GPIO02
 boolean estLED = false;  //
 
@@ -262,45 +256,6 @@ void loop() {
     feedback(3);
   }
 
-  // // Leitura de comandos via Telnet
-  // if (telnetClient && telnetClient.connected() && telnetClient.available()) {
-  //   String command = telnetClient.readStringUntil('\n');
-  //   command.trim();
-  //   debugPrintln("[Telnet] Comando recebido: " + command);
-
-  //   if (command == "status") {
-  //     debugPrint("Uptime: ");
-  //     debugPrintln(getFormattedUptime());
-  //     feedback(3);
-
-  //   } else if (command == "info") {
-  //     debugPrintln("================= Informações de compilação =================");
-  //     debugPrintln("Data e hora: " + buildDateTime);
-  //     debugPrintln("Versão do compilador: " + buildVersion);
-  //     debugPrintln("Arquivo fonte: " + buildFile);
-  //     debugPrintln("================= MQTT =================");
-  //     debugPrintln("Tópicos Assinados:");
-  //     debugPrint("Tópico 1: ");
-  //     debugPrintln(topic_command);
-  //     debugPrint("Tópico 2: ");
-  //     debugPrintln(topic_command_led);
-  //     debugPrint("Tópico 3: ");
-  //     debugPrintln(topic_command_ir_typeSendCod);
-  //     debugPrint("Tópico 4: ");
-  //     debugPrintln(topic_command_ir_nec_dec);
-  //     debugPrint("Tópico 5: ");
-  //     debugPrintln(topic_command_ir_nec_hex);
-  //     debugPrint("Tópico 6: ");
-  //     debugPrintln(topic_command_ir_nikai_dec);
-  //     debugPrint("Tópico 7: ");
-  //     debugPrintln(topic_command_ir_nikai_hex);
-  //   } else if (command == "testeIR") {
-  //     desligamentoUniversal();
-  //   } else if (command == "help") {
-  //     debugPrint("Tente os comandos: ");
-  //     debugPrintln("[status] [info] [testeIR] [help]");
-  //   }
-  // }
 }
 
 String getFormattedUptime() {
@@ -363,34 +318,4 @@ void setup_wifi() {
   Serial.println(WiFi.subnetMask());
   Serial.print("   RRSI: ");
   Serial.println(WiFi.RSSI());
-}
-
-/************ log ************/
-//================= Funções Telnet =================
-void debugPrint(const String& msg) {
-  Serial.print(msg);
-  if (telnetClient && telnetClient.connected()) {
-    telnetClient.print(msg);
-  }
-}
-
-void debugPrint(float val) {
-  Serial.print(val);
-  if (telnetClient && telnetClient.connected()) {
-    telnetClient.print(val);
-  }
-}
-
-void debugPrintln(const String& msg) {
-  Serial.println(msg);
-  if (telnetClient && telnetClient.connected()) {
-    telnetClient.println(msg);
-  }
-}
-
-void debugPrintln(float val) {
-  Serial.println(val);
-  if (telnetClient && telnetClient.connected()) {
-    telnetClient.println(val);
-  }
 }

@@ -6,6 +6,7 @@ void setup_mqtt() {
   Serial.println("   Criando Tópicos");
 
   snprintf(topic_info_status, sizeof(topic_info_status), "%s/info/status", myTopic.c_str());
+  snprintf(topic_info_Build, sizeof(topic_info_Build), "%s/info/build", myTopic.c_str());
   snprintf(topic_info_software, sizeof(topic_info_software), "%s/info/software", myTopic.c_str());
   snprintf(topic_info_network, sizeof(topic_info_network), "%s/info/network", myTopic.c_str());
   snprintf(topic_info_mqtt, sizeof(topic_info_mqtt), "%s/info/mqtt", myTopic.c_str());
@@ -133,7 +134,6 @@ void mqtt_reconnect() {
     } else {
 
       mqttErro++;
-      mqttOK = 0;
 
       Serial.print("Falha MQTT. rc=");
       Serial.println(String(mqtt_client.state()));

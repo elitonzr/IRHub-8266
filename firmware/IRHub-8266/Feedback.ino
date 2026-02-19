@@ -18,21 +18,6 @@ void feedback(int ops) {
           ************************************************************/
         mqtt_client.publish(topic_info_status, "online", true);
 
-        // // Monta o tópico com segurança
-        // char topic[128];
-        // snprintf(topic, sizeof(topic), "%s/info/BuildInfo", mqtt_client_id.c_str());
-
-        // // Prepara JSON
-        // StaticJsonDocument<256> doc;
-        // doc["chip_id"] = chipID;
-        // doc["MQTT Client ID"] = mqtt_client_id;
-        // doc["version"] = buildVersion;
-        // doc["build_file"] = buildFile;
-
-        // // Serializa JSON e publica
-        // char buffer[256];
-        // serializeJson(doc, buffer);
-        // mqtt_client.publish(topic, buffer);
 
 
         /************************************************************
@@ -40,27 +25,7 @@ void feedback(int ops) {
         * JSON montado em buffer fixo
         * snprintf protege contra overflow
         ************************************************************/
-        int len = snprintf(
-          MQTT_Msg,
-          sizeof(MQTT_Msg),
-          "{\"firmware\":\"v2025\","
-          "\"version\":\"%s\","
-          "\"data\":\"%s\","
-          "\"hora\":\"%s\","
-          "\"file\":\"%s\","
-          "\"mqtt_client_id\":\"%s\"}",
-          __VERSION__,      // Versão do compilador
-          __DATE__,         // Data da compilação
-          __TIME__,         // Hora da compilação
-          __FILE__,         // Arquivo compilado
-          clenteID.c_str()  // Client ID MQTT
-        );
-
-        // Publica somente se o JSON coube no buffer
-        if (len > 0 && len < sizeof(MQTT_Msg)) {
-          mqtt_client.publish(topic_info_software, MQTT_Msg);
-        }
-
+        MQTTsendBuildInfo();
 
         /************************************************************
           * INFO NETWORK
@@ -68,7 +33,7 @@ void feedback(int ops) {
           * - Executa raramente
           * - Não está em zona quente (loop/callback)
           ************************************************************/
-        len = snprintf(
+        int len = snprintf(
           MQTT_Msg,
           sizeof(MQTT_Msg),
           "{\"wifi\":\"%s\","
@@ -112,12 +77,8 @@ void feedback(int ops) {
     // --------------------------------------------------
     case 1:
       {
-        // Converte uptime de milissegundos para segundos
-        snprintf(MQTT_Msg, sizeof(MQTT_Msg),
-                 "%lu", millis() / 1000UL);
 
-        // Publica diretamente no tópico já montado
-        mqtt_client.publish(topic_info_uptime, MQTT_Msg);
+        MQTTUptime();
 
         break;
       }
@@ -128,11 +89,6 @@ void feedback(int ops) {
     // --------------------------------------------------
     case 2:
       {
-
-        // Converte o tipo atual de envio IR para string
-        // snprintf(MQTT_Msg, sizeof(MQTT_Msg),
-        //          "%d", typeSendCod);
-
         snprintf(MQTT_Msg, sizeof(MQTT_Msg),
                  "{\"HabilitaReceive\":%d,\"HabilitaTeste\":%d}", HabilitaReceive, HabilitaTeste);
 
@@ -175,3 +131,46 @@ void feedback(int ops) {
       break;
   }
 }
+
+void MQTTsendBuildInfo() {
+
+  StaticJsonDocument<256> doc;
+  doc["firmware"] = "2026";
+  doc["version"] = buildVersion;  // Versão do compilador
+  doc["build_file"] = buildFile;  // Arquivo compilado
+  doc["chip_id"] = ESP.getChipId();
+  doc["mqtt_client_id"] = clenteID;       // Client ID MQTT
+  doc["build_datetime"] = buildDateTime;  // Data e hora de compilação
+
+  char buffer[256];
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+
+  if (!mqtt_client.publish(topic_info_Build, buffer, len)) {
+    debugPrintln("[MQTT] Falha ao publicar BuildInfo");
+  }
+}
+
+void MQTTUptime() {
+
+  StaticJsonDocument<256> doc;
+  doc["uptime_formatted"] = getFormattedUptime();
+  doc["uptime_seconds"] = millis() / 1000UL;
+
+  char buffer[256];
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+
+  if (!mqtt_client.publish(topic_info_uptime, buffer, len)) {
+    debugPrintln("[MQTT] Falha ao publicar Uptime");
+  }
+}
+
+
+// // Monta e publica em "mqtt_client_id"/sensores/PIR
+// void MQTTMotion() {
+//   String topic = mqtt_client_id + "/sensores/PIR";
+//   motion ? debugPrintln("[PIR] Movimento detectado!") : debugPrintln("[PIR] Nenhum movimento detectado!");
+//   motion ? snprintf(MQTT_Msg, 50, "ON") : snprintf(MQTT_Msg, 50, "OFF");
+//   topic.toCharArray(MQTT_Topic, 110);
+//   mqtt_client.publish(MQTT_Topic, MQTT_Msg);
+//   DebugPublish(MQTT_Topic, MQTT_Msg);  // Imprime o tópico e mensagem enviada via MQTT.
+// }

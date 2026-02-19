@@ -50,10 +50,20 @@ void processTelnetCommand(char* cmd) {
     debugPrint("AHT10: ");
     debugPrintln(estadoAHT10 == AHT10_ONLINE ? "online" : "offline");
 
+    feedback(3);
+
     debugPrint("IR Mode: ");
     debugPrintln(cmdIRModeToString());
 
-    feedback(3);
+    debugPrintln(" ");
+    debugPrintln("           MQTT            ");
+    debugPrint("Erros: ");
+    debugPrint(mqttErro);
+
+    debugPrint(" | Sucessos: ");
+    debugPrintln(mqttOK);
+    debugPrintln(" ");
+
   }
 
   else if (strcmp(cmd, "info") == 0) {
@@ -123,5 +133,34 @@ const char* cmdIRModeToString() {
     case IR_NECe24bits: return "nec_nikai_24";
     case IR_TUDO: return "all";
     default: return "unknown";
+  }
+}
+
+//================= Funções Telnet =================
+void debugPrint(const String& msg) {
+  Serial.print(msg);
+  if (telnetClient && telnetClient.connected()) {
+    telnetClient.print(msg);
+  }
+}
+
+void debugPrint(float val) {
+  Serial.print(val);
+  if (telnetClient && telnetClient.connected()) {
+    telnetClient.print(val);
+  }
+}
+
+void debugPrintln(const String& msg) {
+  Serial.println(msg);
+  if (telnetClient && telnetClient.connected()) {
+    telnetClient.println(msg);
+  }
+}
+
+void debugPrintln(float val) {
+  Serial.println(val);
+  if (telnetClient && telnetClient.connected()) {
+    telnetClient.println(val);
   }
 }
