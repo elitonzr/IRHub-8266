@@ -1,6 +1,4 @@
 /************ IR ************/
-// snprintf(topic_sensor_ir_receptor, sizeof(topic_sensor_ir_receptor), "%s/sensor/IR/receptor", myTopic.c_str());
-// snprintf(topic_sensor_ir_status, sizeof(topic_sensor_ir_status), "%s/sensor/IR/status", myTopic.c_str());
 
 void setup_IR() {
   Serial.println();
@@ -42,7 +40,7 @@ void myIRdecoder() {
       lastIRTime = now;
 
       // Habilita enviar código recebido.
-      if (HabilitaReceive) {
+      if (IR_ReceptorEstado != DESABILITADO) {
 
         unsigned long tecla = results.value;  // Armazena o código IR.
         uint8_t bitLength = getBitLength(results.value);
@@ -50,23 +48,23 @@ void myIRdecoder() {
         int len = 0;
 
         // Caso Código for protocolo NEC.
-        if (results.decode_type == NEC && isValidNEC(results.value) && (estadoIRRecepitor == IR_NEC || estadoIRRecepitor == IR_NECe24bits)) {  //typeSendCod >= 1
+        if (results.decode_type == NEC && isValidNEC(results.value) && (IR_ReceptorEstado == PROTOCOL_NEC || IR_ReceptorEstado == NECe24bits)) {  //typeSendCod >= 1
 
-          publishIR("NEC", tecla);
+          MQTTsendIR_Receptor("NEC", tecla);
 
-        } else if (results.decode_type == NIKAI && results.bits == 24 && estadoIRRecepitor == IR_NECe24bits) {  //typeSendCod >= 2
+        } else if (results.decode_type == NIKAI && results.bits == 24 && IR_ReceptorEstado == NECe24bits) {  //typeSendCod >= 2
 
-          publishIR("NIKAI", tecla);
+          MQTTsendIR_Receptor("NIKAI", tecla);
 
           // Caso Código for AOC de 24bits.
-        } else if (bitLength == 24 && estadoIRRecepitor == IR_NECe24bits) {  //typeSendCod >= 2
+        } else if (bitLength == 24 && IR_ReceptorEstado == NECe24bits) {  //typeSendCod >= 2
 
-          publishIR("AOC", tecla);
+          MQTTsendIR_Receptor("AOC", tecla);
 
           // Caso Código for Desconhecido.
-        } else if (estadoIRRecepitor == IR_TUDO) {  //typeSendCod == 3
+        } else if (IR_ReceptorEstado == TUDO) {  //typeSendCod == 3
 
-          publishIR("DESCONHECIDO", tecla);
+          MQTTsendIR_Receptor("DESCONHECIDO", tecla);
         }
       }
       irrecv.resume();  // Receba o próximo valor
@@ -99,31 +97,7 @@ uint8_t getBitLength(uint32_t code) {
   return 0;
 }
 
-void publishIR(const char* protocolo, unsigned long tecla) {
-  if (!mqtt_client.connected()) return;
 
-  // Atualiza estado local
-  strncpy(lastIR.protocolo, protocolo, sizeof(lastIR.protocolo));
-  lastIR.dec = tecla;
-  lastIR.hex = tecla;
-  lastIR.timestamp = millis();
-  lastIR.valido = true;
-
-  int len = snprintf(
-    MQTT_Msg,
-    sizeof(MQTT_Msg),
-    "{\"protocol\":\"%s\",\"dec\":%lu,\"hex\":\"%lX\"}",
-    protocolo,
-    tecla,
-    tecla);
-
-  if (len <= 0 || len >= sizeof(MQTT_Msg)) {
-    debugPrintln("Erro ao montar payload IR");
-    return;
-  }
-
-  mqtt_client.publish(topic_sensor_ir_receptor, MQTT_Msg);
-}
 
 // Imprime na serial.
 void SerialPublish(const char* Topic, const char* Msg) {
@@ -145,45 +119,16 @@ void SerialPublish(const char* Topic, const char* Msg) {
         1           Somente NEC.
         2           NEC e 24bits.
         3           NEC e 24bits e DESCONHECIDOS */
-void ControleIRSend(int n) {
+void IR_RecepitorSET(int n) {
   if (n < 0 || n > 3) {
     return;  // valor inválido, ignora
   }
 
-  estadoIRRecepitor = static_cast<IRRecepitorType>(n);
+  IR_ReceptorEstado = static_cast<IR_ReceptorMode>(n);
 
   feedback(2);
-  publicarEstadoIR();
 }
 
-void publicarEstadoIR() {
-  const char* status;
-
-  switch (estadoIRRecepitor) {
-    case IR_DESABILITADO:
-      status = "Receptor IR: Desabilitado";
-      break;
-
-    case IR_NEC:
-      status = "Receptor IR: NEC";
-      break;
-
-    case IR_NECe24bits:
-      status = "Receptor IR: NEC, NIKAI e 24bits";
-      break;
-
-    case IR_TUDO:
-      status = "Receptor IR: Tudo";
-      break;
-
-    default:
-      status = "Receptor IR: Desconhecido";
-      break;
-  }
-
-  mqtt_client.publish(topic_sensor_ir_status, status, true);
-  debugPrintln(status);
-}
 
 void desligamentoUniversal() {
 
@@ -229,5 +174,5 @@ void desligamentoUniversal() {
   debugPrintln("=====================================================");
   debugPrintln(" ");
 
-  HabilitaTeste = false;
+  IR_EmissorTeste = false;
 }

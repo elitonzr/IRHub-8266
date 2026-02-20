@@ -48,36 +48,39 @@ PubSubClient mqtt_client(espClient);
 int mqttErro = 0;  // Variável para armazenar erro de conexão do MQTT.
 int mqttOK = 0;    // Variável para armazenar número de conexãos do MQTT.
 
-// TOPICS MQTT
+// -- TOPICS MQTT --
+//info
 char topic_info_status[250];
 char topic_info_Build[250];
 char topic_info_software[250];
 char topic_info_network[250];
 char topic_info_mqtt[250];
 char topic_info_uptime[250];
-char topic_info_outputs[64];  // "%s/info/Outputs"
-char topic_ir_type[250];      // "%s/IR/typeSendCod"
-char topic_ir_test[64];
-char topic_ir_info[64];
+char topic_info_outputs[64];
 
+//AHT10
 char topic_sensor_AHT10[250];
-char topic_sensor_status[64];
+char topic_status_AHT10[250];
 
 //IR
-char topic_sensor_ir_receptor[64];
 char topic_sensor_ir_status[64];
+char topic_sensor_ir_receptor[64];
+char topic_sensor_ir_emissor[64];
 
-// TOPICS MQTT Subscriptions
+
+// -- TOPICS MQTT Subscriptions --
 char topic_command[64];
 char topic_command_led[64];
+
 //IR
-char topic_command_ir_typeSendCod[64];
-char topic_command_ir_info[64];
-char topic_command_ir_prefix[64];
-char topic_command_ir_nec_dec[64];
-char topic_command_ir_nec_hex[64];
-char topic_command_ir_nikai_dec[64];
-char topic_command_ir_nikai_hex[64];
+char topic_command_ir_receptor_protocol[250];
+
+char topic_command_ir_emissor_nec_dec[64];
+char topic_command_ir_emissor_nec_hex[64];
+char topic_command_ir_emissor_nikai_dec[64];
+char topic_command_ir_emissor_nikai_hex[64];
+
+char topic_command_ir_emissor_prefix[64];
 
 // BUFFERS
 #define MAX_PAYLOAD 250
@@ -97,14 +100,14 @@ IRsend irsend(kIrLed);
 IRrecv irrecv(kRecvPin);
 decode_results results;
 
-enum IRRecepitorType {
-  IR_DESABILITADO,  // Não envia nada.
-  IR_NEC,           // Somente NEC.
-  IR_NECe24bits,    // NEC e 24bits.
-  IR_TUDO           // Tudo.
+enum IR_ReceptorMode {
+  DESABILITADO,  // Não envia nada.
+  PROTOCOL_NEC,           // Somente NEC.
+  NECe24bits,    // NEC e 24bits.
+  TUDO           // Tudo.
 };
 
-IRRecepitorType estadoIRRecepitor = IR_NECe24bits;  // Flag para indicar tipo de recepção IR
+IR_ReceptorMode IR_ReceptorEstado = NECe24bits;  // Flag para indicar tipo de recepção IR
 
 uint32_t lastIRCode = 0;
 unsigned long lastIRTime = 0;
@@ -128,7 +131,7 @@ IRLastData lastIR = {
 Adafruit_AHTX0 aht;  // Endereço I2C 0x38
 float umidade;       // Variável para armazenar a umidade
 float temperatura;   // Variável para armazenar a temperatura
-// boolean estadoAHT10 = false;
+
 enum AHT10State {
   AHT10_OFFLINE,
   AHT10_ONLINE,
@@ -139,8 +142,7 @@ AHT10State estadoAHT10 = AHT10_OFFLINE;  // Flag para indicar que sensor está A
 
 // Auxiliares
 boolean enviandoCod = false;     // Sinalizador para evitar recepção de IR durante transmissão.
-boolean HabilitaTeste = false;   // Sinalizador para evitar recepção de IR durante transmissão.
-boolean HabilitaReceive = true;  // Sinalizador para ligar ou deligar recepção de IR.
+boolean IR_EmissorTeste = false;   // executa teste do emissor
 
 /************ SETUP ************/
 void setup() {
@@ -165,7 +167,7 @@ void setup() {
   setup_wifi();    // inicializa WiFi
   setup_ota();     // inicializa OTA
   setup_mqtt();    // inicializa MQTT
-  AHT10Setup();    // Inicializa o servidor
+  setup_AHT10();   // Inicializa AHT10
   setup_server();  // Inicializa o servidor
 
   pinMode(LEDA, OUTPUT);  // LED A GPIO02
@@ -197,7 +199,7 @@ void loop() {
 
   unsigned long now = millis();
 
-  if (HabilitaTeste) {
+  if (IR_EmissorTeste) {
 
     static unsigned long lastMsgTest = 0;
     if (now - lastMsgTest > 20000) {
@@ -255,7 +257,6 @@ void loop() {
     debugPrintln(getFormattedUptime());
     feedback(3);
   }
-
 }
 
 String getFormattedUptime() {

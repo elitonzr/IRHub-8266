@@ -43,6 +43,7 @@ void processTelnetCommand(char* cmd) {
 
   if (strcmp(cmd, "status") == 0) {
 
+    debugPrintln(" ");
     debugPrintln("=== STATUS ===");
     debugPrint("Uptime: ");
     debugPrintln(getFormattedUptime());
@@ -50,19 +51,12 @@ void processTelnetCommand(char* cmd) {
     debugPrint("AHT10: ");
     debugPrintln(estadoAHT10 == AHT10_ONLINE ? "online" : "offline");
 
-    feedback(3);
+    lerSensorAHT10();
 
     debugPrint("IR Mode: ");
     debugPrintln(cmdIRModeToString());
 
-    debugPrintln(" ");
-    debugPrintln("           MQTT            ");
-    debugPrint("Erros: ");
-    debugPrint(mqttErro);
-
-    debugPrint(" | Sucessos: ");
-    debugPrintln(mqttOK);
-    debugPrintln(" ");
+    MQTTFeedback();
 
   }
 
@@ -78,14 +72,8 @@ void processTelnetCommand(char* cmd) {
     debugPrint("Arquivo: ");
     debugPrintln(buildFile);
 
-    debugPrintln("=== MQTT ===");
-    debugPrintln(topic_command);
-    debugPrintln(topic_command_led);
-    debugPrintln(topic_command_ir_typeSendCod);
-    debugPrintln(topic_command_ir_nec_dec);
-    debugPrintln(topic_command_ir_nec_hex);
-    debugPrintln(topic_command_ir_nikai_dec);
-    debugPrintln(topic_command_ir_nikai_hex);
+    MQTTsendMQTT();
+
   }
 
   else if (strcmp(cmd, "testeir") == 0) {
@@ -127,11 +115,11 @@ void processTelnetCommand(char* cmd) {
 }
 
 const char* cmdIRModeToString() {
-  switch (estadoIRRecepitor) {
-    case IR_DESABILITADO: return "disabled";
-    case IR_NEC: return "nec";
-    case IR_NECe24bits: return "nec_nikai_24";
-    case IR_TUDO: return "all";
+  switch (IR_ReceptorEstado) {
+    case DESABILITADO: return "disabled";
+    case PROTOCOL_NEC: return "nec";
+    case NECe24bits: return "nec_nikai_24";
+    case TUDO: return "all";
     default: return "unknown";
   }
 }

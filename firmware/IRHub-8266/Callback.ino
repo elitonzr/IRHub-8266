@@ -17,7 +17,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
   debugPrint("topic [");
   debugPrint(topic);
   debugPrint("] ");
-  debugPrintln(mensagem);  // Imprime a mensagem completa de uma vez só
+  debugPrint(" payload [");
+  debugPrint(mensagem);
+  debugPrint("] ");
   debugPrintln("");
 
   // Comando geral
@@ -40,7 +42,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     feedback(4);
   }
   // Comandos IR
-  else if (strncmp(topic, topic_command_ir_prefix, strlen(topic_command_ir_prefix)) == 0) {
+  else if (strncmp(topic, topic_command_ir_emissor_prefix, strlen(topic_command_ir_emissor_prefix)) == 0) {
 
     processaIR(topic, payload, length);
   }
@@ -60,7 +62,7 @@ void processaIR(const char* topic, byte* payload, unsigned int length) {
   buffer[copyLen] = '\0';
 
   // ---------- IR NEC decimal ----------
-  if (strcmp(topic, topic_command_ir_nec_dec) == 0) {
+  if (strcmp(topic, topic_command_ir_emissor_nec_dec) == 0) {
 
     char* endPtr;
     long tecla = strtol(buffer, &endPtr, 10);
@@ -75,12 +77,12 @@ void processaIR(const char* topic, byte* payload, unsigned int length) {
     snprintf(mqttMsg, sizeof(mqttMsg),
              "Codigo IR NEC enviado: %ld", tecla);
 
-    mqtt_client.publish(topic_ir_info, mqttMsg);
-    // SerialPublish(topic_ir_info, mqttMsg);  // Imprime o tópico e mensagem enviada via MQTT.
+    mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
+    // SerialPublish(topic_sensor_ir_emissor, mqttMsg);  // Imprime o tópico e mensagem enviada via MQTT.
   }
 
   // ---------- IR NEC hexadecimal ----------
-  else if (strcmp(topic, topic_command_ir_nec_hex) == 0) {
+  else if (strcmp(topic, topic_command_ir_emissor_nec_hex) == 0) {
 
     char* endPtr;
     uint32_t irCode = strtoul(buffer, &endPtr, 16);
@@ -94,12 +96,12 @@ void processaIR(const char* topic, byte* payload, unsigned int length) {
     snprintf(mqttMsg, sizeof(mqttMsg),
              "IR NEC enviado (HEX): 0x%X", irCode);
 
-    mqtt_client.publish(topic_ir_info, mqttMsg);
-    // SerialPublish(topic_ir_info, mqttMsg);  // Imprime o tópico e mensagem enviada via MQTT.
+    mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
+    // SerialPublish(topic_sensor_ir_emissor, mqttMsg);  // Imprime o tópico e mensagem enviada via MQTT.
   }
 
   // ---------- IR NIKAI decimal ----------
-  else if (strcmp(topic, topic_command_ir_nikai_dec) == 0) {
+  else if (strcmp(topic, topic_command_ir_emissor_nikai_dec) == 0) {
 
     char* endPtr;
     uint32_t irCode = strtoul(buffer, &endPtr, 16);
@@ -114,13 +116,13 @@ void processaIR(const char* topic, byte* payload, unsigned int length) {
     snprintf(mqttMsg, sizeof(mqttMsg),
              "IR NIKAI enviado (DEC): %lu", irCode);
 
-    mqtt_client.publish(topic_ir_info, mqttMsg);
+    mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
     // SerialPublish(mqttTopic, mqttMsg);  // Imprime o tópico e mensagem enviada via MQTT.
 
   }
 
   // ---------- IR NIKAI hexadecimal ----------
-  else if (strcmp(topic, topic_command_ir_nikai_hex) == 0) {
+  else if (strcmp(topic, topic_command_ir_emissor_nikai_hex) == 0) {
 
     char* endPtr;
     uint32_t irCode = strtoul(buffer, &endPtr, 16);
@@ -134,13 +136,12 @@ void processaIR(const char* topic, byte* payload, unsigned int length) {
     snprintf(mqttMsg, sizeof(mqttMsg),
              "IR NIKAI enviado (HEX): 0x%X", irCode);
 
-    mqtt_client.publish(topic_ir_info, mqttMsg);
-    // SerialPublish(topic_ir_info, mqttMsg);  // Imprime o tópico e mensagem enviada via MQTT.
+    mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
+    // SerialPublish(topic_sensor_ir_emissor, mqttMsg);  // Imprime o tópico e mensagem enviada via MQTT.
   }
 
   // ---------- Alteração de modo ----------
-  else if (strcmp(topic, topic_ir_type) == 0) {
-
+  else if (strcmp(topic, topic_command_ir_receptor_protocol) == 0) {
     processaComando(payload, length);
     feedback(10);
   }
@@ -163,23 +164,16 @@ void processaComando(byte* payload, unsigned int length) {
   } else if (cmd == 'b') {
 
     if (valor == 0) {
-      HabilitaTeste = false;
+      IR_EmissorTeste = false;
     } else if (valor == 1) {
-      HabilitaTeste = true;
+      IR_EmissorTeste = true;
     }
     feedback(2);
   }
 
   // Controle do envio do código IR recebido.
   else if (cmd == 'c') {
-    ControleIRSend(valor);
-  } else if (cmd == 'd') {
-    if (valor == 0) {
-      HabilitaReceive = false;
-    } else if (valor == 1) {
-      HabilitaReceive = true;
-    }
-    feedback(2);
+    IR_RecepitorSET(valor);
   }
 }
 

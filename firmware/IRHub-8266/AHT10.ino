@@ -6,7 +6,7 @@
 // SDA = GPIO12
 // SCL = GPIO13
 
-void AHT10Setup() {
+void setup_AHT10() {
   Serial.println();
   Serial.println("=================================");
   Serial.println("  Configurando AHT10  ");
@@ -90,6 +90,6 @@ void publicarEstadoAHT10() {
       status = "AHT10 Status: offline";
   }
 
-  mqtt_client.publish(topic_sensor_status, status, true);
+  mqtt_client.publish(topic_status_AHT10, status, true);
   debugPrintln(status);
 }

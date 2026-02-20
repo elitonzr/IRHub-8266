@@ -68,20 +68,20 @@ void handleSensorStatus() {
   }
 
   // --- Estado IR ---
-  switch (estadoIRRecepitor) {
-    case IR_DESABILITADO:
+  switch (IR_ReceptorEstado) {
+    case DESABILITADO:
       statusIR = "disabled";
       break;
 
-    case IR_NEC:
+    case PROTOCOL_NEC:
       statusIR = "nec";
       break;
 
-    case IR_NECe24bits:
+    case NECe24bits:
       statusIR = "nec_nikai_24";
       break;
 
-    case IR_TUDO:
+    case TUDO:
       statusIR = "all";
       break;
 

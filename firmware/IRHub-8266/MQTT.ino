@@ -1,4 +1,6 @@
+/************ MQTT ************/
 void setup_mqtt() {
+
   Serial.println();
   Serial.println("=================================");
   Serial.println("  Configurando o servidor MQTT  ");
@@ -13,28 +15,25 @@ void setup_mqtt() {
   snprintf(topic_info_uptime, sizeof(topic_info_uptime), "%s/info/uptime", myTopic.c_str());
   snprintf(topic_info_outputs, sizeof(topic_info_outputs), "%s/info/Outputs", myTopic.c_str());
 
-
-  snprintf(topic_sensor_status, sizeof(topic_sensor_status), "%s/sensor/status", myTopic.c_str());
+  // -- AHT10 --
+  snprintf(topic_status_AHT10, sizeof(topic_status_AHT10), "%s/sensor/AHT10/status", myTopic.c_str());
   snprintf(topic_sensor_AHT10, sizeof(topic_sensor_AHT10), "%s/sensor/AHT10", myTopic.c_str());
 
-  //IR
-  snprintf(topic_ir_type, sizeof(topic_ir_type), "%s/IR/typeSendCod", myTopic.c_str());
-  snprintf(topic_ir_info, sizeof(topic_ir_info), "%s/info/IR", myTopic.c_str());
-  snprintf(topic_ir_test, sizeof(topic_ir_test), "%s/command/IR/test", myTopic.c_str());
-
-  snprintf(topic_sensor_ir_status, sizeof(topic_sensor_ir_status), "%s/sensor/IR/status", myTopic.c_str());
-  snprintf(topic_sensor_ir_receptor, sizeof(topic_sensor_ir_receptor), "%s/sensor/IR/receptor", myTopic.c_str());
+  // -- IR --
+  snprintf(topic_sensor_ir_status, sizeof(topic_sensor_ir_status), "%s/sensor/ir_status", myTopic.c_str());
+  snprintf(topic_sensor_ir_receptor, sizeof(topic_sensor_ir_receptor), "%s/sensor/ir_receptor", myTopic.c_str());
+  snprintf(topic_sensor_ir_emissor, sizeof(topic_sensor_ir_emissor), "%s/sensor/ir_emissor", myTopic.c_str());
 
   /************ Subscriptions ************/
   snprintf(topic_command, sizeof(topic_command), "%s/command", myTopic.c_str());
   snprintf(topic_command_led, sizeof(topic_command_led), "%s/command/LEDA", myTopic.c_str());
-  snprintf(topic_command_ir_typeSendCod, sizeof(topic_command_ir_typeSendCod), "%s/command/IR/typeSendCod", myTopic.c_str());
 
-  //IR
-  snprintf(topic_command_ir_nec_dec, sizeof(topic_command_ir_nec_dec), "%s/command/IR/NEC/DEC", myTopic.c_str());
-  snprintf(topic_command_ir_nec_hex, sizeof(topic_command_ir_nec_hex), "%s/command/IR/NEC/HEX", myTopic.c_str());
-  snprintf(topic_command_ir_nikai_dec, sizeof(topic_command_ir_nikai_dec), "%s/command/IR/NIKAI/DEC", myTopic.c_str());
-  snprintf(topic_command_ir_nikai_hex, sizeof(topic_command_ir_nikai_hex), "%s/command/IR/NIKAI/HEX", myTopic.c_str());
+  // -- IR --
+  snprintf(topic_command_ir_receptor_protocol, sizeof(topic_command_ir_receptor_protocol), "%s/command/ir_receptor/protocol", myTopic.c_str());
+  snprintf(topic_command_ir_emissor_nec_dec, sizeof(topic_command_ir_emissor_nec_dec), "%s/command/ir_emissor/NEC/DEC", myTopic.c_str());
+  snprintf(topic_command_ir_emissor_nec_hex, sizeof(topic_command_ir_emissor_nec_hex), "%s/command/ir_emissor/NEC/HEX", myTopic.c_str());
+  snprintf(topic_command_ir_emissor_nikai_dec, sizeof(topic_command_ir_emissor_nikai_dec), "%s/command/ir_emissor/NIKAI/DEC", myTopic.c_str());
+  snprintf(topic_command_ir_emissor_nikai_hex, sizeof(topic_command_ir_emissor_nikai_hex), "%s/command/ir_emissor/NIKAI/HEX", myTopic.c_str());
 
   mqtt_client.setServer(mqtt_server, 1883);
   mqtt_client.setCallback(callback);
@@ -52,7 +51,7 @@ void setup_mqtt() {
   Serial.println();
 }
 
-/************ MQTT RECONNECT ************/
+
 void mqtt_reconnect() {
 
   static unsigned long lastAttempt = 0;
@@ -98,30 +97,13 @@ void mqtt_reconnect() {
       mqtt_client.publish(MQTT_Topic, "online", false);
 
       // Subscriptions
-      Serial.println("Assinando os seguintes tópicos:");
-
       mqtt_client.subscribe(topic_command);
       mqtt_client.subscribe(topic_command_led);
-      mqtt_client.subscribe(topic_command_ir_typeSendCod);
-      mqtt_client.subscribe(topic_command_ir_nec_dec);
-      mqtt_client.subscribe(topic_command_ir_nec_hex);
-      mqtt_client.subscribe(topic_command_ir_nikai_dec);
-      mqtt_client.subscribe(topic_command_ir_nikai_hex);
-
-      Serial.print("Tópico 1: ");
-      Serial.println(topic_command);
-      Serial.print("Tópico 2: ");
-      Serial.println(topic_command_led);
-      Serial.print("Tópico 3: ");
-      Serial.println(topic_command_ir_typeSendCod);
-      Serial.print("Tópico 4: ");
-      Serial.println(topic_command_ir_nec_dec);
-      Serial.print("Tópico 5: ");
-      Serial.println(topic_command_ir_nec_hex);
-      Serial.print("Tópico 6: ");
-      Serial.println(topic_command_ir_nikai_dec);
-      Serial.print("Tópico 7: ");
-      Serial.println(topic_command_ir_nikai_hex);
+      mqtt_client.subscribe(topic_command_ir_receptor_protocol);
+      mqtt_client.subscribe(topic_command_ir_emissor_nec_dec);
+      mqtt_client.subscribe(topic_command_ir_emissor_nec_hex);
+      mqtt_client.subscribe(topic_command_ir_emissor_nikai_dec);
+      mqtt_client.subscribe(topic_command_ir_emissor_nikai_hex);
 
       // Publica os feedbacks iniciais
       Serial.println("Publicando os feedbacks iniciais...");
@@ -134,11 +116,192 @@ void mqtt_reconnect() {
     } else {
 
       mqttErro++;
+      Serial.println();
+      Serial.print("N° Erros: ");
+      Serial.println(mqttErro);
 
       Serial.print("Falha MQTT. rc=");
       Serial.println(String(mqtt_client.state()));
 
-      delay(5000);
+      // delay(5000);
     }
   }
+}
+
+
+void MQTTsendBuildInfo() {
+
+  StaticJsonDocument<256> doc;
+  doc["firmware"] = "2026";
+  doc["version"] = buildVersion;  // Versão do compilador
+  doc["build_file"] = buildFile;  // Arquivo compilado
+  doc["chip_id"] = ESP.getChipId();
+  doc["build_datetime"] = buildDateTime;  // Data e hora de compilação
+
+  char buffer[256];
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+
+  if (!mqtt_client.publish(topic_info_Build, buffer, len)) {
+    debugPrintln("[MQTT] Falha ao publicar BuildInfo");
+  }
+}
+
+void MQTTsendUptime() {
+
+  StaticJsonDocument<256> doc;
+  doc["uptime_formatted"] = getFormattedUptime();
+  doc["uptime_seconds"] = millis() / 1000UL;
+
+  char buffer[256];
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+
+  if (!mqtt_client.publish(topic_info_uptime, buffer, len)) {
+    debugPrintln("[MQTT] Falha ao publicar Uptime");
+  }
+}
+
+void MQTTsendNetwork() {
+
+  StaticJsonDocument<256> doc;
+  doc["wifi"] = wifi_ssid;
+  doc["ip"] = WiFi.localIP().toString().c_str();
+  doc["gateway"] = WiFi.gatewayIP().toString().c_str();
+  doc["mask"] = WiFi.subnetMask().toString().c_str();
+  doc["rssi"] = WiFi.RSSI();
+
+  char buffer[256];
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+
+  if (!mqtt_client.publish(topic_info_network, buffer, len)) {
+    debugPrintln("[MQTT] Falha ao publicar Network");
+  }
+}
+
+void MQTTsendMQTT() {
+
+  StaticJsonDocument<256> doc;
+  doc["server"] = mqtt_server;
+  doc["client_id"] = clenteID;  // Client ID MQTT
+  doc["topic_main"] = myTopic + "/#";
+  doc["connect"] = mqttOK;
+  doc["erro"] = mqttErro;
+
+  char buffer[256];
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+
+  if (!mqtt_client.publish(topic_info_mqtt, buffer, len)) {
+    debugPrintln("[MQTT] Falha ao publicar MQTT");
+  }
+}
+
+void MQTTsendIR() {
+
+  const char* status;
+
+  switch (IR_ReceptorEstado) {
+    case DESABILITADO:
+      status = "Receptor IR: Desabilitado";
+      break;
+
+    case PROTOCOL_NEC:
+      status = "Receptor IR: NEC";
+      break;
+
+    case NECe24bits:
+      status = "Receptor IR: NEC, NIKAI e 24bits";
+      break;
+
+    case TUDO:
+      status = "Receptor IR: Tudo";
+      break;
+
+    default:
+      status = "Receptor IR: Desconhecido";
+      break;
+  }
+
+  StaticJsonDocument<256> doc;
+  doc["IR_Receptor"] = status;
+  doc["IR_Emissor"] = IR_EmissorTeste;
+
+  char buffer[256];
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+
+  if (!mqtt_client.publish(topic_sensor_ir_status, buffer, len)) {
+    debugPrintln("[MQTT] Falha ao publicar IR");
+  }
+}
+
+void MQTTsendOutputs() {
+
+  StaticJsonDocument<256> doc;
+  doc["led_A"] = estLED;
+
+  char buffer[256];
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+
+  if (!mqtt_client.publish(topic_info_outputs, buffer, len)) {
+    debugPrintln("[MQTT] Falha ao publicar outputs");
+  }
+}
+
+void MQTTsendIR_Receptor(const char* protocolo, unsigned long tecla) {
+  if (!mqtt_client.connected()) return;
+
+  // Atualiza estado local
+  strncpy(lastIR.protocolo, protocolo, sizeof(lastIR.protocolo));
+  lastIR.dec = tecla;
+  lastIR.hex = tecla;
+  lastIR.timestamp = millis();
+  lastIR.valido = true;
+
+  int len = snprintf(
+    MQTT_Msg,
+    sizeof(MQTT_Msg),
+    "{\"protocol\":\"%s\",\"dec\":%lu,\"hex\":\"%lX\"}",
+    protocolo,
+    tecla,
+    tecla);
+
+  if (len <= 0 || len >= sizeof(MQTT_Msg)) {
+    debugPrintln("Erro ao montar payload IR");
+    return;
+  }
+
+  mqtt_client.publish(topic_sensor_ir_receptor, MQTT_Msg);
+}
+
+void MQTTFeedback() {
+  debugPrintln(" ");
+  debugPrintln("=== MQTT ===");
+  debugPrint("Status:   ");
+  debugPrintln(mqtt_client.connected() ? "online" : "offline");
+  debugPrint("Server:     ");
+  debugPrintln(mqtt_server);
+  debugPrint("Cliente ID:   ");
+  debugPrintln(clenteID);
+  debugPrint("Tópico:     ");
+  debugPrintln(myTopic + "/#");
+  debugPrint("Sucessos:   ");
+  debugPrintln(mqttOK);
+  debugPrint("Erros:    ");
+  debugPrintln(mqttErro);
+  debugPrintln(" ");
+
+  debugPrintln("MQTT Subscriptions");
+  debugPrint("Tópico 1: ");
+  debugPrintln(topic_command);
+  debugPrint("Tópico 2: ");
+  debugPrintln(topic_command_led);
+  debugPrint("Tópico 3: ");
+  debugPrintln(topic_command_ir_receptor_protocol);
+  debugPrint("Tópico 4: ");
+  debugPrintln(topic_command_ir_emissor_nec_dec);
+  debugPrint("Tópico 5: ");
+  debugPrintln(topic_command_ir_emissor_nec_hex);
+  debugPrint("Tópico 6: ");
+  debugPrintln(topic_command_ir_emissor_nikai_dec);
+  debugPrint("Tópico 7: ");
+  debugPrintln(topic_command_ir_emissor_nikai_hex);
+  debugPrintln(" ");
 }
