@@ -30,10 +30,9 @@ void setup_server() {
     server.send(200, "application/json", json);
   });
 
-  server.onNotFound(handle_NotFound);               // Servidor recebe uma solicitação HTTP não especificada - chama a função handle_NotFound
-  server.begin();                                   // Inicializa o servidor
-  Serial.println("   Servidor HTTP inicializado");  // Imprime texto na serial.
-  Serial.println();
+  server.onNotFound(handle_NotFound);                // Servidor recebe uma solicitação HTTP não especificada - chama a função handle_NotFound
+  server.begin();                                    // Inicializa o servidor
+  Serial.println("    Servidor HTTP inicializado");  // Imprime texto na serial.
 }
 
 void handleRoot() {
@@ -96,16 +95,15 @@ void handleSensorStatus() {
     json,
     sizeof(json),
     "{"
-      "\"AHT10\":{"
-        "\"status\":\"%s\""
-      "},"
-      "\"IR\":{"
-        "\"modo\":\"%s\""
-      "}"
+    "\"AHT10\":{"
+    "\"status\":\"%s\""
+    "},"
+    "\"IR\":{"
+    "\"modo\":\"%s\""
+    "}"
     "}",
     statusAHT10,
-    statusIR
-  );
+    statusIR);
 
   server.send(200, "application/json", json);
 }

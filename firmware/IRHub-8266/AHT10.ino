@@ -9,15 +9,15 @@
 void setup_AHT10() {
   Serial.println();
   Serial.println("=================================");
-  Serial.println("  Configurando AHT10  ");
+  Serial.println("        Configurando AHT10        ");
   Serial.println("=================================");
 
   Wire.begin(12, 13);
   if (!aht.begin(&Wire)) {
-    Serial.println("   Falha ao detectar o AHT10.");
+    Serial.println("    Falha ao detectar o AHT10.");
     estadoAHT10 = AHT10_OFFLINE;
   } else {
-    Serial.println("   AHT10 Detectado com sucesso!");
+    Serial.println("    AHT10 Detectado com sucesso!");
     estadoAHT10 = AHT10_ONLINE;
   }
 }
@@ -42,24 +42,8 @@ void lerSensorAHT10() {
   temperatura = temp.temperature;
   umidade = humidity.relative_humidity;
 
-  Serial.printf("Temperatura: %.1f °C\n", temperatura);
-  Serial.printf("Umidade: %.1f %%\n", umidade);
-
-  debugPrintln("Temperatura: ");
-  debugPrint(temperatura);
-  debugPrintln("Umidade: ");
-  debugPrint(umidade);
-
-  int len = snprintf(
-    MQTT_Msg,
-    sizeof(MQTT_Msg),
-    "{\"temperatura\":%.1f,\"umidade\":%.1f}",
-    temperatura,
-    umidade);
-
-  if (len > 0 && len < sizeof(MQTT_Msg)) {
-    mqtt_client.publish(topic_sensor_AHT10, MQTT_Msg);
-  }
+  // Serial.printf("Temperatura: %.1f °C\n", temperatura);
+  // Serial.printf("Umidade: %.1f %%\n", umidade);
 
   estadoAHT10 = AHT10_ONLINE;
   // publicarEstadoAHT10();

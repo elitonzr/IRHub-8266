@@ -2,9 +2,8 @@
 void setup_ota() {
   Serial.println();
   Serial.println("=================================");
-  Serial.println("  Configurando OTA device  ");
+  Serial.println("      Configurando OTA device     ");
   Serial.println("=================================");
-  Serial.println("...");
   ArduinoOTA.setHostname(clenteID.c_str());
 
   // Sem autenticação por padrão
@@ -30,5 +29,5 @@ void setup_ota() {
     else if (error == OTA_END_ERROR) Serial.println("Falha no término");
   });
   ArduinoOTA.begin();
-  Serial.println("   OTA Configurado.");
+  Serial.println("   OTA Configurado");
 }

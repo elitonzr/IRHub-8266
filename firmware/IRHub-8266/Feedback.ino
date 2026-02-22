@@ -76,7 +76,7 @@ void feedback(int ops) {
     // --------------------------------------------------
     case 3:
       {
-        lerSensorAHT10();
+        MQTTsendAHT10();
         break;
       }
 

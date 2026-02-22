@@ -5,7 +5,7 @@ void setup_mqtt() {
   Serial.println("=================================");
   Serial.println("  Configurando o servidor MQTT  ");
   Serial.println("=================================");
-  Serial.println("   Criando Tópicos");
+  Serial.println("    Criando Tópicos");
 
   snprintf(topic_info_status, sizeof(topic_info_status), "%s/info/status", myTopic.c_str());
   snprintf(topic_info_Build, sizeof(topic_info_Build), "%s/info/build", myTopic.c_str());
@@ -38,17 +38,16 @@ void setup_mqtt() {
   mqtt_client.setServer(mqtt_server, 1883);
   mqtt_client.setCallback(callback);
 
-  Serial.println("   Tópicos Criados");
-  Serial.print("   IP do servidor: ");
+  Serial.println("    Tópicos Criados");
+  Serial.print("    IP do servidor    : ");
   Serial.println(mqtt_server);
-  Serial.print("    ID do cliente: ");
+  Serial.print("    ID do cliente     : ");
   Serial.println(clenteID);
-  Serial.print(" Tópico principal: ");
+  Serial.print("    Tópico principal  : ");
   Serial.print(myTopic);
   Serial.println("/#");
   Serial.println();
-  Serial.println("   MQTT configurado!");
-  Serial.println();
+  Serial.println("    MQTT configurado!");
 }
 
 
@@ -73,7 +72,7 @@ void mqtt_reconnect() {
 
   // Loop até reconectar
   while (!mqtt_client.connected()) {
-    Serial.println("Tentando conexão MQTT...");
+    Serial.println("    Tentando conexão MQTT...");
 
     String status_topic = myTopic + "/info/status";
 
@@ -90,7 +89,7 @@ void mqtt_reconnect() {
 
     if (conectado) {
       mqttOK++;
-      Serial.println("Conectado ao broker MQTT.");
+      Serial.println("    Conectado ao broker MQTT.");
 
       // Publica birth message
       status_topic.toCharArray(MQTT_Topic, 110);
@@ -106,21 +105,23 @@ void mqtt_reconnect() {
       mqtt_client.subscribe(topic_command_ir_emissor_nikai_hex);
 
       // Publica os feedbacks iniciais
-      Serial.println("Publicando os feedbacks iniciais...");
+      Serial.println("    Publicando os feedbacks iniciais...");
       feedback(0);
       feedback(1);
       feedback(2);
       feedback(3);
       feedback(4);
+      Serial.println("    Feito!");
+      Serial.println();
 
     } else {
 
       mqttErro++;
       Serial.println();
-      Serial.print("N° Erros: ");
+      Serial.print("    Erros N°: ");
       Serial.println(mqttErro);
 
-      Serial.print("Falha MQTT. rc=");
+      Serial.print("    Falha MQTT. rc=");
       Serial.println(String(mqtt_client.state()));
 
       // delay(5000);
@@ -229,6 +230,26 @@ void MQTTsendIR() {
 
   if (!mqtt_client.publish(topic_sensor_ir_status, buffer, len)) {
     debugPrintln("[MQTT] Falha ao publicar IR");
+  }
+}
+
+void MQTTsendAHT10() {
+
+  lerSensorAHT10();
+
+  if (estadoAHT10 != AHT10_ONLINE) {
+    return;
+  }
+
+  int len = snprintf(
+    MQTT_Msg,
+    sizeof(MQTT_Msg),
+    "{\"temperatura\":%.1f,\"umidade\":%.1f}",
+    temperatura,
+    umidade);
+
+  if (len > 0 && len < sizeof(MQTT_Msg)) {
+    mqtt_client.publish(topic_sensor_AHT10, MQTT_Msg);
   }
 }
 

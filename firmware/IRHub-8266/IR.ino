@@ -3,16 +3,16 @@
 void setup_IR() {
   Serial.println();
   Serial.println("=================================");
-  Serial.println("  IR SETUP   ");
+  Serial.println("         IR SETUP         ");
   Serial.println("=================================");
 
   irsend.begin();       // Inicializa emissor
   irrecv.enableIRIn();  // Inicializa receptor
 
-  Serial.print("Emissor no GPIO ");
+  Serial.print("    Emissor   : GPIO ");
   Serial.println(kIrLed);
 
-  Serial.print("Receptor no GPIO ");
+  Serial.print("    Receptor  : GPIO ");
   Serial.println(kRecvPin);
 }
 
@@ -24,7 +24,7 @@ void myIRdecoder() {
     if (irrecv.decode(&results)) {
 
       // Ignora código inválido ou repeat NEC
-      if (results.value == 0 || results.value == 0xFFFFFFFF) {
+      if (results.value == 0 || results.value == 0xFFFFFFFF || results.value == 0xFFFFFFFFFFFFFFFF) {
         irrecv.resume();
         return;
       }
@@ -38,6 +38,8 @@ void myIRdecoder() {
 
       lastIRCode = results.value;
       lastIRTime = now;
+
+      IRPublish();
 
       // Habilita enviar código recebido.
       if (IR_ReceptorEstado != DESABILITADO) {
@@ -97,21 +99,44 @@ uint8_t getBitLength(uint32_t code) {
   return 0;
 }
 
-
-
 // Imprime na serial.
-void SerialPublish(const char* Topic, const char* Msg) {
-  Serial.print("MQTT_Topic,MQTT_Msg [ ");
-  Serial.print(Topic);
-  Serial.print(" , ");
-  Serial.print(Msg);
-  Serial.println(" ]");
-  Serial.print("Código HEX: ");
-  Serial.println(results.value, HEX);  // Imprime o código IR no formato hexadecimal.
-  Serial.print("Código DEC: ");
-  Serial.println(results.value, DEC);                    // Imprime o código IR no formato decimal.
-  Serial.println(resultToHumanReadableBasic(&results));  // Imprime o código IR no formato RAW.
+void IRPublish() {
+
+  char hexBuffer[64];
+  char decBuffer[64];
+
+  snprintf(hexBuffer, sizeof(hexBuffer), "%08lX", (unsigned long)results.value);
+  snprintf(decBuffer, sizeof(decBuffer), "%lu", (unsigned long)results.value);
+
+  debugPrintln("");
+  debugPrint("IR Receptor: ");
+  debugPrint("Código HEX: 0x");
+  debugPrint(hexBuffer);
+
+  debugPrint("\tCódigo DEC: ");
+  debugPrintln(decBuffer);
+
+  // debugPrintln(" ");
+  // debugPrintln("Código RAW: ");
+  // debugPrintln(resultToHumanReadableBasic(&results));
+
+  // debugPrint("Bits: ");
+  // debugPrintln((uint16_t)results.bits);
 }
+
+// void IRPublish2() {
+//   Serial.println("");
+//   Serial.print("IR Receptor: ");
+//   Serial.print("Código HEX: 0x");
+//   Serial.print(results.value, HEX);
+
+//   Serial.print("\tCódigo DEC: ");
+//   Serial.print(results.value, DEC);
+
+//   Serial.println(" ");
+//   Serial.println("Código RAW: ");
+//   Serial.println(resultToHumanReadableBasic(&results));
+// }
 
 // Controle do envio do código IR recebido.
 /*  typeSendCod       Feedback

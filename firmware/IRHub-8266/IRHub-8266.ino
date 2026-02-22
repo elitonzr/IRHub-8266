@@ -102,7 +102,7 @@ decode_results results;
 
 enum IR_ReceptorMode {
   DESABILITADO,  // Não envia nada.
-  PROTOCOL_NEC,           // Somente NEC.
+  PROTOCOL_NEC,  // Somente NEC.
   NECe24bits,    // NEC e 24bits.
   TUDO           // Tudo.
 };
@@ -141,8 +141,8 @@ enum AHT10State {
 AHT10State estadoAHT10 = AHT10_OFFLINE;  // Flag para indicar que sensor está AHT10 conectado
 
 // Auxiliares
-boolean enviandoCod = false;     // Sinalizador para evitar recepção de IR durante transmissão.
-boolean IR_EmissorTeste = false;   // executa teste do emissor
+boolean enviandoCod = false;      // Sinalizador para evitar recepção de IR durante transmissão.
+boolean IR_EmissorTeste = false;  // executa teste do emissor
 
 /************ SETUP ************/
 void setup() {
@@ -150,18 +150,14 @@ void setup() {
   Serial.begin(115200);
   delay(1500);
 
-  Serial.println();
   Serial.println("=================================");
-  Serial.println("         Iniciando Setup         ");
+  Serial.println("    Informações de compilação   ");
   Serial.println("=================================");
+  Serial.println("    Data e hora           : " + buildDateTime);
+  Serial.println("    Versão do compilador  : " + buildVersion);
+  Serial.println("    Arquivo fonte         : " + buildFile);
   Serial.println();
-  Serial.println("================= Informações de compilação =================");
-  Serial.println("Data e hora: " + buildDateTime);
-  Serial.println("Versão do compilador: " + buildVersion);
-  Serial.println("Arquivo fonte: " + buildFile);
-  Serial.println();
-  Serial.println("\nIniciando ESP8266...");
-  Serial.println();
+  Serial.println("======= Iniciando Setup =======");
 
   setup_IR();      // inicializa IR
   setup_wifi();    // inicializa WiFi
@@ -177,9 +173,9 @@ void setup() {
     delay(500);                              // Espera 0,5 Segundo.
   }
 
-  Serial.println("Setup Concluído!");  // Imprime texto na serial.
   Serial.println();
   Serial.println("=================================");
+  Serial.println("        Setup Concluído!        ");  // Imprime texto na serial.
   Serial.println("         Sistema pronto          ");
   Serial.println("=================================");
   Serial.println();
@@ -226,7 +222,30 @@ void loop() {
   // Feedback uptime a cada 5 minutos (300000 ms)
   if (now - lastMsgAHT10 > 300000) {
     lastMsgAHT10 = now;
-    feedback(3);
+
+    MQTTsendAHT10();
+  }
+
+  // Debug periódico
+  static unsigned long lastDebug = 0;
+  if (millis() - lastDebug > 60000) {
+    lastDebug = millis();
+
+    debugPrintln("");
+    debugPrint("Uptime: ");
+    debugPrintln(getFormattedUptime());
+
+    lerSensorAHT10();
+
+    if (estadoAHT10 != AHT10_ONLINE) {
+      return;
+    }
+
+    debugPrint("AHT10: ");
+    debugPrint(temperatura);
+    debugPrint("°C\t");
+    debugPrint(umidade);
+    debugPrintln("%");
   }
 
   // Conexão com cliente Telnet
@@ -247,15 +266,6 @@ void loop() {
       newClient.println("Outro cliente já está conectado.");
       newClient.stop();
     }
-  }
-
-  // Debug periódico
-  static unsigned long lastDebug = 0;
-  if (millis() - lastDebug > 60000) {
-    lastDebug = millis();
-    debugPrint("Uptime: ");
-    debugPrintln(getFormattedUptime());
-    feedback(3);
   }
 }
 
@@ -281,7 +291,7 @@ String getFormattedUptime() {
 void setup_wifi() {
   Serial.println();
   Serial.println("=================================");
-  Serial.println("  Configurando WiFi  ");
+  Serial.println("         Configurando WiFi         ");
   Serial.println("=================================");
 
   delay(10);
@@ -292,31 +302,34 @@ void setup_wifi() {
   WiFi.begin(wifi_ssid, wifi_password);
 
   // Exibe informações sobre a configuração de conexão
-  Serial.print("   Conectando à: ");
+  Serial.print("    Conectando à          : ");
   Serial.println(wifi_ssid);
-  Serial.print("   Endereço IP: ");
+  Serial.print("    Endereço IP           : ");
   Serial.println(WiFi.localIP());
-  Serial.print("   Gateway: ");
+  Serial.print("    Gateway               : ");
   Serial.println(WiFi.gatewayIP());
-  Serial.print("   Máscara de sub-rede: ");
+  Serial.print("    Máscara de sub-rede   : ");
   Serial.println(WiFi.subnetMask());
 
   // Aguarda conexão
+  Serial.println();
+  Serial.print("Tentando conexão WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
 
   // Exibe o endereços após conectar
-  Serial.println("");
-  Serial.print("   Conectado a ");
+  Serial.println();
+  Serial.println();
+  Serial.print("    Conectado à          : ");
   Serial.println(wifi_ssid);
-  Serial.print("   Endereço IP: ");
+  Serial.print("    Endereço IP          : ");
   Serial.println(WiFi.localIP());
-  Serial.print("   Gateway: ");
+  Serial.print("    Gateway              : ");
   Serial.println(WiFi.gatewayIP());
-  Serial.print("   Máscara de sub-rede: ");
+  Serial.print("    Máscara de sub-rede  : ");
   Serial.println(WiFi.subnetMask());
-  Serial.print("   RRSI: ");
+  Serial.print("    RRSI                 : ");
   Serial.println(WiFi.RSSI());
 }

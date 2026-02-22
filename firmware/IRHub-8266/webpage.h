@@ -132,7 +132,7 @@ function updateSensorStatus() {
               throw new Error();
 
             dataEl.innerHTML =
-              `🌡 ${s.temperatura} °C<br>💧 ${s.umidade} %`;
+              `${s.temperatura} °C<br> ${s.umidade} %`;
           })
           .catch(() => {
             dataEl.innerText = '⚠️ Dados indisponíveis';
