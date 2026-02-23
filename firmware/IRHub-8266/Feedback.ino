@@ -18,6 +18,9 @@ void feedback(int ops) {
           ************************************************************/
         mqtt_client.publish(topic_info_status, "online", true);
 
+        debugPrint("topic [");
+        debugPrint(topic_info_status);
+        debugPrintln("] ");
 
 
         /************************************************************

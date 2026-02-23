@@ -44,36 +44,17 @@ void processTelnetCommand(char* cmd) {
   if (strcmp(cmd, "status") == 0) {
 
     debugPrintln(" ");
-    debugPrintln("=== STATUS ===");
-    debugPrint("Uptime: ");
+    debugPrintln("================= STATUS =================");
+    debugIR();
+    debugAHT10();
+    debugMQTT();
+    debugPrint("  Uptime        : ");
     debugPrintln(getFormattedUptime());
-
-    debugPrint("AHT10: ");
-    debugPrintln(estadoAHT10 == AHT10_ONLINE ? "online" : "offline");
-
-    lerSensorAHT10();
-
-    debugPrint("IR Mode: ");
-    debugPrintln(cmdIRModeToString());
-
-    MQTTFeedback();
 
   }
 
   else if (strcmp(cmd, "info") == 0) {
-
-    debugPrintln("=== BUILD INFO ===");
-    debugPrint("Data/Hora: ");
-    debugPrintln(buildDateTime);
-
-    debugPrint("Compilador: ");
-    debugPrintln(buildVersion);
-
-    debugPrint("Arquivo: ");
-    debugPrintln(buildFile);
-
-    MQTTsendMQTT();
-
+    debugBuild();
   }
 
   else if (strcmp(cmd, "testeir") == 0) {
@@ -97,13 +78,7 @@ void processTelnetCommand(char* cmd) {
 
   else if (strcmp(cmd, "help") == 0) {
 
-    debugPrintln("=== COMANDOS DISPONIVEIS ===");
-    debugPrintln("status   -> Mostra estado geral");
-    debugPrintln("info     -> Informacoes de compilacao");
-    debugPrintln("testeIR  -> Envia desligamento universal");
-    debugPrintln("heap     -> Mostra memoria livre");
-    debugPrintln("reboot   -> Reinicia o dispositivo");
-    debugPrintln("help     -> Mostra esta lista");
+    debugHelp();
   }
 
   else {
@@ -111,16 +86,6 @@ void processTelnetCommand(char* cmd) {
     debugPrint("Comando desconhecido: ");
     debugPrintln(cmd);
     debugPrintln("Digite 'help' para lista de comandos.");
-  }
-}
-
-const char* cmdIRModeToString() {
-  switch (IR_ReceptorEstado) {
-    case DESABILITADO: return "disabled";
-    case PROTOCOL_NEC: return "nec";
-    case NECe24bits: return "nec_nikai_24";
-    case TUDO: return "all";
-    default: return "unknown";
   }
 }
 

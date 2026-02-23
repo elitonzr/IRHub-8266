@@ -42,9 +42,6 @@ void lerSensorAHT10() {
   temperatura = temp.temperature;
   umidade = humidity.relative_humidity;
 
-  // Serial.printf("Temperatura: %.1f °C\n", temperatura);
-  // Serial.printf("Umidade: %.1f %%\n", umidade);
-
   estadoAHT10 = AHT10_ONLINE;
   // publicarEstadoAHT10();
 }
@@ -60,20 +57,42 @@ bool leituraAHT10Valida(float temp, float umid) {
   return true;
 }
 
-void publicarEstadoAHT10() {
-  const char* status;
+const char* EstadoAHT10() {
 
   switch (estadoAHT10) {
     case AHT10_ONLINE:
-      status = "AHT10 Status: online";
-      break;
+      return "online";
+
     case AHT10_ERROR:
-      status = "AHT10 Status: error";
-      break;
+      return "error";
+
     default:
-      status = "AHT10 Status: offline";
+      return "offline";
+  }
+}
+
+void publicarEstadoAHT10() {
+
+  debugPrint("topic [");
+  debugPrint(topic_status_AHT10);
+  debugPrintln("] ");
+
+  mqtt_client.publish(topic_status_AHT10, EstadoAHT10(), true);
+  debugPrint("AHT10: ");
+  debugPrintln(EstadoAHT10());
+}
+
+void debugAHT10() {
+
+  lerSensorAHT10();
+
+  if (estadoAHT10 != AHT10_ONLINE) {
+    return;
   }
 
-  mqtt_client.publish(topic_status_AHT10, status, true);
-  debugPrintln(status);
+  debugPrint("AHT10: ");
+  debugPrint(temperatura);
+  debugPrint("°C\t");
+  debugPrint(umidade);
+  debugPrintln("%");
 }

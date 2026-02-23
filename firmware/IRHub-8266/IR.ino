@@ -201,3 +201,52 @@ void desligamentoUniversal() {
 
   IR_EmissorTeste = false;
 }
+
+// const char* cmdIRModeToString() {
+//   switch (IR_ReceptorEstado) {
+//     case DESABILITADO: return "disabled";
+//     case PROTOCOL_NEC: return "nec";
+//     case NECe24bits: return "nec_nikai_24";
+//     case TUDO: return "all";
+//     default: return "unknown";
+//   }
+// }
+
+const char* EstadoIRReceptor() {
+
+  switch (IR_ReceptorEstado) {
+    case DESABILITADO:
+      return "DESABILITADO";
+
+    case PROTOCOL_NEC:
+      return "NEC";
+
+    case NECe24bits:
+      return "NEC, NIKAI e 24bits";
+
+    case TUDO:
+      return "TUDO";
+
+    default:
+      return "unknown";
+  }
+}
+
+void debugIR() {
+  char hexBuffer[64];
+  char decBuffer[64];
+
+  snprintf(hexBuffer, sizeof(hexBuffer), "%08lX", (unsigned long)lastIRCode);
+  snprintf(decBuffer, sizeof(decBuffer), "%lu", (unsigned long)lastIRCode);
+
+  debugPrintln("");
+  debugPrint("  IR Receptor: ");
+  debugPrint("Código HEX: 0x");
+  debugPrint(hexBuffer);
+
+  debugPrint("\tCódigo DEC: ");
+  debugPrintln(decBuffer);
+
+  debugPrint("  IR Receptor   : ");
+  debugPrintln(EstadoIRReceptor());
+}

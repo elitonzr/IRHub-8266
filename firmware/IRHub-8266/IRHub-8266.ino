@@ -235,32 +235,16 @@ void loop() {
     debugPrint("Uptime: ");
     debugPrintln(getFormattedUptime());
 
-    lerSensorAHT10();
-
-    if (estadoAHT10 != AHT10_ONLINE) {
-      return;
-    }
-
-    debugPrint("AHT10: ");
-    debugPrint(temperatura);
-    debugPrint("°C\t");
-    debugPrint(umidade);
-    debugPrintln("%");
+    debugAHT10();
   }
 
   // Conexão com cliente Telnet
   if (telnetServer.hasClient()) {
     if (!telnetClient || !telnetClient.connected()) {
       telnetClient = telnetServer.available();
+      debugPrint("");
       debugPrintln("\n[Telnet] Cliente conectado!");
-
-      debugPrintln("================= Informações de compilação =================");
-      debugPrintln("Data e hora: " + buildDateTime);
-      debugPrintln("Versão do compilador: " + buildVersion);
-      debugPrintln("Arquivo fonte: " + buildFile);
-
-      debugPrint("Tente os comandos: ");
-      debugPrintln("[status] [info] [testeIR] [help]");
+      debugHelp();
     } else {
       WiFiClient newClient = telnetServer.available();
       newClient.println("Outro cliente já está conectado.");

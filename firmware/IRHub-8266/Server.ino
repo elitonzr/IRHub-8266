@@ -48,47 +48,6 @@ void handle_NotFound() {                             // Função para lidar com 
 }
 
 void handleSensorStatus() {
-  const char* statusAHT10;
-  const char* statusIR;
-
-  // --- Estado AHT10 ---
-  switch (estadoAHT10) {
-    case AHT10_ONLINE:
-      statusAHT10 = "online";
-      break;
-
-    case AHT10_ERROR:
-      statusAHT10 = "error";
-      break;
-
-    default:
-      statusAHT10 = "offline";
-      break;
-  }
-
-  // --- Estado IR ---
-  switch (IR_ReceptorEstado) {
-    case DESABILITADO:
-      statusIR = "disabled";
-      break;
-
-    case PROTOCOL_NEC:
-      statusIR = "nec";
-      break;
-
-    case NECe24bits:
-      statusIR = "nec_nikai_24";
-      break;
-
-    case TUDO:
-      statusIR = "all";
-      break;
-
-    default:
-      statusIR = "unknown";
-      break;
-  }
-
   char json[256];
 
   snprintf(
@@ -102,8 +61,8 @@ void handleSensorStatus() {
     "\"modo\":\"%s\""
     "}"
     "}",
-    statusAHT10,
-    statusIR);
+    EstadoAHT10(),
+    EstadoIRReceptor());
 
   server.send(200, "application/json", json);
 }
@@ -123,39 +82,3 @@ void handleSensorAHT10() {
 
   server.send(200, "application/json", buffer);
 }
-
-
-// void handleSensorAHT10() {
-//   if (estadoAHT10 != AHT10_ONLINE) {
-//     server.send(503, "application/json",
-//                 "{\"error\":\"AHT10 indisponivel\"}");
-//     return;
-//   }
-
-//   char buffer[128];
-//   snprintf(buffer, sizeof(buffer),
-//            "{\"temperatura\":%.1f,\"umidade\":%.1f}",
-//            temperatura, umidade);
-
-//   server.send(200, "application/json", buffer);
-// }
-
-
-
-// void handleSensorStatus() {
-//   String status;
-
-//   switch (estadoAHT10) {
-//     case AHT10_ONLINE:
-//       status = "online";
-//       break;
-//     case AHT10_ERROR:
-//       status = "error";
-//       break;
-//     default:
-//       status = "offline";
-//   }
-
-//   server.send(200, "application/json",
-//               "{\"sensor\":\"AHT10\",\"status\":\"" + status + "\"}");
-// }
