@@ -14,7 +14,6 @@
 
 /************ ARQUIVOS AUXILIARES ************/
 #include "globals.h"
-#include "credentials.h"
 #include "webpage.h"
 
 /************ CREDENCIAIS ************/
@@ -101,13 +100,13 @@ IRrecv irrecv(kRecvPin);
 decode_results results;
 
 enum IR_ReceptorMode {
-  DESABILITADO,  // Não envia nada.
-  PROTOCOL_NEC,  // Somente NEC.
-  NECe24bits,    // NEC e 24bits.
-  TUDO           // Tudo.
+  IR_DESABILITADO,  // Não envia nada.
+  IR_PROTOCOL_NEC,  // Somente NEC.
+  IR_NECe24bits,    // NEC e 24bits.
+  IR_TUDO           // Tudo.
 };
 
-IR_ReceptorMode IR_ReceptorEstado = NECe24bits;  // Flag para indicar tipo de recepção IR
+IR_ReceptorMode IR_ReceptorEstado = IR_NECe24bits;  // Flag para indicar tipo de recepção IR
 
 uint32_t lastIRCode = 0;
 unsigned long lastIRTime = 0;
@@ -117,7 +116,7 @@ const unsigned long IR_DEBOUNCE_MS = 300;
 struct IRLastData {
   char protocolo[16];
   uint32_t dec;
-  uint32_t hex;
+  uint32_t hexStr;
   unsigned long timestamp;
   bool valido;
 };
@@ -196,46 +195,29 @@ void loop() {
   unsigned long now = millis();
 
   if (IR_EmissorTeste) {
-
     static unsigned long lastMsgTest = 0;
-    if (now - lastMsgTest > 20000) {
+    if (now - lastMsgTest > 2 * 1000) {
       lastMsgTest = now;
       desligamentoUniversal();
     }
   }
 
   static unsigned long lastMsgnetwork = 0;
-  // Feedback info software e network.
-  if (now - lastMsgnetwork > 900000) {
+  if (now - lastMsgnetwork > 5 * 60 * 1000) {
     lastMsgnetwork = now;
-    feedback(0);
+    MQTTsendInfoNetwork();
   }
 
   static unsigned long lastMsgUptime = 0;
-  // Feedback uptime a cada 5 minutos (300000 ms)
-  if (now - lastMsgUptime > 300000) {
+  if (now - lastMsgUptime > 5 * 60 * 1000) {
     lastMsgUptime = now;
-    feedback(1);
+    MQTTsendUptime();
   }
 
   static unsigned long lastMsgAHT10 = 0;
-  // Feedback uptime a cada 5 minutos (300000 ms)
-  if (now - lastMsgAHT10 > 300000) {
+  if (now - lastMsgAHT10 > 5 * 60 * 1000) {
     lastMsgAHT10 = now;
-
     MQTTsendAHT10();
-  }
-
-  // Debug periódico
-  static unsigned long lastDebug = 0;
-  if (millis() - lastDebug > 60000) {
-    lastDebug = millis();
-
-    debugPrintln("");
-    debugPrint("Uptime: ");
-    debugPrintln(getFormattedUptime());
-
-    debugAHT10();
   }
 
   // Conexão com cliente Telnet
@@ -269,51 +251,4 @@ String getFormattedUptime() {
   char buffer[32];
   snprintf(buffer, sizeof(buffer), "%ud %02uh %02um %02us", days, hours, minutes, seconds);
   return String(buffer);
-}
-
-/************ WIFI ************/
-void setup_wifi() {
-  Serial.println();
-  Serial.println("=================================");
-  Serial.println("         Configurando WiFi         ");
-  Serial.println("=================================");
-
-  delay(10);
-
-  // Configura o IP, gateway e subnetMask
-  WiFi.config(ip, gateway, subnet);
-  // Conecta à rede
-  WiFi.begin(wifi_ssid, wifi_password);
-
-  // Exibe informações sobre a configuração de conexão
-  Serial.print("    Conectando à          : ");
-  Serial.println(wifi_ssid);
-  Serial.print("    Endereço IP           : ");
-  Serial.println(WiFi.localIP());
-  Serial.print("    Gateway               : ");
-  Serial.println(WiFi.gatewayIP());
-  Serial.print("    Máscara de sub-rede   : ");
-  Serial.println(WiFi.subnetMask());
-
-  // Aguarda conexão
-  Serial.println();
-  Serial.print("Tentando conexão WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  // Exibe o endereços após conectar
-  Serial.println();
-  Serial.println();
-  Serial.print("    Conectado à          : ");
-  Serial.println(wifi_ssid);
-  Serial.print("    Endereço IP          : ");
-  Serial.println(WiFi.localIP());
-  Serial.print("    Gateway              : ");
-  Serial.println(WiFi.gatewayIP());
-  Serial.print("    Máscara de sub-rede  : ");
-  Serial.println(WiFi.subnetMask());
-  Serial.print("    RRSI                 : ");
-  Serial.println(WiFi.RSSI());
 }

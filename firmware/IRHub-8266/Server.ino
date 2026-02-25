@@ -25,7 +25,7 @@ void setup_server() {
       "{\"status\":\"ok\",\"protocolo\":\"%s\",\"dec\":%lu,\"hex\":\"%lX\"}",
       lastIR.protocolo,
       lastIR.dec,
-      lastIR.hex);
+      lastIR.hexStr);
 
     server.send(200, "application/json", json);
   });

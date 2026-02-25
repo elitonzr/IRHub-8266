@@ -53,14 +53,27 @@ void processTelnetCommand(char* cmd) {
 
   }
 
-  else if (strcmp(cmd, "info") == 0) {
-    debugBuild();
+  else if (strcmp(cmd, "ir") == 0) {
+    debugPrintln("");
+    debugIR();
+    debugPrintln("");
   }
 
-  else if (strcmp(cmd, "testeir") == 0) {
+  else if (strcmp(cmd, "aht10") == 0) {
+    debugPrintln("");
+    debugAHT10();
+    debugPrintln("");
 
-    debugPrintln("Executando desligamento universal...");
-    desligamentoUniversal();
+  }
+
+  else if (strcmp(cmd, "info") == 0) {
+    debugPrintln("");
+    debugBuild();
+    debugPrintln("");
+  }
+
+  else if (strcmp(cmd, "irteste") == 0) {
+    IR_EmissorTeste = true;
   }
 
   else if (strcmp(cmd, "reboot") == 0) {
@@ -116,4 +129,127 @@ void debugPrintln(float val) {
   if (telnetClient && telnetClient.connected()) {
     telnetClient.println(val);
   }
+}
+
+void debugMQTT() {
+  debugPrintln("");
+  debugPrintln("================= MQTT =================");
+  debugPrintln(" ");
+  debugPrint("  Status        : ");
+  debugPrintln(mqtt_client.connected() ? "online" : "offline");
+  debugPrint("  Server        : ");
+  debugPrintln(mqtt_server);
+  debugPrint("  Cliente ID    : ");
+  debugPrintln(clientID);
+  debugPrint("  Tópico        : ");
+  debugPrintln(myTopic + "/#");
+  debugPrint("  Sucessos      : ");
+  debugPrintln(mqttOK);
+  debugPrint("  Erros         : ");
+  debugPrintln(mqttErro);
+  debugPrintln("  Subscriptions : ");
+  debugPrintln(topic_command);
+  debugPrintln(topic_command_led);
+  debugPrintln(topic_command_ir_receptor_protocol);
+  debugPrintln(topic_command_ir_emissor_nec_dec);
+  debugPrintln(topic_command_ir_emissor_nec_hex);
+  debugPrintln(topic_command_ir_emissor_nikai_dec);
+  debugPrintln(topic_command_ir_emissor_nikai_hex);
+  debugPrintln("  Publisher      : ");
+  debugPrintln(topic_info_status);
+  debugPrintln(topic_info_Build);
+  debugPrintln(topic_info_software);
+  debugPrintln(topic_info_network);
+  debugPrintln(topic_info_mqtt);
+  debugPrintln(topic_info_uptime);
+  debugPrintln(topic_info_outputs);
+  debugPrintln(topic_status_AHT10);
+  debugPrintln(topic_sensor_AHT10);
+  debugPrintln(topic_sensor_ir_status);
+  debugPrintln(topic_sensor_ir_receptor);
+  debugPrintln(topic_sensor_ir_emissor);
+  debugPrintln("");
+  debugPrintln("");
+}
+
+void debugBuild() {
+  debugPrintln("================= BUILD INFO =================");
+  debugPrintln(" ");
+  debugPrint("  Data e hora   : ");
+  debugPrintln(buildDateTime);
+
+  debugPrint("  Versão        : ");
+  debugPrintln(buildVersion);
+
+  debugPrint("  Arquivo       : ");
+  debugPrintln(buildFile);
+}
+
+void debugHelp() {
+  debugPrintln("");
+  debugPrintln("========= COMANDOS DISPONIVEIS =========");
+  debugPrintln("");
+  debugPrintln("  IR       -> Sensores IR");
+  debugPrintln("  AHT10    -> Sensor AHT10");
+  debugPrintln("  info     -> Informacoes de compilacao");
+  debugPrintln("  status   -> Mostra estado geral");
+  debugPrintln("  irteste  -> Testa emissor IR");
+  debugPrintln("  heap     -> Mostra memoria livre");
+  debugPrintln("  reboot   -> Reinicia o dispositivo");
+  debugPrintln("  help     -> Mostra esta lista");
+  debugPrintln("");
+};
+
+void debugAHT10() {
+
+  lerSensorAHT10();
+
+  if (estadoAHT10 != AHT10_ONLINE) {
+    debugPrint("AHT10: ");
+    debugPrintln(EstadoAHT10());
+    return;
+  }
+
+  debugPrint("AHT10: ");
+  debugPrint(temperatura);
+  debugPrint("°C\t");
+  debugPrint(umidade);
+  debugPrintln("%");
+}
+
+void debugIR() {
+  char hexBuffer[64];
+  char decBuffer[64];
+
+  snprintf(hexBuffer, sizeof(hexBuffer), "%08lX", (unsigned long)lastIRCode);
+  snprintf(decBuffer, sizeof(decBuffer), "%lu", (unsigned long)lastIRCode);
+
+  debugPrintln("=========== IR Receptor ============");
+  debugPrintln("");
+  debugPrint("  [Protocol]: ");
+  debugPrint(lastIR.protocolo);
+
+  debugPrint("  HEX: 0x");
+  debugPrint(hexBuffer);
+  
+  debugPrint("  DEC: ");
+  debugPrint(decBuffer);
+}
+
+// Imprime na serial.
+void IRPublish() {
+
+  char hexBuffer[64];
+  char decBuffer[64];
+
+  snprintf(hexBuffer, sizeof(hexBuffer), "%08lX", (unsigned long)results.value);
+  snprintf(decBuffer, sizeof(decBuffer), "%lu", (unsigned long)results.value);
+
+  debugPrintln("");
+  debugPrint("IR Receptor: ");
+  debugPrint("Código HEX: 0x");
+  debugPrint(hexBuffer);
+
+  debugPrint("\tCódigo DEC: ");
+  debugPrintln(decBuffer);
 }

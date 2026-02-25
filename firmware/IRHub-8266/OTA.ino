@@ -4,7 +4,7 @@ void setup_ota() {
   Serial.println("=================================");
   Serial.println("      Configurando OTA device     ");
   Serial.println("=================================");
-  ArduinoOTA.setHostname(clenteID.c_str());
+  ArduinoOTA.setHostname(clientID.c_str());
 
   // Sem autenticação por padrão
   ArduinoOTA.setPassword("admin123");

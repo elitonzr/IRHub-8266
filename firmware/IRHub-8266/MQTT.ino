@@ -42,7 +42,7 @@ void setup_mqtt() {
   Serial.print("    IP do servidor    : ");
   Serial.println(mqtt_server);
   Serial.print("    ID do cliente     : ");
-  Serial.println(clenteID);
+  Serial.println(clientID);
   Serial.print("    Tópico principal  : ");
   Serial.print(myTopic);
   Serial.println("/#");
@@ -56,10 +56,10 @@ void mqtt_reconnect() {
   static unsigned long lastAttempt = 0;
   const unsigned long retryInterval = 60000;  // 60 segundos
 
-  // // Se já está conectado, não faz nada
-  // if (mqtt_client.connected()) {
-  //   return;
-  // }
+  // Se já está conectado, não faz nada
+  if (mqtt_client.connected()) {
+    return;
+  }
 
   unsigned long now = millis();
 
@@ -70,57 +70,103 @@ void mqtt_reconnect() {
 
   lastAttempt = now;
 
+  // if (!mqtt_client.connected()) {
+  debugPrintln("");
+  debugPrintln("    Tentando conexão MQTT...");
+
+  bool conectado = mqtt_client.connect(
+    clientID.c_str(),
+    mqtt_user.c_str(),
+    mqtt_password.c_str(),
+    topic_info_status,
+    1,
+    true,
+    "offline");
+
+  if (conectado) {
+    mqttOK++;
+    debugPrintln("    Sucesso!");
+    debugPrintln("    Conectado ao broker MQTT");
+
+    // Publica birth message
+    mqtt_client.publish(topic_info_status, "online", true);
+
+    // Subscriptions
+    mqtt_client.subscribe(topic_command);
+    mqtt_client.subscribe(topic_command_led);
+    mqtt_client.subscribe(topic_command_ir_receptor_protocol);
+    mqtt_client.subscribe(topic_command_ir_emissor_nec_dec);
+    mqtt_client.subscribe(topic_command_ir_emissor_nec_hex);
+    mqtt_client.subscribe(topic_command_ir_emissor_nikai_dec);
+    mqtt_client.subscribe(topic_command_ir_emissor_nikai_hex);
+
+    // Publica os feedbacks iniciais
+    debugPrintln("    Publicando os feedbacks iniciais...");
+
+    MQTTsendInfoSatus();
+    MQTTsendInfoBuild();
+    MQTTsendInfoNetwork();
+    MQTTsendInfoMQTT();
+
+    MQTTsendUptime();
+
+    MQTTsendInfoIR();
+
+    MQTTsendAHT10();
+
+    MQTTsendOutputs();
+
+    debugPrintln("    Feito!");
+    debugPrintln("");
+    debugMQTT();
+
+  } else {
+    mqttErro++;
+    debugPrintln("");
+    debugPrint("    Erros N° ");
+    debugPrintln(mqttErro);
+
+    debugPrint("    Falha MQTT. rc=");
+    debugPrintln(String(mqtt_client.state()));
+  }
+  // }
+}
+
+/************************************************************
+* STATUS ONLINE
+* Publica que o dispositivo está online (retain = true)
+************************************************************/
+void MQTTsendInfoSatus() {
+
+  StaticJsonDocument<256> doc;
+  doc["status"] = "online";
+
+  char MQTT_Msg[256];
+  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
+
   if (!mqtt_client.connected()) {
-    Serial.println();
-    Serial.println("    Tentando conexão MQTT...");
+    debugPrintln("[MQTT] Falha ao publicar tópico, MQTT offline");
+    debugPrint("topic [");
+    debugPrint(topic_info_status);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+    return;
+  }
 
-    bool conectado = mqtt_client.connect(
-      clenteID.c_str(),
-      mqtt_user.c_str(),
-      mqtt_password.c_str(),
-      topic_info_status,
-      1,
-      true,
-      "offline");
-
-    if (conectado) {
-      mqttOK++;
-      Serial.println("    Conectado ao broker MQTT.");
-
-      // Publica birth message
-      mqtt_client.publish(topic_info_status, "online", true);
-
-      // Subscriptions
-      mqtt_client.subscribe(topic_command);
-      mqtt_client.subscribe(topic_command_led);
-      mqtt_client.subscribe(topic_command_ir_receptor_protocol);
-      mqtt_client.subscribe(topic_command_ir_emissor_nec_dec);
-      mqtt_client.subscribe(topic_command_ir_emissor_nec_hex);
-      mqtt_client.subscribe(topic_command_ir_emissor_nikai_dec);
-      mqtt_client.subscribe(topic_command_ir_emissor_nikai_hex);
-
-      // Publica os feedbacks iniciais
-      debugPrintln("    Publicando os feedbacks iniciais...");
-      feedback(0);
-      feedback(1);
-      feedback(2);
-      feedback(3);
-      feedback(4);
-      debugPrintln("    Feito!");
-      debugPrintln("");
-    } else {
-      mqttErro++;
-      debugPrintln("");
-      debugPrint("    Erros N° ");
-      debugPrintln(mqttErro);
-
-      debugPrint("    Falha MQTT. rc=");
-      debugPrintln(String(mqtt_client.state()));
-    }
+  if (!mqtt_client.publish(topic_info_status, MQTT_Msg, len)) {
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_info_status);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
   }
 }
 
-void MQTTsendBuildInfo() {
+/************************************************************
+* INFO SOFTWARE
+* Publica informações sobre o software
+************************************************************/
+void MQTTsendInfoBuild() {
 
   StaticJsonDocument<256> doc;
   doc["firmware"] = "2026";
@@ -129,19 +175,32 @@ void MQTTsendBuildInfo() {
   doc["chip_id"] = ESP.getChipId();
   doc["build_datetime"] = buildDateTime;  // Data e hora de compilação
 
-  char buffer[256];
-  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+  char MQTT_Msg[256];
+  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
-  debugPrint("topic [");
-  debugPrint(topic_info_Build);
-  debugPrintln("] ");
+  if (!mqtt_client.connected()) {
+    debugPrintln("[MQTT] Falha ao publicar tópico, MQTT offline");
+    debugPrint("topic [");
+    debugPrint(topic_info_Build);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+    return;
+  }
 
-  if (!mqtt_client.publish(topic_info_Build, buffer, len)) {
-    debugPrintln("[MQTT] Falha ao publicar BuildInfo");
+  if (!mqtt_client.publish(topic_info_Build, MQTT_Msg, len)) {
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_info_Build);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
   }
 }
 
-void MQTTsendNetwork() {
+/************************************************************
+* INFO NETWORK
+* Publica informações sobre a rede
+************************************************************/
+void MQTTsendInfoNetwork() {
 
   StaticJsonDocument<256> doc;
   doc["wifi"] = wifi_ssid;
@@ -150,74 +209,122 @@ void MQTTsendNetwork() {
   doc["mask"] = WiFi.subnetMask().toString();
   doc["rssi"] = WiFi.RSSI();
 
-  char buffer[256];
-  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+  char MQTT_Msg[256];
+  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
-  debugPrint("topic [");
-  debugPrint(topic_info_network);
-  debugPrintln("] ");
+  if (!mqtt_client.connected()) {
+    debugPrintln("[MQTT] Falha ao publicar tópico, MQTT offline");
+    debugPrint("topic [");
+    debugPrint(topic_info_network);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+    return;
+  }
 
-  if (!mqtt_client.publish(topic_info_network, buffer, len)) {
-    debugPrintln("[MQTT] Falha ao publicar Network");
+  if (!mqtt_client.publish(topic_info_network, MQTT_Msg, len)) {
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_info_network);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
   }
 }
 
-void MQTTsendMQTT() {
+/************************************************************
+* INFO MQTT
+* Publica informações sobre o MQTT
+************************************************************/
+void MQTTsendInfoMQTT() {
 
   char topic_main[128];
   snprintf(topic_main, sizeof(topic_main), "%s/#", myTopic.c_str());
 
   StaticJsonDocument<256> doc;
   doc["server"] = mqtt_server;
-  doc["client_id"] = clenteID;  // Client ID MQTT
+  doc["client_id"] = clientID;  // Client ID MQTT
   doc["topic_main"] = topic_main;
   doc["connect"] = mqttOK;
   doc["erro"] = mqttErro;
 
-  char buffer[256];
-  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+  char MQTT_Msg[256];
+  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
-  debugPrint("topic [");
-  debugPrint(topic_info_mqtt);
-  debugPrintln("] ");
+  if (!mqtt_client.connected()) {
+    debugPrintln("[MQTT] Falha ao publicar tópico, MQTT offline");
+    debugPrint("topic [");
+    debugPrint(topic_info_mqtt);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+    return;
+  }
 
-  if (!mqtt_client.publish(topic_info_mqtt, buffer, len)) {
-    debugPrintln("[MQTT] Falha ao publicar MQTT");
+  if (!mqtt_client.publish(topic_info_mqtt, MQTT_Msg, len)) {
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_info_mqtt);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
   }
 }
 
+/************************************************************
+* UPTIME
+* Publica o tempo em atividade em dois formatos
+************************************************************/
 void MQTTsendUptime() {
 
   StaticJsonDocument<256> doc;
   doc["uptime_formatted"] = getFormattedUptime();
   doc["uptime_seconds"] = millis() / 1000UL;
 
-  char buffer[256];
-  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+  char MQTT_Msg[256];
+  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
-  debugPrint("topic [");
-  debugPrint(topic_info_uptime);
-  debugPrintln("] ");
+  if (!mqtt_client.connected()) {
+    debugPrintln("[MQTT] Falha ao publicar tópico, MQTT offline");
+    debugPrint("topic [");
+    debugPrint(topic_info_uptime);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+    return;
+  }
 
-  if (!mqtt_client.publish(topic_info_uptime, buffer, len)) {
-    debugPrintln("[MQTT] Falha ao publicar Uptime");
+  if (!mqtt_client.publish(topic_info_uptime, MQTT_Msg, len)) {
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_info_uptime);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
   }
 }
 
-void MQTTsendIR() {
+/************************************************************
+* IR
+* Publica informações sobre os estados dos senores IR
+************************************************************/
+void MQTTsendInfoIR() {
   StaticJsonDocument<256> doc;
   doc["IR_Receptor"] = EstadoIRReceptor();
   doc["IR_Emissor"] = IR_EmissorTeste;
 
-  char buffer[256];
-  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+  char MQTT_Msg[256];
+  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
-  debugPrint("topic [");
-  debugPrint(topic_sensor_ir_status);
-  debugPrintln("] ");
+  if (!mqtt_client.connected()) {
+    debugPrintln("[MQTT] Falha ao publicar tópico, MQTT offline");
+    debugPrint("topic [");
+    debugPrint(topic_sensor_ir_status);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+    return;
+  }
 
-  if (!mqtt_client.publish(topic_sensor_ir_status, buffer, len)) {
-    debugPrintln("[MQTT] Falha ao publicar IR");
+  if (!mqtt_client.publish(topic_sensor_ir_status, MQTT_Msg, len)) {
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_sensor_ir_status);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
   }
 }
 
@@ -226,24 +333,58 @@ void MQTTsendAHT10() {
   lerSensorAHT10();
 
   if (estadoAHT10 != AHT10_ONLINE) {
+    MQTTsendAHT10Status();
     return;
   }
 
-  int len = snprintf(
-    MQTT_Msg,
-    sizeof(MQTT_Msg),
-    "{\"temperatura\":%.1f,\"umidade\":%.1f}",
-    temperatura,
-    umidade);
+  StaticJsonDocument<256> doc;
+  doc["temperatura"] = temperatura;
+  doc["umidade"] = umidade;
 
-  debugPrint("topic [");
-  debugPrint(topic_sensor_AHT10);
-  debugPrintln("] ");
+  char MQTT_Msg[256];
+  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
-  if (len > 0 && len < sizeof(MQTT_Msg)) {
-    if (!mqtt_client.publish(topic_sensor_AHT10, MQTT_Msg, len)) {
-      debugPrintln("[MQTT] Falha ao publicar AH10");
-    }
+  if (!mqtt_client.connected()) {
+    debugPrintln("[MQTT] Falha ao publicar tópico, MQTT offline");
+    debugPrint("topic [");
+    debugPrint(topic_sensor_AHT10);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+    return;
+  }
+
+  if (!mqtt_client.publish(topic_sensor_AHT10, MQTT_Msg, len)) {
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_sensor_AHT10);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+  }
+}
+
+void MQTTsendAHT10Status() {
+
+  StaticJsonDocument<256> doc;
+  doc["AHT10"] = EstadoAHT10();
+
+  char MQTT_Msg[256];
+  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
+
+  if (!mqtt_client.connected()) {
+    debugPrintln("[MQTT] Falha ao publicar tópico, MQTT offline");
+    debugPrint("topic [");
+    debugPrint(topic_status_AHT10);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+    return;
+  }
+
+  if (!mqtt_client.publish(topic_status_AHT10, MQTT_Msg, len)) {
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_status_AHT10);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
   }
 }
 
@@ -252,25 +393,34 @@ void MQTTsendOutputs() {
   StaticJsonDocument<256> doc;
   doc["led_A"] = estLED;
 
-  char buffer[256];
-  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+  char MQTT_Msg[256];
+  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
-  debugPrint("topic [");
-  debugPrint(topic_info_outputs);
-  debugPrintln("] ");
+  if (!mqtt_client.connected()) {
+    debugPrintln("[MQTT] Falha ao publicar tópico, MQTT offline");
+    debugPrint("topic [");
+    debugPrint(topic_info_outputs);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+    return;
+  }
 
-  if (!mqtt_client.publish(topic_info_outputs, buffer, len)) {
-    debugPrintln("[MQTT] Falha ao publicar outputs");
+  if (!mqtt_client.publish(topic_info_outputs, MQTT_Msg, len)) {
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_info_outputs);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
   }
 }
 
 void MQTTsendIR_Receptor(const char* protocolo, unsigned long tecla) {
-  if (!mqtt_client.connected()) return;
 
   // Atualiza estado local
-  strncpy(lastIR.protocolo, protocolo, sizeof(lastIR.protocolo));
+  strncpy(lastIR.protocolo, protocolo, sizeof(lastIR.protocolo) - 1);
+  lastIR.protocolo[sizeof(lastIR.protocolo) - 1] = '\0';
   lastIR.dec = tecla;
-  lastIR.hex = tecla;
+  lastIR.hexStr = tecla;
   lastIR.timestamp = millis();
   lastIR.valido = true;
 
@@ -282,82 +432,25 @@ void MQTTsendIR_Receptor(const char* protocolo, unsigned long tecla) {
     tecla,
     tecla);
 
-  debugPrint("topic [");
-  debugPrint(topic_sensor_ir_receptor);
-  debugPrintln("] ");
-
   if (len <= 0 || len >= sizeof(MQTT_Msg)) {
     debugPrintln("Erro ao montar payload IR");
     return;
   }
 
+  if (!mqtt_client.connected()) {
+    debugPrintln("[MQTT] Falha ao publicar tópico, MQTT offline");
+    debugPrint("topic [");
+    debugPrint(topic_sensor_ir_receptor);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+    return;
+  }
+
   if (!mqtt_client.publish(topic_sensor_ir_receptor, MQTT_Msg, len)) {
-    debugPrintln("[MQTT] Falha ao publicar IR Receptor");
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_sensor_ir_receptor);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
   }
 }
-
-void debugMQTT() {
-  debugPrintln("");
-  debugPrintln("================= MQTT =================");
-  debugPrintln(" ");
-  debugPrint("  Status        : ");
-  debugPrintln(mqtt_client.connected() ? "online" : "offline");
-  debugPrint("  Server        : ");
-  debugPrintln(mqtt_server);
-  debugPrint("  Cliente ID    : ");
-  debugPrintln(clenteID);
-  debugPrint("  Tópico        : ");
-  debugPrintln(myTopic + "/#");
-  debugPrint("  Sucessos      : ");
-  debugPrintln(mqttOK);
-  debugPrint("  Erros         : ");
-  debugPrintln(mqttErro);
-  debugPrintln("  Subscriptions : ");
-  debugPrintln(topic_command);
-  debugPrintln(topic_command_led);
-  debugPrintln(topic_command_ir_receptor_protocol);
-  debugPrintln(topic_command_ir_emissor_nec_dec);
-  debugPrintln(topic_command_ir_emissor_nec_hex);
-  debugPrintln(topic_command_ir_emissor_nikai_dec);
-  debugPrintln(topic_command_ir_emissor_nikai_hex);
-  debugPrintln("  Publisher      : ");
-  debugPrintln(topic_info_status);
-  debugPrintln(topic_info_Build);
-  debugPrintln(topic_info_software);
-  debugPrintln(topic_info_network);
-  debugPrintln(topic_info_mqtt);
-  debugPrintln(topic_info_uptime);
-  debugPrintln(topic_info_outputs);
-  debugPrintln(topic_status_AHT10);
-  debugPrintln(topic_sensor_AHT10);
-  debugPrintln(topic_sensor_ir_status);
-  debugPrintln(topic_sensor_ir_receptor);
-  debugPrintln(topic_sensor_ir_emissor);
-  debugPrintln("");
-  debugPrintln("");
-}
-
-void debugBuild() {
-  debugPrintln("================= BUILD INFO =================");
-  debugPrintln(" ");
-  debugPrint("  Data e hora   : ");
-  debugPrintln(buildDateTime);
-
-  debugPrint("  Versão  : ");
-  debugPrintln(buildVersion);
-
-  debugPrint("  Arquivo     : ");
-  debugPrintln(buildFile);
-}
-
-void debugHelp() {
-  debugPrintln("");
-  debugPrintln("=== COMANDOS DISPONIVEIS ===");
-  debugPrintln("info     -> Informacoes de compilacao");
-  debugPrintln("status   -> Mostra estado geral");
-  debugPrintln("testeIR  -> Envia desligamento universal");
-  debugPrintln("heap     -> Mostra memoria livre");
-  debugPrintln("reboot   -> Reinicia o dispositivo");
-  debugPrintln("help     -> Mostra esta lista");
-  debugPrintln("");
-};

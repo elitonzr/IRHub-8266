@@ -14,6 +14,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   mensagem[copyLen] = '\0';
 
   // Exibe o tópico e a mensagem recebida no monitor serial
+  debugPrint("[Callback] [");
   debugPrint("topic [");
   debugPrint(topic);
   debugPrint("] ");
@@ -39,7 +40,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
     // Atualiza estado real do pino
     estLED = digitalRead(LEDA);
-    feedback(4);
+    MQTTsendOutputs();
   }
   // Comandos IR
   else if (strncmp(topic, topic_command_ir_emissor_prefix, strlen(topic_command_ir_emissor_prefix)) == 0) {
@@ -143,7 +144,7 @@ void processaIR(const char* topic, byte* payload, unsigned int length) {
   // ---------- Alteração de modo ----------
   else if (strcmp(topic, topic_command_ir_receptor_protocol) == 0) {
     processaComando(payload, length);
-    feedback(10);
+    MQTTsendInfoIR();
   }
 }
 
@@ -168,7 +169,7 @@ void processaComando(byte* payload, unsigned int length) {
     } else if (valor == 1) {
       IR_EmissorTeste = true;
     }
-    feedback(2);
+    MQTTsendInfoIR();
   }
 
   // Controle do envio do código IR recebido.

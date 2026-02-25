@@ -23,9 +23,8 @@ void setup_AHT10() {
 }
 
 void lerSensorAHT10() {
+
   if (estadoAHT10 != AHT10_ONLINE) {
-    // mqtt_client.publish(topic_ir_info, "AHT10 AHT10 OFFLINE", false);
-    publicarEstadoAHT10();
     return;
   }
 
@@ -35,7 +34,6 @@ void lerSensorAHT10() {
   if (!leituraAHT10Valida(temp.temperature, humidity.relative_humidity)) {
 
     estadoAHT10 = AHT10_ERROR;
-    publicarEstadoAHT10();
     return;
   }
 
@@ -43,7 +41,6 @@ void lerSensorAHT10() {
   umidade = humidity.relative_humidity;
 
   estadoAHT10 = AHT10_ONLINE;
-  // publicarEstadoAHT10();
 }
 
 // Função dedicada para validar dados físicos
@@ -69,30 +66,4 @@ const char* EstadoAHT10() {
     default:
       return "offline";
   }
-}
-
-void publicarEstadoAHT10() {
-
-  debugPrint("topic [");
-  debugPrint(topic_status_AHT10);
-  debugPrintln("] ");
-
-  mqtt_client.publish(topic_status_AHT10, EstadoAHT10(), true);
-  debugPrint("AHT10: ");
-  debugPrintln(EstadoAHT10());
-}
-
-void debugAHT10() {
-
-  lerSensorAHT10();
-
-  if (estadoAHT10 != AHT10_ONLINE) {
-    return;
-  }
-
-  debugPrint("AHT10: ");
-  debugPrint(temperatura);
-  debugPrint("°C\t");
-  debugPrint(umidade);
-  debugPrintln("%");
 }
