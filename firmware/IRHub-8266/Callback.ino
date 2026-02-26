@@ -36,16 +36,66 @@ void callback(char* topic, byte* payload, unsigned int length) {
     memcpy(comando, mensagem, copyLen);
     comando[copyLen] = '\0';
 
-    controlaPino(LEDA, comando);
+    // Buffer pequeno para normalização
+    char cmd[16];
+    size_t len = strlen(comando);
+    if (len >= sizeof(cmd)) len = sizeof(cmd) - 1;
 
-    // Atualiza estado real do pino
-    estLED = digitalRead(LEDA);
-    MQTTsendOutputs();
+    memcpy(cmd, comando, len);
+    cmd[len] = '\0';
+
+    // Normaliza para lowercase
+    for (size_t i = 0; i < len; i++) {
+      cmd[i] = tolower(cmd[i]);
+    }
+
+    if (strcmp(cmd, "toggle") == 0) {
+
+      ledState = !ledState;
+
+    } else if (strcmp(cmd, "on") == 0) {
+
+      ledState = true;
+
+    } else if (strcmp(cmd, "off") == 0) {
+
+      ledState = false;
+
+    } else {
+
+      debugPrintln("Comando inválido para LED.");
+      debugPrintln(cmd);
+      return;
+    }
+
   }
-  // Comandos IR
+  // Envia sinais IR
   else if (strncmp(topic, topic_command_ir_emissor_prefix, strlen(topic_command_ir_emissor_prefix)) == 0) {
-
     processaIR(topic, payload, length);
+  }
+}
+
+// ======================================================
+// Processamento de comandos gerais
+// ======================================================
+void processaComando(byte* payload, unsigned int length) {
+
+  // Garante pelo menos dois caracteres
+  if (length < 2) return;
+
+  char cmd = (char)payload[0];
+  int valor = payload[1] - '0';
+
+  if (cmd == 'a') {
+    feedback(valor);
+  } else if (cmd == 'b') {
+
+    if (valor == 0) {
+      IR_EmissorTeste = false;
+    } else if (valor == 1) {
+      IR_EmissorTeste = true;
+    }
+    MQTTsendInfoIR();
   }
 }
 
@@ -79,7 +129,6 @@ void processaIR(const char* topic, byte* payload, unsigned int length) {
              "Codigo IR NEC enviado: %ld", tecla);
 
     mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
-    // SerialPublish(topic_sensor_ir_emissor, mqttMsg);  // Imprime o tópico e mensagem enviada via MQTT.
   }
 
   // ---------- IR NEC hexadecimal ----------
@@ -98,7 +147,6 @@ void processaIR(const char* topic, byte* payload, unsigned int length) {
              "IR NEC enviado (HEX): 0x%X", irCode);
 
     mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
-    // SerialPublish(topic_sensor_ir_emissor, mqttMsg);  // Imprime o tópico e mensagem enviada via MQTT.
   }
 
   // ---------- IR NIKAI decimal ----------
@@ -118,8 +166,6 @@ void processaIR(const char* topic, byte* payload, unsigned int length) {
              "IR NIKAI enviado (DEC): %lu", irCode);
 
     mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
-    // SerialPublish(mqttTopic, mqttMsg);  // Imprime o tópico e mensagem enviada via MQTT.
-
   }
 
   // ---------- IR NIKAI hexadecimal ----------
@@ -138,75 +184,45 @@ void processaIR(const char* topic, byte* payload, unsigned int length) {
              "IR NIKAI enviado (HEX): 0x%X", irCode);
 
     mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
-    // SerialPublish(topic_sensor_ir_emissor, mqttMsg);  // Imprime o tópico e mensagem enviada via MQTT.
   }
 
   // ---------- Alteração de modo ----------
   else if (strcmp(topic, topic_command_ir_receptor_protocol) == 0) {
-    processaComando(payload, length);
-    MQTTsendInfoIR();
-  }
-}
 
+    char comando[MAX_PAYLOAD];
+    memcpy(comando, payload, copyLen);
+    comando[copyLen] = '\0';
 
-// ======================================================
-// Processamento de comandos gerais
-// ======================================================
-void processaComando(byte* payload, unsigned int length) {
+    // Buffer pequeno para normalização
+    char cmd[25];
+    size_t len = strlen(comando);
+    if (len >= sizeof(cmd)) len = sizeof(cmd) - 1;
 
-  // Garante pelo menos dois caracteres
-  if (length < 2) return;
+    memcpy(cmd, comando, len);
+    cmd[len] = '\0';
 
-  char cmd = (char)payload[0];
-  int valor = payload[1] - '0';
-
-  if (cmd == 'a') {
-    feedback(valor);
-  } else if (cmd == 'b') {
-
-    if (valor == 0) {
-      IR_EmissorTeste = false;
-    } else if (valor == 1) {
-      IR_EmissorTeste = true;
+    // Normaliza para lowercase
+    for (size_t i = 0; i < len; i++) {
+      cmd[i] = tolower(cmd[i]);
     }
-    MQTTsendInfoIR();
-  }
 
-  // Controle do envio do código IR recebido.
-  else if (cmd == 'c') {
-    IR_RecepitorSET(valor);
-  }
-}
+    if (strcmp(cmd, "desabilita") == 0) {
 
-// ======================================================
-// Controle de pino digital (sem uso de String)
-// ======================================================
-void controlaPino(int pino, const char* comando) {
+      IR_RecepitorSET(0);
+    }
 
-  // Buffer local pequeno para normalizar comando
-  char cmd[16];
-  size_t len = strlen(comando);
-  if (len >= sizeof(cmd)) len = sizeof(cmd) - 1;
+    else if (strcmp(cmd, "nec") == 0) {
+      IR_RecepitorSET(1);
+    }
 
-  // Converte para minúsculo manualmente
-  for (size_t i = 0; i < len; i++) {
-    cmd[i] = tolower(comando[i]);
-  }
-  cmd[len] = '\0';
+    else if (strcmp(cmd, "nec, nikay e 24bits") == 0) {
+      IR_RecepitorSET(2);
+    }
 
-  Serial.print("pino: ");
-  Serial.print(pino);
-  Serial.print(" cmd: ");
-  Serial.println(cmd);
-
-  if (strcmp(cmd, "toggle") == 0) {
-    digitalWrite(pino, !digitalRead(pino));
-  } else if (strcmp(cmd, "on") == 0) {
-    digitalWrite(pino, HIGH);
-  } else if (strcmp(cmd, "off") == 0) {
-    digitalWrite(pino, LOW);
-  } else {
-    Serial.println("Comando inválido para pino.");
-    return;
+    else if (strcmp(cmd, "tudo") == 0) {
+      IR_RecepitorSET(3);
+    }
+    // debugPrint(" cmd");
+    // debugPrint(cmd);
   }
 }

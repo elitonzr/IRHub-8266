@@ -7,12 +7,10 @@ void setup_server() {
   Serial.println("=================================");
   Serial.println("  Configurando Servidor HTTP  ");
   Serial.println("=================================");
-  server.on("/uptime", handleUptime);
   server.on("/", handleRoot);  // Servidor recebe uma solicitação HTTP - chama a função handleRoot
-  server.on("/sensor/status", handleSensorStatus);
-  server.on("/sensor/AHT10", handleSensorAHT10);
-
-  server.on("/ir", HTTP_GET, []() {
+  server.on("/data", HTTP_GET, handleData);
+  server.on("/led/toggle", handleLED);
+  server.on("/ir_receptor", HTTP_GET, []() {
     if (!lastIR.valido) {
       server.send(200, "application/json", "{\"status\":\"idle\"}");
       return;
@@ -39,46 +37,68 @@ void handleRoot() {
   server.send_P(200, "text/html", HTML_PAGE);
 }
 
-void handleUptime() {
-  server.send(200, "text/plain", getFormattedUptime());
-}
-
 void handle_NotFound() {                             // Função para lidar com o erro 404
   server.send(404, "text/plain", "Não encontrado");  // Envia o código 404, especifica o conteúdo como "text/pain" e envia a mensagem "Não encontrado"
 }
 
-void handleSensorStatus() {
-  char json[256];
+void handleData() {
 
-  snprintf(
-    json,
-    sizeof(json),
-    "{"
-    "\"AHT10\":{"
-    "\"status\":\"%s\""
-    "},"
-    "\"IR\":{"
-    "\"modo\":\"%s\""
-    "}"
-    "}",
-    EstadoAHT10(),
-    EstadoIRReceptor());
+  char topic_main[128];
+  snprintf(topic_main, sizeof(topic_main), "%s/#", myTopic.c_str());
 
-  server.send(200, "application/json", json);
-}
+  StaticJsonDocument<768> doc;
 
-void handleSensorAHT10() {
+  // ---- SYSTEM ----
+  JsonObject system = doc.createNestedObject("system");
+  system["uptime"] = getFormattedUptime();
+  system["heap"] = ESP.getFreeHeap();
+
+  // ---- NETWORK ----
+  JsonObject network = doc.createNestedObject("network");
+  network["wifi"] = wifi_ssid;
+  network["ip"] = WiFi.localIP().toString();
+  network["gateway"] = WiFi.gatewayIP().toString();
+  network["mask"] = WiFi.subnetMask().toString();
+  network["rssi"] = WiFi.RSSI();
+
+  // ---- MQTT ----
+  JsonObject mqtt = doc.createNestedObject("mqtt");
+  mqtt["server"] = mqtt_server;
+  mqtt["client_id"] = clientID;
+  mqtt["topic_main"] = topic_main;
+  mqtt["connect"] = mqttOK;
+  mqtt["erro"] = mqttErro;
+
+  // ---- IR ----
+  JsonObject ir = doc.createNestedObject("ir");
+  ir["receptor"] = EstadoIRReceptor();
+  ir["emissor_teste"] = IR_EmissorTeste;
+
+  // ---- LED ----
+  JsonObject led = doc.createNestedObject("led");
+  led["state"] = ledState;
+
+  // ---- SENSOR ----
+  JsonObject sensor = doc.createNestedObject("sensor");
   if (estadoAHT10 != AHT10_ONLINE) {
-    server.send(503, "application/json",
-                "{\"error\":\"AHT10 indisponivel\"}");
-    return;
+    sensor["AHT10"] = EstadoAHT10();
+  } else {
+    sensor["temperatura"] = temperatura;
+    sensor["umidade"] = umidade;
   }
 
-  char buffer[128];
+  size_t len = measureJson(doc);
+  server.setContentLength(len);
+  server.send(200, "application/json", "");
+  serializeJson(doc, server.client());
+}
 
-  snprintf(buffer, sizeof(buffer),
-           "{\"temperatura\":%.1f,\"umidade\":%.1f}",
-           temperatura, umidade);
+// Controle do LED
+void handleLED() {
 
-  server.send(200, "application/json", buffer);
+  ledState = !ledState;
+  server.send(200, "application/json",
+              String("{\"state\":") +
+              (ledState ? "true" : "false") +
+              "}");
 }

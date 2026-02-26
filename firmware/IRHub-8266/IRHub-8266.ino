@@ -47,7 +47,7 @@ PubSubClient mqtt_client(espClient);
 int mqttErro = 0;  // Variável para armazenar erro de conexão do MQTT.
 int mqttOK = 0;    // Variável para armazenar número de conexãos do MQTT.
 
-// -- TOPICS MQTT --
+// -- TOPICS MQTT PUBLISHERS --
 //info
 char topic_info_status[250];
 char topic_info_Build[250];
@@ -67,7 +67,7 @@ char topic_sensor_ir_receptor[64];
 char topic_sensor_ir_emissor[64];
 
 
-// -- TOPICS MQTT Subscriptions --
+// -- TOPICS MQTT SUBSCRIPTIONS --
 char topic_command[64];
 char topic_command_led[64];
 
@@ -87,8 +87,9 @@ char MQTT_Topic[MAX_PAYLOAD];
 char MQTT_Msg[MAX_PAYLOAD];
 
 /************ LED ************/
-#define LEDA 2           // LED A GPIO02
-boolean estLED = false;  //
+#define LEDA 2              // LED A GPIO02
+bool ledState = false;      // Estado lógico desejado
+bool lastLedState = false;  // Último estado publicado
 
 /************ IR ************/
 // Configuração
@@ -191,6 +192,15 @@ void loop() {
 
   myIRdecoder();  // Chama função que trata a decodificação do IR.
   handleTelnet();
+
+  // Aplica estado ao LED
+  digitalWrite(LEDA, ledState ? LOW : HIGH);
+
+  // Publica somente se houve mudança lógica
+  if (ledState != lastLedState) {
+    lastLedState = ledState;
+    MQTTsendOutputs();
+  }
 
   unsigned long now = millis();
 

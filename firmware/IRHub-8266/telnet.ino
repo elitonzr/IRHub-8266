@@ -42,15 +42,17 @@ void handleTelnet() {
 void processTelnetCommand(char* cmd) {
 
   if (strcmp(cmd, "status") == 0) {
-
     debugPrintln(" ");
-    debugPrintln("================= STATUS =================");
-    debugIR();
+    debugUptime();
+    debugLED();
     debugAHT10();
+    debugIR();
     debugMQTT();
-    debugPrint("  Uptime        : ");
-    debugPrintln(getFormattedUptime());
+  }
 
+  else if (strcmp(cmd, "led") == 0) {
+    ledState = !ledState;
+    debugLED();
   }
 
   else if (strcmp(cmd, "ir") == 0) {
@@ -131,46 +133,7 @@ void debugPrintln(float val) {
   }
 }
 
-void debugMQTT() {
-  debugPrintln("");
-  debugPrintln("================= MQTT =================");
-  debugPrintln(" ");
-  debugPrint("  Status        : ");
-  debugPrintln(mqtt_client.connected() ? "online" : "offline");
-  debugPrint("  Server        : ");
-  debugPrintln(mqtt_server);
-  debugPrint("  Cliente ID    : ");
-  debugPrintln(clientID);
-  debugPrint("  Tópico        : ");
-  debugPrintln(myTopic + "/#");
-  debugPrint("  Sucessos      : ");
-  debugPrintln(mqttOK);
-  debugPrint("  Erros         : ");
-  debugPrintln(mqttErro);
-  debugPrintln("  Subscriptions : ");
-  debugPrintln(topic_command);
-  debugPrintln(topic_command_led);
-  debugPrintln(topic_command_ir_receptor_protocol);
-  debugPrintln(topic_command_ir_emissor_nec_dec);
-  debugPrintln(topic_command_ir_emissor_nec_hex);
-  debugPrintln(topic_command_ir_emissor_nikai_dec);
-  debugPrintln(topic_command_ir_emissor_nikai_hex);
-  debugPrintln("  Publisher      : ");
-  debugPrintln(topic_info_status);
-  debugPrintln(topic_info_Build);
-  debugPrintln(topic_info_software);
-  debugPrintln(topic_info_network);
-  debugPrintln(topic_info_mqtt);
-  debugPrintln(topic_info_uptime);
-  debugPrintln(topic_info_outputs);
-  debugPrintln(topic_status_AHT10);
-  debugPrintln(topic_sensor_AHT10);
-  debugPrintln(topic_sensor_ir_status);
-  debugPrintln(topic_sensor_ir_receptor);
-  debugPrintln(topic_sensor_ir_emissor);
-  debugPrintln("");
-  debugPrintln("");
-}
+
 
 void debugBuild() {
   debugPrintln("================= BUILD INFO =================");
@@ -189,10 +152,11 @@ void debugHelp() {
   debugPrintln("");
   debugPrintln("========= COMANDOS DISPONIVEIS =========");
   debugPrintln("");
+  debugPrintln("  status   -> Mostra estado geral");
+  debugPrintln("  LED      -> Inverte estado do LED A");
   debugPrintln("  IR       -> Sensores IR");
   debugPrintln("  AHT10    -> Sensor AHT10");
   debugPrintln("  info     -> Informacoes de compilacao");
-  debugPrintln("  status   -> Mostra estado geral");
   debugPrintln("  irteste  -> Testa emissor IR");
   debugPrintln("  heap     -> Mostra memoria livre");
   debugPrintln("  reboot   -> Reinicia o dispositivo");
@@ -200,21 +164,46 @@ void debugHelp() {
   debugPrintln("");
 };
 
+void debugUptime() {
+  debugPrintln("================ UPTIME ================");
+  debugPrintln(" ");
+  debugPrint("  Uptime: ");
+  debugPrintln(getFormattedUptime());
+  debugPrintln(" ");
+  debugPrintln(" ");
+}
+
+void debugLED() {
+  debugPrintln("================ LED A =================");
+  debugPrintln("");
+  debugPrint("  LED A: ");
+  debugPrintln(ledState ? "Ligado" : "Desligado");
+  debugPrintln("");
+  debugPrintln("");
+}
+
 void debugAHT10() {
+  debugPrintln("================ AHT10 =================");
+  debugPrintln("");
 
   lerSensorAHT10();
 
   if (estadoAHT10 != AHT10_ONLINE) {
-    debugPrint("AHT10: ");
+    debugPrint("  AHT10: ");
     debugPrintln(EstadoAHT10());
+    debugPrintln("");
+    debugPrintln("");
     return;
   }
+
 
   debugPrint("AHT10: ");
   debugPrint(temperatura);
   debugPrint("°C\t");
   debugPrint(umidade);
   debugPrintln("%");
+  debugPrintln("");
+  debugPrintln("");
 }
 
 void debugIR() {
@@ -224,32 +213,101 @@ void debugIR() {
   snprintf(hexBuffer, sizeof(hexBuffer), "%08lX", (unsigned long)lastIRCode);
   snprintf(decBuffer, sizeof(decBuffer), "%lu", (unsigned long)lastIRCode);
 
-  debugPrintln("=========== IR Receptor ============");
+  debugPrintln("============= IR Receptor ==============");
   debugPrintln("");
   debugPrint("  [Protocol]: ");
   debugPrint(lastIR.protocolo);
 
   debugPrint("  HEX: 0x");
   debugPrint(hexBuffer);
-  
+
   debugPrint("  DEC: ");
   debugPrint(decBuffer);
-}
-
-// Imprime na serial.
-void IRPublish() {
-
-  char hexBuffer[64];
-  char decBuffer[64];
-
-  snprintf(hexBuffer, sizeof(hexBuffer), "%08lX", (unsigned long)results.value);
-  snprintf(decBuffer, sizeof(decBuffer), "%lu", (unsigned long)results.value);
-
   debugPrintln("");
-  debugPrint("IR Receptor: ");
-  debugPrint("Código HEX: 0x");
-  debugPrint(hexBuffer);
-
-  debugPrint("\tCódigo DEC: ");
-  debugPrintln(decBuffer);
+  debugPrintln("");
 }
+
+void debugMQTT() {
+  debugPrintln("");
+  debugPrintln("================= MQTT =================");
+  debugPrintln(" ");
+  debugPrint("  Status        : ");
+  debugPrintln(mqtt_client.connected() ? "online" : "offline");
+  debugPrint("  Server        : ");
+  debugPrintln(mqtt_server);
+  debugPrint("  Cliente ID    : ");
+  debugPrintln(clientID);
+  debugPrint("  Tópico        : ");
+  debugPrintln(myTopic + "/#");
+  debugPrint("  Sucessos      : ");
+  debugPrintln(mqttOK);
+  debugPrint("  Erros         : ");
+  debugPrintln(mqttErro);
+
+  debugPrintln("  Subscriptions : ");
+  debugPrint("                  ");
+  debugPrintln(topic_command);
+  debugPrint("                  ");
+  debugPrintln(topic_command_led);
+  debugPrint("                  ");
+  debugPrintln(topic_command_ir_receptor_protocol);
+  debugPrint("                  ");
+  debugPrintln(topic_command_ir_emissor_nec_dec);
+  debugPrint("                  ");
+  debugPrintln(topic_command_ir_emissor_nec_hex);
+  debugPrint("                  ");
+  debugPrintln(topic_command_ir_emissor_nikai_dec);
+  debugPrint("                  ");
+  debugPrintln(topic_command_ir_emissor_nikai_hex);
+  debugPrintln("  Publisher     : ");
+
+  debugPrint("                  ");
+  debugPrintln(topic_info_status);
+  debugPrint("                  ");
+  debugPrintln(topic_info_Build);
+  debugPrint("                  ");
+  debugPrintln(topic_info_software);
+  debugPrint("                  ");
+  debugPrintln(topic_info_network);
+  debugPrint("                  ");
+  debugPrintln(topic_info_mqtt);
+  debugPrint("                  ");
+  debugPrintln(topic_info_uptime);
+  debugPrint("                  ");
+  debugPrintln(topic_info_outputs);
+  debugPrint("                  ");
+  debugPrintln(topic_status_AHT10);
+  debugPrint("                  ");
+  debugPrintln(topic_sensor_AHT10);
+  debugPrint("                  ");
+  debugPrintln(topic_sensor_ir_status);
+  debugPrint("                  ");
+  debugPrintln(topic_sensor_ir_receptor);
+  debugPrint("                  ");
+  debugPrintln(topic_sensor_ir_emissor);
+  debugPrintln("");
+  debugPrintln("");
+}
+
+// // Imprime na serial.
+// void IRPublish() {
+
+//   char hexBuffer[64];
+//   char decBuffer[64];
+
+//   snprintf(hexBuffer, sizeof(hexBuffer), "%08lX", (unsigned long)results.value);
+//   snprintf(decBuffer, sizeof(decBuffer), "%lu", (unsigned long)results.value);
+
+//   debugPrintln("============= IR Receptor ==============");
+//   debugPrintln("");
+//   debugPrint("  [Protocol]: ");
+//   debugPrint(lastIR.protocolo);
+
+//   debugPrint("  HEX: 0x");
+//   debugPrint(hexBuffer);
+
+//   debugPrint("  DEC: ");
+//   debugPrint(decBuffer);
+//   debugPrintln("");
+//   debugPrintln("");
+//   }

@@ -39,8 +39,6 @@ void myIRdecoder() {
       lastIRCode = results.value;
       lastIRTime = now;
 
-      IRPublish();
-
       // Habilita enviar código recebido.
       if (IR_ReceptorEstado != IR_DESABILITADO) {
 
@@ -52,20 +50,24 @@ void myIRdecoder() {
         // Caso Código for protocolo NEC.
         if (results.decode_type == NEC && isValidNEC(results.value) && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_NECe24bits)) {  //typeSendCod >= 1
 
+          lastIR_Receptor("NEC", tecla);
           MQTTsendIR_Receptor("NEC", tecla);
 
         } else if (results.decode_type == NIKAI && results.bits == 24 && IR_ReceptorEstado == IR_NECe24bits) {  //typeSendCod >= 2
 
+          lastIR_Receptor("NIKAI", tecla);
           MQTTsendIR_Receptor("NIKAI", tecla);
 
           // Caso Código for AOC de 24bits.
         } else if (bitLength == 24 && IR_ReceptorEstado == IR_NECe24bits) {  //typeSendCod >= 2
 
+          lastIR_Receptor("AOC", tecla);
           MQTTsendIR_Receptor("AOC", tecla);
 
           // Caso Código for Desconhecido.
         } else if (IR_ReceptorEstado == IR_TUDO) {  //typeSendCod == 3
 
+          lastIR_Receptor("DESCONHECIDO", tecla);
           MQTTsendIR_Receptor("DESCONHECIDO", tecla);
         }
       }
@@ -112,7 +114,7 @@ void IR_RecepitorSET(int n) {
 
   IR_ReceptorEstado = static_cast<IR_ReceptorMode>(n);
 
-  feedback(2);
+  MQTTsendInfoIR();
 }
 
 
@@ -213,4 +215,17 @@ const char* EstadoIRReceptor() {
     default:
       return "unknown";
   }
+}
+
+void lastIR_Receptor(const char* protocolo, unsigned long tecla) {
+
+  // Atualiza estado local
+  strncpy(lastIR.protocolo, protocolo, sizeof(lastIR.protocolo) - 1);
+  lastIR.protocolo[sizeof(lastIR.protocolo) - 1] = '\0';
+  lastIR.dec = tecla;
+  lastIR.hexStr = tecla;
+  lastIR.timestamp = millis();
+  lastIR.valido = true;
+
+  debugIR();
 }
