@@ -219,11 +219,17 @@ const char* EstadoIRReceptor() {
 
 void lastIR_Receptor(const char* protocolo, unsigned long tecla) {
 
+  if (lastIR.dec == tecla) {
+    lastIR.valido = false;
+    debugIR();
+    return;
+  }
+
   // Atualiza estado local
   strncpy(lastIR.protocolo, protocolo, sizeof(lastIR.protocolo) - 1);
   lastIR.protocolo[sizeof(lastIR.protocolo) - 1] = '\0';
   lastIR.dec = tecla;
-  lastIR.hexStr = tecla;
+  // lastIR.hexStr = tecla;
   lastIR.timestamp = millis();
   lastIR.valido = true;
 

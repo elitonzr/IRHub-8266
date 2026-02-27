@@ -38,7 +38,6 @@ ESP8266WebServer server(80);  // server na porta 80
 #define mqtt_server MQTT_SERVER
 String mqtt_user = MQTT_USER;
 String mqtt_password = MQTT_PASSWORD;
-String myTopic = String(MQTT_ID) + String(GRUPO);  //
 
 // MQTT cliente
 WiFiClient espClient;

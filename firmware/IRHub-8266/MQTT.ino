@@ -149,7 +149,7 @@ void MQTTsendInfoSatus() {
   size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
   if (!mqtt_client.connected()) {
-    debugPrintln("[MQTT] Offline - ");
+    debugPrint("[MQTT] Offline - ");
     debugPrint("topic [");
     debugPrint(topic_info_status);
     debugPrint("] payload: ");
@@ -182,7 +182,7 @@ void MQTTsendInfoBuild() {
   size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
   if (!mqtt_client.connected()) {
-    debugPrintln("[MQTT] Offline - ");
+    debugPrint("[MQTT] Offline - ");
     debugPrint("topic [");
     debugPrint(topic_info_Build);
     debugPrint("] payload: ");
@@ -216,7 +216,7 @@ void MQTTsendInfoNetwork() {
   size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
   if (!mqtt_client.connected()) {
-    debugPrintln("[MQTT] Offline - ");
+    debugPrint("[MQTT] Offline - ");
     debugPrint("topic [");
     debugPrint(topic_info_network);
     debugPrint("] payload: ");
@@ -253,7 +253,7 @@ void MQTTsendInfoMQTT() {
   size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
   if (!mqtt_client.connected()) {
-    debugPrintln("[MQTT] Offline - ");
+    debugPrint("[MQTT] Offline - ");
     debugPrint("topic [");
     debugPrint(topic_info_mqtt);
     debugPrint("] payload: ");
@@ -284,7 +284,7 @@ void MQTTsendUptime() {
   size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
   if (!mqtt_client.connected()) {
-    debugPrintln("[MQTT] Offline - ");
+    debugPrint("[MQTT] Offline - ");
     debugPrint("topic [");
     debugPrint(topic_info_uptime);
     debugPrint("] payload: ");
@@ -314,7 +314,7 @@ void MQTTsendInfoIR() {
   size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
   if (!mqtt_client.connected()) {
-    debugPrintln("[MQTT] Offline - ");
+    debugPrint("[MQTT] Offline - ");
     debugPrint("topic [");
     debugPrint(topic_sensor_ir_status);
     debugPrint("] payload: ");
@@ -348,7 +348,7 @@ void MQTTsendAHT10() {
   size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
   if (!mqtt_client.connected()) {
-    debugPrintln("[MQTT] Offline - ");
+    debugPrint("[MQTT] Offline - ");
     debugPrint("topic [");
     debugPrint(topic_sensor_AHT10);
     debugPrint("] payload: ");
@@ -374,7 +374,7 @@ void MQTTsendAHT10Status() {
   size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
   if (!mqtt_client.connected()) {
-    debugPrintln("[MQTT] Offline - ");
+    debugPrint("[MQTT] Offline - ");
     debugPrint("topic [");
     debugPrint(topic_status_AHT10);
     debugPrint("] payload: ");
@@ -400,7 +400,7 @@ void MQTTsendOutputs() {
   size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
   if (!mqtt_client.connected()) {
-    debugPrintln("[MQTT] Offline - ");
+    debugPrint("[MQTT] Offline - ");
     debugPrint("topic [");
     debugPrint(topic_info_outputs);
     debugPrint("] payload: ");
@@ -439,7 +439,7 @@ void MQTTsendIR_Receptor(const char* protocolo, unsigned long tecla) {
   }
 
   if (!mqtt_client.connected()) {
-    debugPrintln("[MQTT] Offline - ");
+    debugPrint("[MQTT] Offline - ");
     debugPrint("topic [");
     debugPrint(topic_sensor_ir_receptor);
     debugPrint("] payload: ");
@@ -480,7 +480,7 @@ void MQTTsendIR_Receptor(const char* protocolo, unsigned long tecla) {
 //   }
 
 //   if (!mqtt_client.connected()) {
-//     debugPrintln("[MQTT] Offline - ");
+//     debugPrint("[MQTT] Offline - ");
 //     debugPrint("topic [");
 //     debugPrint(topic_sensor_ir_receptor);
 //     debugPrint("] payload: ");

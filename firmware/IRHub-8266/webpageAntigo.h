@@ -9,159 +9,412 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 <style>
 body {
   font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #1f2937, #111827);
+  background: linear-gradient(135deg, #111827, #1f2937);
   color: #f9fafb;
-  text-align: center;
   margin: 0;
-  padding: 40px;
+  padding: 30px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  font-weight: 600;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
 }
 
 .card {
   background: #1f2937;
-  padding: 30px;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-  display: inline-block;
-  min-width: 300px;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
 }
 
+.section-title {
+  font-size: 14px;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 10px;
+}
+
+.item {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.value {
+  font-weight: 600;
+}
+
+.status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.online  { background: #16a34a; }
+.offline { background: #dc2626; }
+.warn    { background: #eab308; color: #000; }
+
 .dot {
-  height: 12px;
-  width: 12px;
+  height: 10px;
+  width: 10px;
   border-radius: 50%;
   display: inline-block;
-  margin-right: 8px;
+  margin-left: 6px;
 }
 
 .green  { background: #22c55e; }
 .yellow { background: #facc15; }
 .red    { background: #ef4444; }
 
-h1 {
-  font-weight: 600;
-  margin-bottom: 20px;
+button {
+  margin-top: 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
 }
 
-.label {
-  font-size: 14px;
-  opacity: 0.7;
-}
-
-.value {
-  font-size: 32px;
-  font-weight: 600;
-  margin: 5px 0 15px;
-}
-
-.status {
-  display: inline-block;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.online  { background: #16a34a; }
-.error   { background: #eab308; color: #000; }
-.offline { background: #dc2626; }
-
-.sensor {
-  margin-top: 20px;
-  font-size: 18px;
+button:hover {
+  opacity: 0.85;
 }
 </style>
 </head>
 
 <body>
 
-<div class="card">
-  <h1>IRHub-8266</h1>
+<h1>IRHub-8266</h1>
 
-  <div class="label">Uptime</div>
-  <div class="value" id="uptime">--</div>
+<div class="grid">
 
-  <div class="label">AHT10</div>
-  <div id="sensorStatus" class="status offline">offline</div>
-  <div class="sensor" id="sensorData"></div>
-
-  <div class="label">IR Receptor</div>
-  <div class="value">
-    <span id="irMode">--</span>
-    <span id="irReceiverStatus" class="dot yellow"></span>
+  <!-- SYSTEM -->
+  <div class="card">
+    <div class="section-title">System</div>
+    <div class="item">Name: <span id="name" class="value">--</span></div>
+    <div class="item">Uptime: <span id="uptime" class="value">--</span></div>
+    <div class="item">Heap: <span id="heap" class="value">--</span></div>
   </div>
 
-  <div class="label">IR Recebido</div>
-  <div class="value">
-    <span id="irStatus" class="dot yellow"></span>
-    <span id="irText">Aguardando...</span>
+  <!-- NETWORK -->
+  <div class="card">
+    <div class="section-title">Network</div>
+    <div class="item">SSID: <span id="wifi" class="value">--</span></div>
+    <div class="item">IP: <span id="ip" class="value">--</span></div>
+    <div class="item">RSSI: <span id="rssi" class="value">--</span></div>
   </div>
+
+  <!-- MQTT -->
+  <div class="card">
+    <div class="section-title">MQTT</div>
+    <div class="item">Server: <span id="mqttServer" class="value">--</span></div>
+    <div class="item">Client ID: <span id="mqttClient" class="value">--</span></div>
+    <div class="item">Tópico: <span id="topic_main" class="value">--</span></div>
+    <div class="item">Sucessos: <span id="mqttSucessos" class="value">--</span></div>
+    <div class="item">Erros: <span id="mqttErros" class="value">--</span></div>
+    <div class="item">
+      Status: <span id="mqttStatus" class="status offline">offline</span>
+    </div>
+  </div>
+
+  <!-- LED -->
+  <div class="card">
+    <div class="section-title">LED</div>
+    <div class="item">
+      Estado: <span id="ledState" class="value">--</span>
+      <span id="ledDot" class="dot red"></span>
+    </div>
+    <button onclick="toggleLED()">Alternar LED</button>
+  </div>
+
+  <!-- AHT10 -->
+  <div class="card">
+    <div class="section-title">AHT10</div>
+    <div class="item">
+      Status: <span id="sensorAHT10Status" class="status offline">offline</span>
+    </div>
+    <div class="item" id="sensorAHT10Data"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">IR Emissor</div>
+        <div class="item">
+        Modo Teste: <span id="irEmitter" class="value">--</span>
+    </div>
+  </div>
+
+  <!-- IR Receptor-->
+  <div class="card">
+    <div class="section-title">IR Receptor</div>
+            <div class="item">
+      Protocolo: <span id="irMode" class="value">--</span>
+      <span id="irDot" class="dot yellow"></span>
+    </div>
+    <div class="item">
+      <span id="irStatus" class="dot yellow"></span>
+      <span id="irText">Aguardando...</span>
+    </div>
+    <div class="card">
+      <h3>Últimos IR Recebidos</h3>
+      <ul id="irHistory"></ul>
+    </div>
+  </div>
+
 </div>
 
 <script>
-let lastIRPayload = '';
 
-function updateData() {
-  fetch('/data')
+
+
+function updateSystem() {
+  fetch('/system')
     .then(r => r.json())
     .then(data => {
 
-      if (!data.system || !data.network) {
-        throw new Error("JSON inválido");
-      }
-
-      // ---------- SYSTEM ----------
+      // SYSTEM
+      document.getElementById('name').innerText =
+        data.system?.name || '--';
       document.getElementById('uptime').innerText =
-        data.system.uptime || '--';
+        data.system?.uptime || '--';
+      document.getElementById('heap').innerText =
+        data.system?.heap || '--';
+    })
+    .catch(() => {
+      console.log("Erro ao atualizar dados");
+    });
+}
 
-      // ---------- SENSOR ----------
-      const statusEl = document.getElementById('sensorStatus');
-      const dataEl   = document.getElementById('sensorData');
+function updateNetwork() {
+  fetch('/network')
+    .then(r => r.json())
+    .then(data => {
 
-      if (data.sensor.AHT10) {
-        statusEl.className = 'status offline';
-        statusEl.innerText = data.sensor.AHT10;
-        dataEl.innerText = '';
-      } 
-      else if (data.sensor.temperatura !== undefined) {
+      // NETWORK
+      document.getElementById('wifi').innerText =
+        data.network?.wifi || '--';
+      document.getElementById('ip').innerText =
+        data.network?.ip || '--';
+      document.getElementById('rssi').innerText =
+        data.network?.rssi || '--';
+    })
+    .catch(() => {
+      console.log("Erro ao atualizar dados");
+    });
+}
 
-        statusEl.className = 'status online';
-        statusEl.innerText = 'online';
+function updateMQTT() {
+  fetch('/mqtt')
+    .then(r => r.json())
+    .then(data => {
 
-        dataEl.innerHTML =
-          `${data.sensor.temperatura} °C<br>${data.sensor.umidade} %`;
-      }
+      // MQTT
+      document.getElementById('mqttServer').innerText =
+        data.mqtt?.server || '--';
+      document.getElementById('mqttClient').innerText =
+        data.mqtt?.client_id || '--';
+      document.getElementById('topic_main').innerText =
+        data.mqtt?.topic_main || '--';
+      document.getElementById('mqttSucessos').innerText =
+        data.mqtt?.connect || '--';
+      document.getElementById('mqttErros').innerText =
+        data.mqtt?.erro || '--';
 
-      // ---------- IR RECEPTOR ----------
-      if (data.ir && data.ir.receptor) {
-
-        document.getElementById('irMode').innerText =
-          data.ir.receptor;
-
-        if (data.ir.receptor.toLowerCase().includes("off")) {
-          irReceiverStatus.className = 'dot yellow';
-        } else {
-          irReceiverStatus.className = 'dot green';
-        }
-      }
-
-      // ---------- LED ----------
-      if (data.led && data.led.state !== undefined) {
-        // Aqui você pode futuramente exibir estado do LED
-        console.log("LED:", data.led.state ? "Ligado" : "Desligado");
+      const mqttStatus = document.getElementById('mqttStatus');
+      if (data.mqtt?.connect === 1) {
+        mqttStatus.className = 'status online';
+        mqttStatus.innerText = 'online';
+      } else {
+        mqttStatus.className = 'status offline';
+        mqttStatus.innerText = 'offline';
       }
 
     })
     .catch(() => {
-      document.getElementById('uptime').innerText = '--';
-      sensorStatus.className = 'status offline';
-      sensorStatus.innerText = 'offline';
-      sensorData.innerText = '';
+      console.log("Erro ao atualizar dados");
     });
 }
 
-// Atualiza tudo a cada 2 segundos
-setInterval(updateData, 2000);
-updateData();
+function updateOutputs() {
+  fetch('/outputs')
+    .then(r => r.json())
+    .then(data => {
+
+      // LED
+      const ledState = document.getElementById('ledState');
+      const ledDot   = document.getElementById('ledDot');
+
+      if (data.led?.state) {
+        ledState.innerText = 'Ligado';
+        ledDot.className = 'dot green';
+      } else {
+        ledState.innerText = 'Desligado';
+        ledDot.className = 'dot red';
+      }
+
+    })
+    .catch(() => {
+      console.log("Erro ao atualizar dados");
+    });
+}
+
+let lastIRPayload = '';
+function updateIR_Receptor() {
+
+  fetch('/ir_receptor')
+    .then(r => r.json())
+    .then(data => {
+
+      const irStatus = document.getElementById('irStatus');
+      const irText   = document.getElementById('irText');
+
+      if (data.status !== 'ok') {
+        irStatus.className = 'dot yellow';
+        irText.innerText = 'Aguardando IR...';
+        lastIRPayload = '';
+        return;
+      }
+
+      // const payload = data.protocolo + "|" + data.dec + "|" + data.hex;
+      const payload = { codigo: data.protocolo + "|" + data.dec + "|" + data.hex, time: new Date().toLocaleTimeString() };
+
+      saveIRToHistory(payload);
+
+      if (payload === lastIRPayload) return;
+
+      lastIRPayload = payload;
+
+      irStatus.className = 'dot green';
+      setTimeout(() => {
+        irStatus.className = 'dot yellow';
+      }, 1200);
+      irText.innerText =
+        data.protocolo +
+        " | DEC " + data.dec +
+        " | HEX " + data.hex;
+    })
+    .catch(() => {
+
+      const irStatus = document.getElementById('irStatus');
+      const irText   = document.getElementById('irText');
+
+      irStatus.className = 'dot red';
+      irText.innerText = 'Erro Web';
+      lastIRPayload = '';
+    });
+}
+
+let irHistory = JSON.parse(localStorage.getItem('irHistory')) || [];
+function saveIRToHistory(payload) {
+
+  // Evita duplicado consecutivo
+  if (irHistory[0] === payload) return;
+
+  irHistory.unshift(payload);
+
+  if (irHistory.length > 10) {
+    irHistory = irHistory.slice(0, 10);
+  }
+
+  localStorage.setItem('irHistory', JSON.stringify(irHistory));
+
+  renderIRHistory();
+}
+
+function renderIRHistory() {
+
+  const list = document.getElementById('irHistory');
+  list.innerHTML = '';
+
+  irHistory.forEach(item => {
+    const li = document.createElement('li');
+    li.innerText = item;
+    list.appendChild(li);
+  });
+}
+
+function updateIR_Emissor() {
+  fetch('/ir_emissor')
+    .then(r => r.json())
+    .then(data => {
+
+      // IR
+      document.getElementById('irMode').innerText =
+        data.ir?.receptor || '--';
+
+      const irDot = document.getElementById('irDot');
+      if (data.ir?.receptor &&
+          !data.ir.receptor.toLowerCase().includes("off")) {
+        irDot.className = 'dot green';
+      } else {
+        irDot.className = 'dot yellow';
+      }
+
+      document.getElementById('irEmitter').innerText =
+        data.ir?.emissor_teste ? 'Testando' : 'Inativo';
+
+
+    })
+    .catch(() => {
+      console.log("Erro ao atualizar dados");
+    });
+}
+
+function updateAHT10() {
+  fetch('/aht10')
+    .then(r => r.json())
+    .then(data => {
+
+      // AHT10
+      const sensorAHT10Status = document.getElementById('sensorAHT10Status');
+      const sensorAHT10Data   = document.getElementById('sensorAHT10Data');
+
+      if (data.sensor?.AHT10) {
+        sensorAHT10Status.className = 'status offline';
+        sensorAHT10Status.innerText = data.sensor.AHT10;
+        sensorAHT10Data.innerText = '';
+      }
+      else if (data.sensor?.temperatura !== undefined) {
+        sensorAHT10Data.innerHTML =
+          data.sensor.temperatura + ' °C<br>' +
+          data.sensor.umidade + ' %';
+        sensorAHT10Status.className = 'status online';
+        sensorAHT10Status.innerText = 'online';
+      }
+
+    })
+    .catch(() => {
+      console.log("Erro ao atualizar dados");
+    });
+}
+
+function toggleLED() {
+  fetch('/led/toggle');
+}
+
+setInterval(updateSystem, 800);
+setInterval(updateMQTT, 2000);
+setInterval(updateOutputs, 800);
+setInterval(updateAHT10, 2000);
+setInterval(updateIR_Emissor, 2000);
+setInterval(updateIR_Receptor, 800);
+
+updateSystem();
+updateNetwork();
+updateMQTT()
+updateOutputs()
+updateAHT10();
+updateIR_Emissor();
+updateIR_Receptor();
+renderIRHistory();
+
 </script>
 
 </body>
