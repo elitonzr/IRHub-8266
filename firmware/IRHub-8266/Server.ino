@@ -64,17 +64,18 @@ void handleNetwork() {
 }
 
 void handleMQTT() {
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<128> doc;
 
   // ---- MQTT ----
-  char topic_main[128];
+  char topic_main[64];
   snprintf(topic_main, sizeof(topic_main), "%s/#", myTopic.c_str());
 
   JsonObject mqtt = doc.createNestedObject("mqtt");
   mqtt["server"] = mqtt_server;
   mqtt["client_id"] = clientID;
   mqtt["topic_main"] = topic_main;
-  mqtt["connect"] = mqttOK;
+  mqtt["status"] = mqtt_client.connected();
+  mqtt["sucesso"] = mqttOK;
   mqtt["erro"] = mqttErro;
 
   size_t len = measureJson(doc);
@@ -104,8 +105,8 @@ void handleAHT10() {
   if (estadoAHT10 != AHT10_ONLINE) {
     sensor["AHT10"] = EstadoAHT10();
   } else {
-    sensor["temperatura"] = temperatura;
-    sensor["umidade"] = umidade;
+    sensor["temperatura"] = String(temperatura, 1);
+    sensor["umidade"] = String(umidade, 1);
   }
 
   size_t len = measureJson(doc);
