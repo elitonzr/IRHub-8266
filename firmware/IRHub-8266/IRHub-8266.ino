@@ -106,7 +106,7 @@ enum IR_ReceptorMode {
   IR_TUDO           // Tudo.
 };
 
-IR_ReceptorMode IR_ReceptorEstado = IR_NECe24bits;  // Flag para indicar tipo de recepção IR
+IR_ReceptorMode IR_ReceptorEstado = IR_TUDO;  // Flag para indicar tipo de recepção IR
 
 uint32_t lastIRCode = 0;
 unsigned long lastIRTime = 0;

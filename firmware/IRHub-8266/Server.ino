@@ -16,6 +16,8 @@ void setup_server() {
   server.on("/ir_receptor", HTTP_GET, handleIR_Receptor);
   server.on("/ir_emissor", HTTP_GET, handleIR_Emissor);
   server.on("/led/toggle", handleLED);
+  server.on("/IR_RecepitorSET", handleIR_Recepitor);
+  server.on("/IR_EmissorTeste", handleIR_EmissorTeste);
 
   server.onNotFound(handle_NotFound);                // Servidor recebe uma solicitação HTTP não especificada - chama a função handle_NotFound
   server.begin();                                    // Inicializa o servidor
@@ -142,51 +144,6 @@ void handleIR_Receptor() {
   serializeJson(doc, server.client());
 }
 
-// void handleIR_Receptor() {
-
-//   if (!lastIR.valido) {
-//     StaticJsonDocument<24> doc;
-
-//     JsonObject receptor = doc.createNestedObject("ir_receptor");
-//     receptor["status"] = "idle";
-//     receptor["type"] = EstadoIRReceptor();
-
-//     size_t len = measureJson(doc);
-//     server.setContentLength(len);
-//     server.send(200, "application/json", "");
-//     serializeJson(doc, server.client());
-//     return;
-//   }
-
-//   StaticJsonDocument<24> doc;
-
-//   JsonObject receptor = doc.createNestedObject("ir_receptor");
-//   receptor["status"] = "ok";
-//   receptor["type"] = EstadoIRReceptor();
-//   receptor["protocolo"] = lastIR.protocolo;
-//   receptor["dec"] = lastIR.dec;
-//   receptor["hex"] = lastIR.dec;
-
-//   size_t len = measureJson(doc);
-//   server.setContentLength(len);
-//   server.send(200, "application/json", "");
-//   serializeJson(doc, server.client());
-
-//   // char json[200];
-//   // snprintf(
-//   //   json,
-//   //   sizeof(json),
-//   //   "{\"status\":\"ok\",\"type\":\"%s\",\"protocolo\":\"%s\",\"dec\":%lu,\"hex\":\"%lX\"}",
-//   //   EstadoIRReceptor(),
-//   //   lastIR.protocolo,
-//   //   lastIR.dec,
-//   //   lastIR.dec);
-
-//   // lastIR.valido = false;  // <<< CONSUME O EVENTO
-
-//   // server.send(200, "application/json", json);
-// }
-
 void handleIR_Emissor() {
   StaticJsonDocument<128> doc;
 
@@ -206,4 +163,21 @@ void handleLED() {
   ledState = !ledState;
   server.send(200, "application/json",
               String("{\"state\":") + (ledState ? "true" : "false") + "}");
+}
+
+void handleIR_Recepitor() {
+  static int n = 0;
+  n++;
+
+  if (n > 3) {
+    n = 0;
+  }
+
+  IR_RecepitorSET(n);
+  server.send(200, "application/json", "");
+}
+
+void handleIR_EmissorTeste() {
+  IR_EmissorTeste = !IR_EmissorTeste;
+  server.send(200, "application/json", "");
 }
