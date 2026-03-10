@@ -206,6 +206,7 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
       }
 
       #irHistory li {
+        cursor: pointer;
         list-style: none;
         color: var(--li-color);
         margin-bottom: 4px;
@@ -260,13 +261,21 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
   </head>
 
   <body>
-    <h1>IRHub-8266</h1>
+    <h1 id="name">IRHub-8266</h1>
 
     <div class="grid">
       <!-- SYSTEM -->
       <section class="card">
         <header>System</header>
-        <div class="item">Name: <span id="name" class="value">--</span></div>
+        <div class="item">
+          Build Date: <span id="buildDateTime" class="value">--</span>
+        </div>
+        <div class="item">
+          Version: <span id="buildVersion" class="value">--</span>
+        </div>
+        <div class="item">
+          File: <span id="buildFile" class="value">--</span>
+        </div>
         <div class="item">
           Uptime: <span id="uptime" class="value">--</span>
         </div>
@@ -369,6 +378,9 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
       async function fetchJSON(url) {
         try {
           const r = await fetch(url);
+
+          if (!r.ok) throw new Error("HTTP " + r.status);
+
           return await r.json();
         } catch (e) {
           console.log("Erro:", url);
@@ -383,6 +395,12 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         if (!data) return;
 
         document.getElementById("name").textContent = data.system?.name || "--";
+        document.getElementById("buildDateTime").textContent =
+          data.system?.buildDateTime || "--";
+        document.getElementById("buildVersion").textContent =
+          data.system?.buildVersion || "--";
+        document.getElementById("buildFile").textContent =
+          data.system?.buildFile || "--";
         document.getElementById("uptime").textContent =
           data.system?.uptime || "--";
         document.getElementById("heap").textContent = data.system?.heap || "--";
@@ -483,8 +501,7 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
       }
 
       /* ---------------- IR RECEPTOR ---------------- */
-
-      let lastIRPayload = "";
+      let lastIRDEC = 0;
 
       async function updateIRReceptor() {
         const data = await fetchJSON("/ir_receptor");
@@ -493,29 +510,36 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         document.getElementById("irMode").textContent =
           data.ir_receptor?.type || "--";
 
-        if (data.ir_receptor?.type === "TUDO") {
-          const irDot = document.getElementById("irDot");
-          irDot.className = "dot green";
-        } else if (data.ir_receptor?.type === "DESABILITADO") {
-          const irDot = document.getElementById("irDot");
-          irDot.className = "dot red";
-        } else {
-          const irDot = document.getElementById("irDot");
-          irDot.className = "dot yellow";
+        const irDot = document.getElementById("irDot");
+
+        switch (data.ir_receptor?.type) {
+          case "TUDO":
+            irDot.className = "dot green";
+            break;
+
+          case "DESABILITADO":
+            irDot.className = "dot red";
+            break;
+
+          default:
+            irDot.className = "dot yellow";
         }
 
         if (data.ir_receptor?.protocolo === undefined) return;
+        if (data.ir_receptor?.dec == lastIRDEC) {
+          return;
+        }
 
-        const payload = `Protocolo: ${data.ir_receptor?.protocolo}
-      DEC: ${data.ir_receptor?.dec}
-      HEX: ${data.ir_receptor?.hex}`;
+        const payload = {
+          timestamp: new Date().toLocaleTimeString(),
+          protocolo: data.ir_receptor?.protocolo,
+          dec: data.ir_receptor?.dec,
+          hex: data.ir_receptor?.hex,
+        };
 
-        if (payload === lastIRPayload) return;
-
-        lastIRPayload = payload;
+        lastIRDEC = data.ir_receptor?.dec;
 
         saveIRToHistory(payload);
-
       }
 
       /* ---------------- HISTORY ---------------- */
@@ -523,9 +547,14 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
       let irHistory = JSON.parse(localStorage.getItem("irHistory")) || [];
 
       function saveIRToHistory(payload) {
-        if (irHistory.length && irHistory[0].includes(payload)) return;
+        if (irHistory.length) {
+          const last = JSON.parse(irHistory[0]);
+          if (last.dec === payload.dec) return;
+        }
 
-        payload = `${new Date().toLocaleTimeString()} - ${payload}`;
+        // if (irHistory.length && irHistory[0].includes(payload.dec)) return;
+
+        payload = JSON.stringify(payload);
 
         irHistory.unshift(payload);
 
@@ -541,11 +570,41 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         list.innerHTML = "";
 
         irHistory.forEach((i) => {
+          const data = JSON.parse(i);
+
           const li = document.createElement("li");
-          li.textContent = i;
+
+          li.textContent = `${data.timestamp} | ${data.protocolo} | ${data.dec} | ${data.hex} 📋`;
+
+          // copiar HEX ao clicar
+          li.onclick = () => {
+            navigator.clipboard.writeText(data.hex);
+
+            li.classList.add("flash");
+
+            setTimeout(() => {
+              li.classList.remove("flash");
+            }, 400);
+          };
+
           list.appendChild(li);
         });
+
+        list.scrollTop = list.scrollHeight;
       }
+
+      // function renderIRHistory() {
+      //   const list = document.getElementById("irHistory");
+      //   list.innerHTML = "";
+
+      //   irHistory.forEach((i) => {
+      //     const li = document.createElement("li");
+      //     li.textContent = i;
+      //     list.appendChild(li);
+      //   });
+
+      //   list.scrollTop = list.scrollHeight;
+      // }
 
       function cleanHistory() {
         irHistory = [];
@@ -555,18 +614,18 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
       /* ---------------- COMMANDS ---------------- */
 
-      function toggleLED() {
-        fetch("/led/toggle");
+      async function toggleLED() {
+        await fetch("/led/toggle");
         updateOutputs();
       }
 
-      function toggleIRReceptor() {
-        fetch("/IR_ReceptorSET");
+      async function toggleIRReceptor() {
+        await fetch("/IR_ReceptorSET");
         updateIRReceptor();
       }
 
-      function toggleIREmissor() {
-        fetch("/IR_EmissorTeste");
+      async function toggleIREmissor() {
+        await fetch("/IR_EmissorTeste");
         updateIREmissor();
       }
 
@@ -590,7 +649,7 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
       updateIREmissor();
       updateIRReceptor();
       renderIRHistory();
-      cleanHistory();
+      // cleanHistory();
     </script>
   </body>
 </html>

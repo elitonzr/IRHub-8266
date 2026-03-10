@@ -22,6 +22,9 @@ void setup_server() {
   server.onNotFound(handle_NotFound);                // Servidor recebe uma solicitação HTTP não especificada - chama a função handle_NotFound
   server.begin();                                    // Inicializa o servidor
   Serial.println("    Servidor HTTP inicializado");  // Imprime texto na serial.
+
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
 }
 
 void handleRoot() {
@@ -38,6 +41,9 @@ void handleSystem() {
   // ---- SYSTEM ----
   JsonObject system = doc.createNestedObject("system");
   system["name"] = myTopic.c_str();
+  system["buildDateTime"] = buildDateTime;
+  system["buildVersion"] = buildVersion;
+  system["buildFile"] = buildFile;
   system["uptime"] = getFormattedUptime();
   system["heap"] = ESP.getFreeHeap();
 
@@ -180,4 +186,22 @@ void handleIR_Recepitor() {
 void handleIR_EmissorTeste() {
   IR_EmissorTeste = !IR_EmissorTeste;
   server.send(200, "application/json", "");
+}
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+
+  switch (type) {
+
+    case WStype_CONNECTED:
+      Serial.printf("Cliente conectado\n");
+      break;
+
+    case WStype_DISCONNECTED:
+      Serial.printf("Cliente desconectado\n");
+      break;
+
+    case WStype_TEXT:
+      Serial.printf("Recebido: %s\n", payload);
+      break;
+  }
 }

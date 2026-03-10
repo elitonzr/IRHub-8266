@@ -11,6 +11,7 @@
 #include <IRutils.h>           // Biblioteca para funcionamento do IR
 #include <Adafruit_AHTX0.h>
 #include <ArduinoJson.h>
+#include <WebSocketsServer.h>
 
 /************ ARQUIVOS AUXILIARES ************/
 #include "globals.h"
@@ -33,6 +34,7 @@ WiFiClient telnetClient;
 
 /************ Web Server ************/
 ESP8266WebServer server(80);  // server na porta 80
+WebSocketsServer webSocket = WebSocketsServer(81);
 
 // /************ MQTT configuração ************/
 #define mqtt_server MQTT_SERVER
@@ -185,6 +187,7 @@ void loop() {
 
   ArduinoOTA.handle();
   server.handleClient();  // Chama o método handleClient(), para ouvir solicitações HTTP de clientes
+  webSocket.loop();
 
   mqtt_reconnect();
   mqtt_client.loop();
