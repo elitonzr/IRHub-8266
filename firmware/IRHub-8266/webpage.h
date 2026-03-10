@@ -1,6 +1,6 @@
 const char HTML_PAGE[] PROGMEM = R"rawliteral(
 <!doctype html>
-<html>
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,20 +9,37 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
       href="https://fonts.googleapis.com/css?family=Inter:300,400,600"
       rel="stylesheet"
     />
-
     <style>
       :root {
-        --bg-color: #f0f4f8;
-        --text-color: #333;
-        --container-bg: #ffffff;
-        --button-bg: #2563eb;
-        --button-text: #ffffff;
-        --button-alt-bg: #6c757d;
-        --input-bg: #fff;
-        --select-bg: #fff;
-        --border-color: #ccc;
+        /* ---------------- BUTTON COLORS ---------------- */
+        --button-text: #fff;
+
+        --btn-primary-bg: linear-gradient(135deg, #2563eb, #1d4ed8);
+        --btn-primary-hv: linear-gradient(135deg, #3b82f6, #1e40af);
+
+        --btn-led-bg: linear-gradient(135deg, #06b6d4, #0ea5e9);
+        --btn-led-hv: linear-gradient(135deg, #22d3ee, #0284c7);
+
+        --btn-ir-emitter-bg: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        --btn-ir-emitter-hv: linear-gradient(135deg, #a78bfa, #6d28d9);
+
+        --btn-ir-receptor-bg: linear-gradient(135deg, #facc15, #f59e0b);
+        --btn-ir-receptor-hv: linear-gradient(135deg, #fde047, #d97706);
+
+        --btn-clean-bg: linear-gradient(135deg, #f87171, #ef4444);
+        --btn-clean-hv: linear-gradient(135deg, #fca5a5, #dc2626);
+
+        /* ---------------- DOT COLORS ---------------- */
+        --dot-red: #ef4444;
+        --dot-green: #22c55e;
+        --dot-yellow: #facc15;
+
+        /* ---------------- LIST COLORS ---------------- */
+        --li-color: #5b22c5;
+        --li-color-child: #4a54de;
       }
 
+      /* ---------------- BODY ---------------- */
       body {
         font-family: "Inter", sans-serif;
         background: linear-gradient(135deg, #111827, #1f2937);
@@ -36,58 +53,46 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         margin-bottom: 30px;
         font-weight: 600;
         letter-spacing: 1px;
-        background: linear-gradient(90deg, #60a5fa, #22c55e);
+        background: linear-gradient(90deg, #60a5fa, #c52222);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
       }
 
-      .section-title {
-        text-align: center;
-        font-size: 13px;
-        text-transform: uppercase;
-        opacity: 0.6;
-        margin-bottom: 14px;
-        border-bottom: 1px solid #374151;
-        padding-bottom: 6px;
-      }
-
+      /* ---------------- GRID ---------------- */
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         gap: 20px;
       }
 
-      .gridIR {
-        display: grid;
-        margin-top: 20px;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 800px));
-        gap: 20px;
-      }
-
-      .card {
+      /* ---------------- CARD ---------------- */
+      section.card {
         background: #1f2937;
         padding: 20px;
         border-radius: 14px;
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
       }
 
-      .section-title {
+      section.card header {
         text-align: center;
-        font-size: 16px;
+        font-size: 13px;
         text-transform: uppercase;
         opacity: 0.6;
-        margin-bottom: 20px;
+        margin-bottom: 14px;
       }
 
       .item {
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         font-size: 12px;
       }
 
       .value {
         font-weight: 600;
+        min-width: 70px;
+        display: inline-block;
       }
 
+      /* ---------------- STATUS ---------------- */
       .status {
         display: inline-block;
         padding: 4px 10px;
@@ -99,16 +104,15 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
       .online {
         background: #16a34a;
       }
-
       .offline {
         background: #dc2626;
       }
-
       .warn {
         background: #eab308;
         color: #000;
       }
 
+      /* ---------------- DOT ---------------- */
       .dot {
         height: 10px;
         width: 10px;
@@ -117,145 +121,136 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         margin-left: 6px;
       }
 
-      .green {
-        background: #22c55e;
-        box-shadow: 0 0 6px #22c55e;
+      .dot.red {
+        background: var(--dot-red);
+        box-shadow: 0 0 6px var(--dot-red);
+      }
+      .dot.green {
+        background: var(--dot-green);
+        box-shadow: 0 0 6px var(--dot-green);
+      }
+      .dot.yellow {
+        background: var(--dot-yellow);
+        box-shadow: 0 0 6px var(--dot-yellow);
       }
 
-      .yellow {
-        background: #facc15;
-        box-shadow: 0 0 6px #facc15;
-      }
-
-      .red {
-        background: #ef4444;
-        box-shadow: 0 0 6px #ef4444;
-      }
-
+      /* ---------------- BUTTONS ---------------- */
       button {
+        width: 100%;
+        margin-top: 8px;
         padding: 8px 12px;
         font-size: 13px;
-        background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        color: white;
+        color: var(--button-text);
         border: none;
         border-radius: 8px;
         cursor: pointer;
-        flex: 1;
-        transition: all 0.15s ease;
+        transition: 0.15s;
       }
 
       button:hover {
         transform: translateY(-1px);
         filter: brightness(1.1);
       }
-
       button:active {
         transform: scale(0.97);
       }
 
-      button:hover {
-        opacity: 0.9;
+      .btn-primary {
+        background: var(--btn-primary-bg);
+      }
+      .btn-primary:hover {
+        background: var(--btn-primary-hv);
       }
 
-      .clean {
-        background: #ef4444;
+      .btn-led {
+        background: var(--btn-led-bg);
+      }
+      .btn-led:hover {
+        background: var(--btn-led-hv);
       }
 
-      .clean:hover {
-        background: #dc2626;
+      .btn-ir-emitter {
+        background: var(--btn-ir-emitter-bg);
+      }
+      .btn-ir-emitter:hover {
+        background: var(--btn-ir-emitter-hv);
       }
 
-      .card {
-        background: #1f2937;
-        padding: 20px;
-        border-radius: 14px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-        transition:
-          transform 0.15s ease,
-          box-shadow 0.15s ease;
+      .btn-ir-receptor {
+        background: var(--btn-ir-receptor-bg);
+      }
+      .btn-ir-receptor:hover {
+        background: var(--btn-ir-receptor-hv);
       }
 
-      .card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.4);
+      .btn-clean {
+        background: var(--btn-clean-bg);
+      }
+      .btn-clean:hover {
+        background: var(--btn-clean-hv);
       }
 
-      #irText {
-        font-family: monospace;
-        background: #111827;
-        padding: 8px;
-        border-radius: 6px;
-      }
+      /* ---------------- IR HISTORY ---------------- */
 
       #irHistory {
         max-height: 220px;
         overflow-y: auto;
-        background: #000000;
-        border: 1px solid #14532d;
-        box-shadow: inset 0 0 10px #22c55e33;
+        background: #111827;
+        border: 2px solid #181453;
+        box-shadow: inset 0 0 10px #2240c533;
         padding: 10px;
         border-radius: 6px;
         font-family: monospace;
         font-size: 12px;
-        max-height: 220px;
-        overflow-y: auto;
         scroll-behavior: smooth;
       }
 
       #irHistory li {
         list-style: none;
-        color: #22c55e;
+        color: var(--li-color);
         margin-bottom: 4px;
       }
 
       #irHistory li::before {
         content: "> ";
-        color: #16a34a;
       }
-
+      #irHistory li:first-child {
+        color: var(--li-color-child);
+        font-weight: 600;
+      }
       #irHistory li:last-child::after {
         content: " _";
         animation: blink 1s infinite;
-        color: #22c55e;
-      }
-
-      #irHistory li:first-child {
-        color: #4ade80;
-        font-weight: 600;
       }
 
       @keyframes blink {
-        0% {
+        0%,
+        100% {
           opacity: 1;
         }
         50% {
           opacity: 0;
         }
-        100% {
-          opacity: 1;
-        }
       }
 
-      #irHistory::-webkit-scrollbar {
-        width: 6px;
+      .card.ir-history {
+        grid-column: 1 / -1; /* ocupa todas as colunas da grid */
+        max-width: 800px; /* limita a largura máxima */
+        margin: 0 auto; /* centraliza horizontalmente */
       }
 
-      #irHistory::-webkit-scrollbar-track {
-        background: #020617;
+      .card.ir-history ul#irHistory {
+        max-height: 250px;
+        font-size: 13px;
       }
 
-      #irHistory::-webkit-scrollbar-thumb {
-        background: #14532d;
-        border-radius: 10px;
-      }
-
+      /* ---------------- EFFECTS ---------------- */
       .flash {
         animation: flash 0.4s;
       }
-
       @keyframes flash {
         0% {
-          background: #14532d;
+          background: #1a1453;
         }
         100% {
           background: transparent;
@@ -269,26 +264,26 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
     <div class="grid">
       <!-- SYSTEM -->
-      <div class="card">
-        <div class="section-title">System</div>
+      <section class="card">
+        <header>System</header>
         <div class="item">Name: <span id="name" class="value">--</span></div>
         <div class="item">
           Uptime: <span id="uptime" class="value">--</span>
         </div>
         <div class="item">Heap: <span id="heap" class="value">--</span></div>
-      </div>
+      </section>
 
       <!-- NETWORK -->
-      <div class="card">
-        <div class="section-title">Network</div>
+      <section class="card">
+        <header>Network</header>
         <div class="item">SSID: <span id="wifi" class="value">--</span></div>
         <div class="item">IP: <span id="ip" class="value">--</span></div>
         <div class="item">RSSI: <span id="rssi" class="value">--</span></div>
-      </div>
+      </section>
 
       <!-- MQTT -->
-      <div class="card">
-        <div class="section-title">MQTT</div>
+      <section class="card">
+        <header>MQTT</header>
         <div class="item">
           Server: <span id="mqttServer" class="value">--</span>
         </div>
@@ -307,229 +302,234 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         <div class="item">
           Status: <span id="mqttStatus" class="status offline">offline</span>
         </div>
-      </div>
+      </section>
 
       <!-- LED -->
-      <div class="card">
-        <div class="section-title">LED</div>
+      <section class="card">
+        <header>LED</header>
         <div class="item">
-          Estado: <span id="ledState" class="value">--</span>
           <span id="ledDot" class="dot red"></span>
+          <span id="ledState" class="value">--</span>
         </div>
-        <button onclick="toggleLED()">Alternar LED</button>
-      </div>
+        <div class="item">
+          <button class="btn-led" onclick="toggleLED()">Alternar LED</button>
+        </div>
+      </section>
 
       <!-- AHT10 -->
-      <div class="card">
-        <div class="section-title">AHT10</div>
+      <section class="card">
+        <header>AHT10</header>
         <div class="item" id="sensorAHT10Data"></div>
         <div class="item">
           Status:
           <span id="sensorAHT10Status" class="status offline">offline</span>
         </div>
-      </div>
+      </section>
 
-      <!-- IR Emissor-->
-      <div class="card">
-        <div class="section-title">IR Emissor</div>
+      <!-- IR EMISSOR -->
+      <section class="card">
+        <header>IR Emissor</header>
         <div class="item">
           Modo Teste: <span id="irEmitter" class="value">--</span>
         </div>
-        <button onclick="IR_EmissorTeste()">Alternar Teste</button>
-      </div>
-    </div>
-
-    <div class="gridIR">
-      <!-- IR Receptor-->
-      <div class="card">
-        <div class="section-title">IR Receptor</div>
         <div class="item">
-          Protocolo: <span id="irMode" class="value">--</span>
+          <button class="btn-ir-emitter" onclick="toggleIREmissor()">
+            Alternar Teste
+          </button>
+        </div>
+      </section>
+
+      <!-- IR RECEPTOR -->
+      <section class="card">
+        <header>IR Receptor</header>
+        <div class="item">
           <span id="irDot" class="dot yellow"></span>
+          Protocolo: <span id="irMode" class="value">--</span>
         </div>
-        <button onclick="IR_Recepitor()">Alternar Protocolo</button>
-        <div class="card">
-          <div class="item">
-            <span id="irStatus" class="dot yellow"></span>
-            <span id="irText">Aguardando...</span>
-          </div>
-          <h3>Últimos IR Recebidos</h3>
-          <button class="clean" onclick="cleanHistory()">🗑 Limpar</button>
-          <ul id="irHistory"></ul>
+        <div class="item">
+          <button class="btn-ir-receptor" onclick="toggleIRReceptor()">
+            Alternar Protocolo
+          </button>
         </div>
-      </div>
+      </section>
+
+      <!-- IR HISTORY -->
+      <section class="card ir-history">
+        <header>Últimos IR Recebidos</header>
+        <ul id="irHistory"></ul>
+        <div class="item">
+          <button class="btn-clean" onclick="cleanHistory()">🗑 Limpar</button>
+        </div>
+      </section>
     </div>
 
     <script>
-      function updateSystem() {
-        fetch("/system")
-          .then((r) => r.json())
-          .then((data) => {
-            // SYSTEM
-            document.getElementById("name").innerText =
-              data.system?.name || "--";
-            document.getElementById("uptime").innerText =
-              data.system?.uptime || "--";
-            document.getElementById("heap").innerText =
-              data.system?.heap || "--";
-          })
-          .catch(() => {
-            console.log("Erro ao atualizar system");
-          });
+      /* ---------------- FETCH HELPERS ---------------- */
+
+      async function fetchJSON(url) {
+        try {
+          const r = await fetch(url);
+          return await r.json();
+        } catch (e) {
+          console.log("Erro:", url);
+          return null;
+        }
       }
 
-      function updateNetwork() {
-        fetch("/network")
-          .then((r) => r.json())
-          .then((data) => {
-            // NETWORK
-            document.getElementById("wifi").innerText =
-              data.network?.wifi || "--";
-            document.getElementById("ip").innerText = data.network?.ip || "--";
-            document.getElementById("rssi").innerText =
-              data.network?.rssi || "--";
-          })
-          .catch(() => {
-            console.log("Erro ao atualizar network");
-          });
+      /* ---------------- SYSTEM ---------------- */
+
+      async function updateSystem() {
+        const data = await fetchJSON("/system");
+        if (!data) return;
+
+        document.getElementById("name").textContent = data.system?.name || "--";
+        document.getElementById("uptime").textContent =
+          data.system?.uptime || "--";
+        document.getElementById("heap").textContent = data.system?.heap || "--";
       }
 
-      function updateMQTT() {
-        fetch("/mqtt")
-          .then((r) => r.json())
-          .then((data) => {
-            const mqtt = data.mqtt || {};
+      /* ---------------- NETWORK ---------------- */
 
-            document.getElementById("mqttServer").innerText =
-              mqtt.server || "--";
+      async function updateNetwork() {
+        const data = await fetchJSON("/network");
+        if (!data) return;
 
-            document.getElementById("mqttClient").innerText =
-              mqtt.client_id || "--";
-
-            document.getElementById("topic_main").innerText =
-              mqtt.topic_main || "--";
-
-            document.getElementById("mqttSucessos").innerText =
-              mqtt.sucesso ?? "--";
-
-            document.getElementById("mqttErros").innerText = mqtt.erro ?? "--";
-
-            const mqttStatus = document.getElementById("mqttStatus");
-
-            if (mqtt.status === true) {
-              mqttStatus.className = "status online";
-              mqttStatus.innerText = "online";
-            } else {
-              mqttStatus.className = "status offline";
-              mqttStatus.innerText = "offline";
-            }
-          })
-          .catch(() => {
-            console.log("Erro ao atualizar mqtt");
-          });
+        document.getElementById("wifi").textContent =
+          data.network?.wifi || "--";
+        document.getElementById("ip").textContent = data.network?.ip || "--";
+        document.getElementById("rssi").textContent =
+          data.network?.rssi || "--";
       }
 
-      function updateOutputs() {
-        fetch("/outputs")
-          .then((r) => r.json())
-          .then((data) => {
-            // LED
-            const ledState = document.getElementById("ledState");
-            const ledDot = document.getElementById("ledDot");
+      /* ---------------- MQTT ---------------- */
 
-            if (data.led?.state) {
-              ledState.innerText = "Ligado";
-              ledDot.className = "dot green";
-            } else {
-              ledState.innerText = "Desligado";
-              ledDot.className = "dot red";
-            }
-          })
-          .catch(() => {
-            console.log("Erro ao atualizar outputs");
-          });
+      async function updateMQTT() {
+        const data = await fetchJSON("/mqtt");
+        if (!data) return;
+
+        const mqtt = data.mqtt || {};
+
+        document.getElementById("mqttServer").textContent = mqtt.server || "--";
+        document.getElementById("mqttClient").textContent =
+          mqtt.client_id || "--";
+        document.getElementById("topic_main").textContent =
+          mqtt.topic_main || "--";
+
+        document.getElementById("mqttSucessos").textContent =
+          mqtt.sucesso ?? "--";
+        document.getElementById("mqttErros").textContent = mqtt.erro ?? "--";
+
+        const status = document.getElementById("mqttStatus");
+
+        if (mqtt.status) {
+          status.className = "status online";
+          status.textContent = "online";
+        } else {
+          status.className = "status offline";
+          status.textContent = "offline";
+        }
       }
+
+      /* ---------------- OUTPUTS ---------------- */
+
+      async function updateOutputs() {
+        const data = await fetchJSON("/outputs");
+        if (!data) return;
+
+        const ledState = document.getElementById("ledState");
+        const ledDot = document.getElementById("ledDot");
+
+        if (data.led?.state) {
+          ledState.textContent = "Ligado";
+          ledDot.className = "dot green";
+        } else {
+          ledState.textContent = "Desligado";
+          ledDot.className = "dot red";
+        }
+      }
+
+      /* ---------------- AHT10 ---------------- */
+
+      async function updateAHT10() {
+        const data = await fetchJSON("/aht10");
+        if (!data) return;
+
+        const status = document.getElementById("sensorAHT10Status");
+        const text = document.getElementById("sensorAHT10Data");
+
+        if (data.sensor?.AHT10) {
+          status.className = "status offline";
+          status.textContent = data.sensor.AHT10;
+          text.textContent = "";
+        } else if (data.sensor?.temperatura !== undefined) {
+          text.innerHTML = `Temperatura: ${data.sensor.temperatura} °C<br>
+       Umidade: ${data.sensor.umidade} %`;
+
+          status.className = "status online";
+          status.textContent = "online";
+        }
+      }
+
+      /* ---------------- IR EMISSOR ---------------- */
+
+      async function updateIREmissor() {
+        const data = await fetchJSON("/ir_emissor");
+        if (!data) return;
+
+        document.getElementById("irEmitter").textContent = data.ir_emissor
+          ?.emissor_teste
+          ? "Testando"
+          : "Inativo";
+      }
+
+      /* ---------------- IR RECEPTOR ---------------- */
 
       let lastIRPayload = "";
-      function updateIR_Receptor() {
-        fetch("/ir_receptor")
-          .then((r) => r.json())
-          .then((data) => {
-            const irStatus = document.getElementById("irStatus");
-            const irText = document.getElementById("irText");
 
-            // IR
-            document.getElementById("irMode").innerText =
-              data.ir_receptor?.type || "--";
+      async function updateIRReceptor() {
+        const data = await fetchJSON("/ir_receptor");
+        if (!data) return;
 
-            const irDot = document.getElementById("irDot");
-            if (
-              data.ir_receptor?.receptor &&
-              !data.ir_receptor.receptor.toLowerCase().includes("desabilitado")
-            ) {
-              irDot.className = "dot green";
-            } else {
-              irDot.className = "dot yellow";
-            }
+        document.getElementById("irMode").textContent =
+          data.ir_receptor?.type || "--";
 
-            if (data.ir_receptor?.status !== "ok") {
-              irStatus.className = "dot yellow";
-              irText.innerText = "Aguardando IR...";
-              lastIRPayload = "";
-              return;
-            }
+        if (data.ir_receptor?.type === "TUDO") {
+          const irDot = document.getElementById("irDot");
+          irDot.className = "dot green";
+        } else if (data.ir_receptor?.type === "DESABILITADO") {
+          const irDot = document.getElementById("irDot");
+          irDot.className = "dot red";
+        } else {
+          const irDot = document.getElementById("irDot");
+          irDot.className = "dot yellow";
+        }
 
-            const rawPayload =
-              "Protocolo: " +
-              data.ir_receptor.protocolo +
-              "\tDEC: " +
-              data.ir_receptor.dec +
-              "\tHEX: " +
-              data.ir_receptor.hex;
+        if (data.ir_receptor?.protocolo === undefined) return;
 
-            if (rawPayload === lastIRPayload) return;
+        const payload = `Protocolo: ${data.ir_receptor?.protocolo}
+      DEC: ${data.ir_receptor?.dec}
+      HEX: ${data.ir_receptor?.hex}`;
 
-            lastIRPayload = rawPayload;
+        if (payload === lastIRPayload) return;
 
-            saveIRToHistory(rawPayload);
+        lastIRPayload = payload;
 
-            irStatus.className = "dot green";
+        saveIRToHistory(payload);
 
-            setTimeout(() => {
-              irStatus.className = "dot yellow";
-            }, 1200);
-
-            irText.innerText = rawPayload;
-
-            irText.classList.add("flash");
-            setTimeout(() => irText.classList.remove("flash"), 400);
-          })
-          .catch(() => {
-            const irStatus = document.getElementById("irStatus");
-            const irText = document.getElementById("irText");
-
-            irStatus.className = "dot red";
-            irText.innerText = "Erro IR";
-            lastIRPayload = "";
-          });
       }
 
-      let irHistory = JSON.parse(localStorage.getItem("irHistory")) || [];
-      function saveIRToHistory(payload) {
-        // Evita duplicado consecutivo
-        if (irHistory[0] === payload) return;
+      /* ---------------- HISTORY ---------------- */
 
-        payload =
-          "timestamp: " +
-          new Date().toISOString().split("T")[1].split(".")[0] +
-          " - " +
-          payload;
+      let irHistory = JSON.parse(localStorage.getItem("irHistory")) || [];
+
+      function saveIRToHistory(payload) {
+        if (irHistory.length && irHistory[0].includes(payload)) return;
+
+        payload = `${new Date().toLocaleTimeString()} - ${payload}`;
 
         irHistory.unshift(payload);
 
-        if (irHistory.length > 10) {
-          irHistory = irHistory.slice(0, 10);
-        }
+        if (irHistory.length > 10) irHistory = irHistory.slice(0, 10);
 
         localStorage.setItem("irHistory", JSON.stringify(irHistory));
 
@@ -540,13 +540,11 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         const list = document.getElementById("irHistory");
         list.innerHTML = "";
 
-        irHistory.forEach((item) => {
+        irHistory.forEach((i) => {
           const li = document.createElement("li");
-          li.innerText = item;
+          li.textContent = i;
           list.appendChild(li);
         });
-
-        list.scrollTop = 0;
       }
 
       function cleanHistory() {
@@ -555,80 +553,47 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         renderIRHistory();
       }
 
-      function updateIR_Emissor() {
-        fetch("/ir_emissor")
-          .then((r) => r.json())
-          .then((data) => {
-            document.getElementById("irEmitter").innerText = data.ir_emissor
-              ?.emissor_teste
-              ? "Testando"
-              : "Inativo";
-          })
-          .catch(() => {
-            console.log("Erro ao atualizar ir_emissor");
-          });
-      }
-
-      function updateAHT10() {
-        fetch("/aht10")
-          .then((r) => r.json())
-          .then((data) => {
-            // AHT10
-            const sensorAHT10Status =
-              document.getElementById("sensorAHT10Status");
-            const sensorAHT10Data = document.getElementById("sensorAHT10Data");
-
-            if (data.sensor?.AHT10) {
-              sensorAHT10Status.className = "status offline";
-              sensorAHT10Status.innerText = data.sensor.AHT10;
-              sensorAHT10Data.innerText = "";
-            } else if (data.sensor?.temperatura !== undefined) {
-              sensorAHT10Data.innerHTML =
-                "Temperatura: " +
-                data.sensor.temperatura +
-                " °C<br>" +
-                "Umidade: " +
-                data.sensor.umidade +
-                " %";
-              sensorAHT10Status.className = "status online";
-              sensorAHT10Status.innerText = "online";
-            }
-          })
-          .catch(() => {
-            console.log("Erro ao atualizar aht10");
-          });
-      }
+      /* ---------------- COMMANDS ---------------- */
 
       function toggleLED() {
         fetch("/led/toggle");
+        updateOutputs();
       }
 
-      function IR_Recepitor() {
-        fetch("/IR_RecepitorSET");
+      function toggleIRReceptor() {
+        fetch("/IR_ReceptorSET");
+        updateIRReceptor();
       }
 
-      function IR_EmissorTeste() {
+      function toggleIREmissor() {
         fetch("/IR_EmissorTeste");
+        updateIREmissor();
       }
+
+      /* ---------------- TIMERS ---------------- */
 
       setInterval(updateSystem, 2000);
+      setInterval(updateNetwork, 5000);
       setInterval(updateMQTT, 3000);
       setInterval(updateOutputs, 1500);
       setInterval(updateAHT10, 3000);
-      setInterval(updateIR_Emissor, 3000);
-      setInterval(updateIR_Receptor, 800);
-      setInterval(updateNetwork, 5000);
+      setInterval(updateIREmissor, 3000);
+      setInterval(updateIRReceptor, 800);
+
+      /* ---------------- INIT ---------------- */
 
       updateSystem();
       updateNetwork();
       updateMQTT();
       updateOutputs();
       updateAHT10();
-      updateIR_Emissor();
-      updateIR_Receptor();
+      updateIREmissor();
+      updateIRReceptor();
       renderIRHistory();
+      cleanHistory();
     </script>
   </body>
 </html>
+
 
 )rawliteral";

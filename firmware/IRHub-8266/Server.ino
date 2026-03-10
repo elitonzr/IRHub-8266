@@ -16,7 +16,7 @@ void setup_server() {
   server.on("/ir_receptor", HTTP_GET, handleIR_Receptor);
   server.on("/ir_emissor", HTTP_GET, handleIR_Emissor);
   server.on("/led/toggle", handleLED);
-  server.on("/IR_RecepitorSET", handleIR_Recepitor);
+  server.on("/IR_ReceptorSET", handleIR_Recepitor);
   server.on("/IR_EmissorTeste", handleIR_EmissorTeste);
 
   server.onNotFound(handle_NotFound);                // Servidor recebe uma solicitação HTTP não especificada - chama a função handle_NotFound
