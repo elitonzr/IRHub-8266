@@ -87,7 +87,41 @@ void processaComando(byte* payload, unsigned int length) {
   int valor = payload[1] - '0';
 
   if (cmd == 'a') {
-    feedback(valor);
+    switch (valor) {
+      case 0:
+        {
+          MQTTsendInfoSatus();
+          MQTTsendInfoBuild();
+          MQTTsendInfoNetwork();
+          MQTTsendInfoMQTT();
+          break;
+        }
+      case 1:
+        {
+          MQTTsendUptime();
+          break;
+        }
+      case 2:
+        {
+
+          MQTTsendInfoIR();
+
+          break;
+        }
+      case 3:
+        {
+          MQTTsendAHT10();
+          break;
+        }
+      case 4:
+        {
+          MQTTsendOutputs();
+          break;
+        }
+      default:
+        break;
+    }
+
   } else if (cmd == 'b') {
 
     if (valor == 0) {

@@ -136,7 +136,7 @@ struct IRLastData {
   unsigned long timestamp;
 
   char resultToHumanReadableBasic[64];
-  char resultToSourceCode[256];
+  char resultToSourceCode[512];
 
   bool valido;
 };

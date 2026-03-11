@@ -125,36 +125,81 @@ void handleAHT10() {
 
 void handleIR_Receptor() {
 
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<640> doc;
+
+  // Objeto principal
   JsonObject receptor = doc.createNestedObject("ir_receptor");
 
+  // Estado do receptor
   receptor["type"] = EstadoIRReceptor();
 
-  if (!lastIR.valido) {
-    receptor["status"] = "idle";
-  } else {
-    receptor["status"] = "ok";
-    receptor["timestamp"] = lastIR.timestamp;
-    receptor["protocolo"] = lastIR.protocolo;
-    receptor["dec"] = lastIR.dec;
-    
-    char hexStr[12];
-    snprintf(hexStr, sizeof(hexStr), "%lX", lastIR.dec);
-    receptor["hex"] = hexStr;
-    receptor["rawlen"] = lastIR.rawlen;
-    receptor["bits"] = lastIR.bits;
-    receptor["decode_type"] = lastIR.decode_type;
-    receptor["resultToHumanReadableBasic"] = lastIR.resultToHumanReadableBasic;
-    receptor["resultToSourceCode"] = lastIR.resultToSourceCode;
+  if (lastIR.valido) {
 
-    lastIR.valido = false;  // consome o evento
+    receptor["status"] = "ok";
+
+    // Dados principais
+    receptor["timestamp"]   = lastIR.timestamp;
+    receptor["protocolo"]   = lastIR.protocolo;
+    receptor["decode_type"] = lastIR.decode_type;
+    receptor["bits"]        = lastIR.bits;
+
+    // Código do comando
+    receptor["dec"] = lastIR.dec;
+    receptor["hex"] = lastIR.hexStr;
+
+    // Dados do RAW
+    receptor["rawlen"] = lastIR.rawlen;
+
+    // Informações detalhadas
+    receptor["resultToHumanReadableBasic"] = lastIR.resultToHumanReadableBasic;
+    receptor["resultToSourceCode"]         = lastIR.resultToSourceCode;
+
+    // consome o evento
+    lastIR.valido = false;
+
+  } else {
+    receptor["status"] = "idle";
   }
 
+  // Calcula tamanho da resposta
   size_t len = measureJson(doc);
+
+  // Envia resposta HTTP
   server.setContentLength(len);
   server.send(200, "application/json", "");
+
   serializeJson(doc, server.client());
 }
+
+// void handleIR_Receptor() {
+
+//   StaticJsonDocument<640> doc;
+//   JsonObject receptor = doc.createNestedObject("ir_receptor");
+
+//   receptor["type"] = EstadoIRReceptor();
+
+//   if (!lastIR.valido) {
+//     receptor["status"] = "idle";
+//   } else {
+//     receptor["status"] = "ok";
+//     receptor["timestamp"] = lastIR.timestamp;
+//     receptor["protocolo"] = lastIR.protocolo;
+//     receptor["decode_type"] = lastIR.decode_type;
+//     receptor["bits"] = lastIR.bits;
+//     receptor["dec"] = lastIR.dec;
+//     receptor["hex"] = lastIR.hexStr;
+//     receptor["rawlen"] = lastIR.rawlen;
+//     receptor["resultToHumanReadableBasic"] = lastIR.resultToHumanReadableBasic;
+//     receptor["resultToSourceCode"] = lastIR.resultToSourceCode;
+
+//     lastIR.valido = false;  // consome o evento
+//   }
+
+//   size_t len = measureJson(doc);
+//   server.setContentLength(len);
+//   server.send(200, "application/json", "");
+//   serializeJson(doc, server.client());
+// }
 
 void handleIR_Emissor() {
   StaticJsonDocument<128> doc;

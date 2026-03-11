@@ -417,65 +417,75 @@ void MQTTsendOutputs() {
   }
 }
 
-void MQTTsendIR_Receptor(const char* protocolo, unsigned long tecla) {
+void MQTTsendIR_Receptor() {
 
-  if (!protocolo) return;
+  // ----- Monta JSON -----
+  StaticJsonDocument<128> doc;
 
-  StaticJsonDocument<128> doc;  // 256 é exagero para 3 campos simples
+  doc["status"]      = "ok";
+  doc["timestamp"]   = lastIR.timestamp;
+  doc["protocolo"]   = lastIR.protocolo;
+  doc["decode_type"] = lastIR.decode_type;
+  doc["bits"]        = lastIR.bits;
+  doc["dec"]         = lastIR.dec;
+  doc["hex"]         = lastIR.hexStr;
 
-  doc["protocol"] = protocolo;
-  doc["dec"] = tecla;
+  // ----- Serializa -----
+  char payload[128];
+  size_t len = serializeJson(doc, payload, sizeof(payload));
 
-  char hexBuffer[9];  // 8 hex digits + null terminator
-  snprintf(hexBuffer, sizeof(hexBuffer), "%lX", tecla);
-  doc["hex"] = hexBuffer;
-
-  char MQTT_Msg[128];
-  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
-
-  if (len == 0 || len >= sizeof(MQTT_Msg)) {
-    debugPrintln("Erro ao serializar JSON IR");
+  if (len == 0 || len >= sizeof(payload)) {
+    debugPrintln("[MQTT] Erro ao serializar JSON IR");
     return;
   }
 
+  // ----- Verifica conexão -----
   if (!mqtt_client.connected()) {
-    debugPrint("[MQTT] Offline - ");
-    debugPrint("topic [");
+
+    debugPrint("[MQTT] Offline - topic [");
     debugPrint(topic_sensor_ir_receptor);
     debugPrint("] payload: ");
-    debugPrintln(MQTT_Msg);
+    debugPrintln(payload);
+
     return;
   }
 
-  if (!mqtt_client.publish(topic_sensor_ir_receptor, MQTT_Msg, len)) {
+  // ----- Publica -----
+  bool ok = mqtt_client.publish(topic_sensor_ir_receptor, payload, len);
+
+  if (!ok) {
+
     debugPrintln("[MQTT] Falha ao publicar");
     debugPrint("topic [");
     debugPrint(topic_sensor_ir_receptor);
     debugPrint("] payload: ");
-    debugPrintln(MQTT_Msg);
+    debugPrintln(payload);
+
+  } else {
+
+    debugPrint("[MQTT] Publicado em ");
+    debugPrintln(topic_sensor_ir_receptor);
+
   }
 }
 
-// void MQTTsendIR_Receptor(const char* protocolo, unsigned long tecla) {
+// void MQTTsendIR_Receptor() {
 
-//   StaticJsonDocument<256> doc;
-//   doc["protocol"] = protocolo;
-//   doc["hex"] = tecla;
-//   doc["dec"] = tecla;
+//   StaticJsonDocument<128> doc;
 
-//   char MQTT_Msg[256];
+//   doc["status"] = "ok";
+//   doc["timestamp"] = lastIR.timestamp;
+//   doc["protocolo"] = lastIR.protocolo;
+//   doc["decode_type"] = lastIR.decode_type;
+//   doc["bits"] = lastIR.bits;
+//   doc["dec"] = lastIR.dec;
+//   doc["hex"] = lastIR.hexStr;
+
+//   char MQTT_Msg[128];
 //   size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
 
-//   int len = snprintf(
-//     MQTT_Msg,
-//     sizeof(MQTT_Msg),
-//     "{\"protocol\":\"%s\",\"dec\":%lu,\"hex\":\"%lX\"}",
-//     protocolo,
-//     tecla,
-//     tecla);
-
-//   if (len <= 0 || len >= sizeof(MQTT_Msg)) {
-//     debugPrintln("Erro ao montar payload IR");
+//   if (len == 0 || len >= sizeof(MQTT_Msg)) {
+//     debugPrintln("Erro ao serializar JSON IR");
 //     return;
 //   }
 

@@ -207,34 +207,39 @@ void debugAHT10() {
 }
 
 void debugIR() {
-
-  // // Display the basic output of what we found.
-  // Serial.print(resultToHumanReadableBasic(&results));
-  // // Output the results as source code
-  // Serial.println(resultToSourceCode(&results));
-
-  char hexBuffer[64];
-  char decBuffer[64];
-
-  snprintf(hexBuffer, sizeof(hexBuffer), "%08lX", (unsigned long)lastIRCode);
-  snprintf(decBuffer, sizeof(decBuffer), "%lu", (unsigned long)lastIRCode);
-
   debugPrintln("============= IR Receptor ==============");
-  debugPrintln("");
-  debugPrint("  [Protocol]: ");
+
+  debugPrint("Timestamp : ");
+  debugPrintln(lastIR.timestamp);
+
+  debugPrint("Protocol  : ");
   debugPrint(lastIR.protocolo);
+  debugPrint(" (");
+  debugPrint(lastIR.decode_type);
+  debugPrintln(")");
 
-  debugPrint("  HEX: 0x");
-  debugPrint(hexBuffer);
+  debugPrint("Bits      : ");
+  debugPrintln(lastIR.bits);
 
-  debugPrint("  DEC: ");
-  debugPrint(decBuffer);
+  debugPrint("DEC       : ");
+  debugPrintln(lastIR.dec);
+
+  debugPrint("HEX       : 0x");
+  debugPrintln(lastIR.hexStr);
+
+  debugPrint("RAW Len   : ");
+  debugPrintln(lastIR.rawlen);
+
+  debugPrintln("");
+  debugPrintln("--- Human Readable ---");
+  debugPrintln(lastIR.resultToHumanReadableBasic);
+
+  debugPrintln("--- Source Code ---");
+  debugPrintln(lastIR.resultToSourceCode);
+
+  debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
-
-  debugPrintln(resultToHumanReadableBasic(&results));
-  debugPrintln(resultToSourceCode(&results));
-
 }
 
 void debugMQTT() {

@@ -3,11 +3,11 @@
 void setup_IR() {
   Serial.println();
   Serial.println("=================================");
-  Serial.println("           IR SETUP              ");
+  Serial.println("         IR SETUP         ");
   Serial.println("=================================");
 
-  irsend.begin();
-  irrecv.enableIRIn();
+  irsend.begin();       // Inicializa emissor
+  irrecv.enableIRIn();  // Inicializa receptor
 
   Serial.print("    Emissor   : GPIO ");
   Serial.println(kIrLed);
@@ -16,71 +16,69 @@ void setup_IR() {
   Serial.println(kRecvPin);
 }
 
-
 void myIRdecoder() {
+  // Se estiver enviando código ir, desabilita recepção de IR.
+  if (!enviandoCod) {
 
-  // Se estiver enviando código IR, ignora leitura
-  if (enviandoCod) {
-    enviandoCod = false;
-    return;
-  }
+    // Verifica se um código IR foi recebido
+    if (irrecv.decode(&results)) {
 
-  if (!irrecv.decode(&results)) {
-    return;
-  }
+      // Ignora código inválido ou repeat NEC
+      if (results.value == 0 || results.value == 0xFFFFFFFF || results.value == 0xFFFFFFFFFFFFFFFF) {
+        irrecv.resume();
+        return;
+      }
 
-  // Ignora códigos inválidos ou repeat
-  if (results.value == 0 || results.value == 0xFFFFFFFF || results.value == 0xFFFFFFFFFFFFFFFF) {
-    irrecv.resume();
-    return;
-  }
+      // DEBOUNCE IR (AQUI)
+      unsigned long now = millis();
+      if (results.value == lastIRCode && (now - lastIRTime) < IR_DEBOUNCE_MS) {
+        irrecv.resume();
+        return;
+      }
 
-  unsigned long now = millis();
+      lastIRCode = results.value;
+      lastIRTime = now;
 
-  // Debounce IR
-  if (results.value == lastIRCode && (now - lastIRTime) < IR_DEBOUNCE_MS) {
-    irrecv.resume();
-    return;
-  }
+      // Habilita enviar código recebido.
+      if (IR_ReceptorEstado != IR_DESABILITADO) {
 
-  lastIRCode = results.value;
-  lastIRTime = now;
+        unsigned long tecla = results.value;  // Armazena o código IR.
+        uint8_t bitLength = getBitLength(results.value);
 
-  // Se receptor estiver ativo
-  if (IR_ReceptorEstado != IR_DESABILITADO) {
+        int len = 0;
 
-    bool aceitar = false;
+        // Caso Código for protocolo NEC.
+        if (results.decode_type == NEC && isValidNEC(results.value) && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_NECe24bits)) {
 
-    if (results.decode_type == NEC && isValidNEC(results.value) && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_NECe24bits)) {
+          lastIR_Receptor();
 
-      aceitar = true;
+        } else if (results.decode_type == NIKAI && results.bits == 24 && IR_ReceptorEstado == IR_NECe24bits) {
 
-    } else if (results.decode_type == NIKAI && results.bits == 24 && IR_ReceptorEstado == IR_NECe24bits) {
+          lastIR_Receptor();
 
-      aceitar = true;
+          // Caso Código for AOC de 24bits.
+        } else if (bitLength == 24 && IR_ReceptorEstado == IR_NECe24bits) {
 
-    } else if (results.bits == 24 && IR_ReceptorEstado == IR_NECe24bits) {
+          lastIR_Receptor();
 
-      aceitar = true;
+          // Caso Código for Desconhecido.
+        } else if (IR_ReceptorEstado == IR_TUDO) {
 
-    } else if (IR_ReceptorEstado == IR_TUDO) {
-
-      aceitar = true;
+          lastIR_Receptor();
+        }
+      }
+      irrecv.resume();  // Receba o próximo valor
     }
+    // delay(200);
 
-    if (aceitar) {
-      lastIR_Receptor();
-    }
+  } else {
+    enviandoCod = false;  // Habilita recepção de IR para próxima leitura.
   }
-
-  irrecv.resume();
 }
 
-
-/************ Validação NEC ************/
-
+// Valida protocolo NEC: 8 bits endereço, 8 bits ~endereço, 8 bits comando, 8 bits ~comando
+// Valida se um código é NEC (verifica bits de complemento), códigos na faixa de 0x00000000 a 0xFFFFFFFF
 bool isValidNEC(uint32_t code) {
-
   uint8_t address = (code >> 24) & 0xFF;
   uint8_t notAddress = (code >> 16) & 0xFF;
   uint8_t command = (code >> 8) & 0xFF;
@@ -89,50 +87,70 @@ bool isValidNEC(uint32_t code) {
   return (notAddress == (uint8_t)~address) && (notCommand == (uint8_t)~command);
 }
 
+// Estima o comprimento do código IR em bits
+uint8_t getBitLength(uint32_t code) {
+  for (int i = 31; i >= 0; i--) {
+    if (code & (1UL << i)) {
+      return i + 1;
+    }
+  }
+  return 0;
+}
 
-/************ Controle receptor ************/
-
+// Controle do envio do código IR recebido.
+/*  typeSendCod       Feedback
+        0           Não envia nada.
+        1           Somente NEC.
+        2           NEC e 24bits.
+        3           NEC e 24bits e DESCONHECIDOS */
 void IR_RecepitorSET(int n) {
-
-  if (n < 0 || n > 3) return;
+  if (n < 0 || n > 3) {
+    return;  // valor inválido, ignora
+  }
 
   IR_ReceptorEstado = static_cast<IR_ReceptorMode>(n);
 
   MQTTsendInfoIR();
 }
 
-
-/************ Registro do último IR ************/
-
 void lastIR_Receptor() {
 
-  unsigned long now = millis();
+  // evita repetição muito rápida
+  if (lastIR.dec == results.value && millis() - lastIR.timestamp < 300) {
+    lastIR.valido = false;
+    debugIR();
+    return;
+  }
 
   const char* protocolo = getIRProtocol(results.decode_type);
 
+  // protocolo
   strncpy(lastIR.protocolo, protocolo, sizeof(lastIR.protocolo) - 1);
   lastIR.protocolo[sizeof(lastIR.protocolo) - 1] = '\0';
 
+  // dados principais
   lastIR.dec = results.value;
   lastIR.bits = results.bits;
   lastIR.decode_type = results.decode_type;
   lastIR.rawlen = results.rawlen;
-  lastIR.timestamp = now;
 
+  lastIR.timestamp = millis();
+
+  // HEX
   snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "%lX", lastIR.dec);
 
+  // texto humano
   strncpy(
     lastIR.resultToHumanReadableBasic,
     resultToHumanReadableBasic(&results).c_str(),
     sizeof(lastIR.resultToHumanReadableBasic) - 1);
-
   lastIR.resultToHumanReadableBasic[sizeof(lastIR.resultToHumanReadableBasic) - 1] = '\0';
 
+  // código fonte
   strncpy(
     lastIR.resultToSourceCode,
     resultToSourceCode(&results).c_str(),
     sizeof(lastIR.resultToSourceCode) - 1);
-
   lastIR.resultToSourceCode[sizeof(lastIR.resultToSourceCode) - 1] = '\0';
 
   lastIR.valido = true;
@@ -140,9 +158,6 @@ void lastIR_Receptor() {
   debugIR();
   MQTTsendIR_Receptor();
 }
-
-
-/************ Tradução de protocolo ************/
 
 const char* getIRProtocol(decode_type_t type) {
 
@@ -157,7 +172,6 @@ const char* getIRProtocol(decode_type_t type) {
     case SAMSUNG: return "SAMSUNG";
     case JVC: return "JVC";
     case WHYNTER: return "WHYNTER";
-    case NIKAI: return "NIKAI";
 
     case UNKNOWN:
     default:
@@ -165,13 +179,9 @@ const char* getIRProtocol(decode_type_t type) {
   }
 }
 
-
-/************ Estado do receptor ************/
-
 const char* EstadoIRReceptor() {
 
   switch (IR_ReceptorEstado) {
-
     case IR_DESABILITADO:
       return "DESABILITADO";
 
