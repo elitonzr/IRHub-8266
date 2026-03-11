@@ -9,9 +9,16 @@
 #include <IRrecv.h>            // Biblioteca para funcionamento do IR
 #include <IRsend.h>            // Biblioteca para funcionamento do IR
 #include <IRutils.h>           // Biblioteca para funcionamento do IR
+#include <IRac.h>              // Biblioteca para funcionamento do IR
+#include <IRtext.h>            // Biblioteca para funcionamento do IR
 #include <Adafruit_AHTX0.h>
 #include <ArduinoJson.h>
 #include <WebSocketsServer.h>
+
+// #include <Arduino.h>
+// #include <assert.h>
+
+
 
 /************ ARQUIVOS AUXILIARES ************/
 #include "globals.h"
@@ -117,11 +124,32 @@ const unsigned long IR_DEBOUNCE_MS = 300;
 // Último IR recebido
 struct IRLastData {
   char protocolo[16];
+
   uint32_t dec;
-  uint32_t hexStr;
+  char hexStr[12];
+
+  uint16_t bits;
+  uint8_t decode_type;
+
+  uint16_t rawlen;
+
   unsigned long timestamp;
+
+  char resultToHumanReadableBasic[64];
+  char resultToSourceCode[256];
+
   bool valido;
 };
+
+// struct IRLastData {
+//   char protocolo[16];
+//   uint32_t dec;
+//   uint32_t hexStr;
+//   unsigned long timestamp;
+//   char resultToHumanReadableBasic[64];
+//   char resultToSourceCode[256];
+//   bool valido;
+// };
 
 IRLastData lastIR = {
   "", 0, 0, 0, false

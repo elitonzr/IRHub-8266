@@ -207,6 +207,12 @@ void debugAHT10() {
 }
 
 void debugIR() {
+
+  // // Display the basic output of what we found.
+  // Serial.print(resultToHumanReadableBasic(&results));
+  // // Output the results as source code
+  // Serial.println(resultToSourceCode(&results));
+
   char hexBuffer[64];
   char decBuffer[64];
 
@@ -225,6 +231,10 @@ void debugIR() {
   debugPrint(decBuffer);
   debugPrintln("");
   debugPrintln("");
+
+  debugPrintln(resultToHumanReadableBasic(&results));
+  debugPrintln(resultToSourceCode(&results));
+
 }
 
 void debugMQTT() {
@@ -288,26 +298,3 @@ void debugMQTT() {
   debugPrintln("");
   debugPrintln("");
 }
-
-// // Imprime na serial.
-// void IRPublish() {
-
-//   char hexBuffer[64];
-//   char decBuffer[64];
-
-//   snprintf(hexBuffer, sizeof(hexBuffer), "%08lX", (unsigned long)results.value);
-//   snprintf(decBuffer, sizeof(decBuffer), "%lu", (unsigned long)results.value);
-
-//   debugPrintln("============= IR Receptor ==============");
-//   debugPrintln("");
-//   debugPrint("  [Protocol]: ");
-//   debugPrint(lastIR.protocolo);
-
-//   debugPrint("  HEX: 0x");
-//   debugPrint(hexBuffer);
-
-//   debugPrint("  DEC: ");
-//   debugPrint(decBuffer);
-//   debugPrintln("");
-//   debugPrintln("");
-//   }

@@ -50,24 +50,28 @@ void myIRdecoder() {
         // Caso Código for protocolo NEC.
         if (results.decode_type == NEC && isValidNEC(results.value) && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_NECe24bits)) {  //typeSendCod >= 1
 
-          lastIR_Receptor("NEC", tecla);
+          lastIR_Receptor();
+          // lastIR_Receptor("NEC", tecla);
           MQTTsendIR_Receptor("NEC", tecla);
 
         } else if (results.decode_type == NIKAI && results.bits == 24 && IR_ReceptorEstado == IR_NECe24bits) {  //typeSendCod >= 2
 
-          lastIR_Receptor("NIKAI", tecla);
+          lastIR_Receptor();
+          // lastIR_Receptor("NIKAI", tecla);
           MQTTsendIR_Receptor("NIKAI", tecla);
 
           // Caso Código for AOC de 24bits.
         } else if (bitLength == 24 && IR_ReceptorEstado == IR_NECe24bits) {  //typeSendCod >= 2
 
-          lastIR_Receptor("AOC", tecla);
+          lastIR_Receptor();
+          // lastIR_Receptor("AOC", tecla);
           MQTTsendIR_Receptor("AOC", tecla);
 
           // Caso Código for Desconhecido.
         } else if (IR_ReceptorEstado == IR_TUDO) {  //typeSendCod == 3
 
-          lastIR_Receptor("DESCONHECIDO", tecla);
+          lastIR_Receptor();
+          // lastIR_Receptor("DESCONHECIDO", tecla);
           MQTTsendIR_Receptor("DESCONHECIDO", tecla);
         }
       }
@@ -217,21 +221,105 @@ const char* EstadoIRReceptor() {
   }
 }
 
-void lastIR_Receptor(const char* protocolo, unsigned long tecla) {
+void lastIR_Receptor() {
 
-  if (lastIR.dec == tecla) {
+  // evita repetição muito rápida
+  if (lastIR.dec == results.value && millis() - lastIR.timestamp < 300) {
     lastIR.valido = false;
     debugIR();
     return;
   }
 
-  // Atualiza estado local
+  const char* protocolo = getIRProtocol(results.decode_type);
+
+  // protocolo
   strncpy(lastIR.protocolo, protocolo, sizeof(lastIR.protocolo) - 1);
   lastIR.protocolo[sizeof(lastIR.protocolo) - 1] = '\0';
-  lastIR.dec = tecla;
-  // lastIR.hexStr = tecla;
+
+  // dados principais
+  lastIR.dec = results.value;
+  lastIR.bits = results.bits;
+  lastIR.decode_type = results.decode_type;
+  lastIR.rawlen = results.rawlen;
+
   lastIR.timestamp = millis();
+
+  // HEX
+  // snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "%08lX", results.value);
+
+  // texto humano
+  strncpy(
+    lastIR.resultToHumanReadableBasic,
+    resultToHumanReadableBasic(&results).c_str(),
+    sizeof(lastIR.resultToHumanReadableBasic) - 1
+  );
+  lastIR.resultToHumanReadableBasic[
+    sizeof(lastIR.resultToHumanReadableBasic) - 1] = '\0';
+
+  // código fonte
+  strncpy(
+    lastIR.resultToSourceCode,
+    resultToSourceCode(&results).c_str(),
+    sizeof(lastIR.resultToSourceCode) - 1
+  );
+  lastIR.resultToSourceCode[
+    sizeof(lastIR.resultToSourceCode) - 1] = '\0';
+
   lastIR.valido = true;
 
   debugIR();
 }
+
+const char* getIRProtocol(decode_type_t type) {
+
+  switch (type) {
+
+    case NEC: return "NEC";
+    case SONY: return "SONY";
+    case RC5: return "RC5";
+    case RC6: return "RC6";
+    case PANASONIC: return "PANASONIC";
+    case LG: return "LG";
+    case SAMSUNG: return "SAMSUNG";
+    case JVC: return "JVC";
+    case WHYNTER: return "WHYNTER";
+
+    case UNKNOWN:
+    default:
+      return "DESCONHECIDO";
+  }
+}
+
+// void lastIR_Receptor(const char* protocolo) {
+
+//   if (lastIR.dec == results.value) {
+//     lastIR.valido = false;
+//     debugIR();
+//     return;
+//   }
+
+//   // Atualiza estado local
+//   strncpy(lastIR.protocolo, protocolo, sizeof(lastIR.protocolo) - 1);
+//   lastIR.protocolo[sizeof(lastIR.protocolo) - 1] = '\0';
+
+//   lastIR.dec = results.value;
+//   lastIR.timestamp = millis();
+
+//   // Copia strings retornadas pelas funções
+//   strncpy(lastIR.resultToHumanReadableBasic,
+//           resultToHumanReadableBasic(&results).c_str(),
+//           sizeof(lastIR.resultToHumanReadableBasic) - 1);
+
+//   lastIR.resultToHumanReadableBasic[sizeof(lastIR.resultToHumanReadableBasic) - 1] = '\0';
+
+
+//   strncpy(lastIR.resultToSourceCode,
+//           resultToSourceCode(&results).c_str(),
+//           sizeof(lastIR.resultToSourceCode) - 1);
+
+//   lastIR.resultToSourceCode[sizeof(lastIR.resultToSourceCode) - 1] = '\0';
+
+//   lastIR.valido = true;
+
+//   debugIR();
+// }

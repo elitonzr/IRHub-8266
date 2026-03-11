@@ -525,10 +525,7 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
             irDot.className = "dot yellow";
         }
 
-        if (data.ir_receptor?.protocolo === undefined) return;
-        if (data.ir_receptor?.dec == lastIRDEC) {
-          return;
-        }
+        if (data.ir_receptor?.protocolo === undefined||data.ir_receptor?.dec == lastIRDEC) return;
 
         const payload = {
           timestamp: new Date().toLocaleTimeString(),
@@ -552,8 +549,6 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
           if (last.dec === payload.dec) return;
         }
 
-        // if (irHistory.length && irHistory[0].includes(payload.dec)) return;
-
         payload = JSON.stringify(payload);
 
         irHistory.unshift(payload);
@@ -576,9 +571,9 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
           li.textContent = `${data.timestamp} | ${data.protocolo} | ${data.dec} | ${data.hex} 📋`;
 
-          // copiar HEX ao clicar
+          // copiar Linha ao clicar
           li.onclick = () => {
-            navigator.clipboard.writeText(data.hex);
+            navigator.clipboard.writeText(`${data.timestamp} | ${data.protocolo} | ${data.dec} | ${data.hex}`);
 
             li.classList.add("flash");
 
@@ -590,21 +585,8 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
           list.appendChild(li);
         });
 
-        list.scrollTop = list.scrollHeight;
+        // list.scrollTop = list.scrollHeight;
       }
-
-      // function renderIRHistory() {
-      //   const list = document.getElementById("irHistory");
-      //   list.innerHTML = "";
-
-      //   irHistory.forEach((i) => {
-      //     const li = document.createElement("li");
-      //     li.textContent = i;
-      //     list.appendChild(li);
-      //   });
-
-      //   list.scrollTop = list.scrollHeight;
-      // }
 
       function cleanHistory() {
         irHistory = [];
@@ -653,6 +635,5 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
     </script>
   </body>
 </html>
-
 
 )rawliteral";

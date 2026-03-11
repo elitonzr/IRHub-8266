@@ -134,12 +134,18 @@ void handleIR_Receptor() {
     receptor["status"] = "idle";
   } else {
     receptor["status"] = "ok";
+    receptor["timestamp"] = lastIR.timestamp;
     receptor["protocolo"] = lastIR.protocolo;
     receptor["dec"] = lastIR.dec;
-
+    
     char hexStr[12];
     snprintf(hexStr, sizeof(hexStr), "%lX", lastIR.dec);
     receptor["hex"] = hexStr;
+    receptor["rawlen"] = lastIR.rawlen;
+    receptor["bits"] = lastIR.bits;
+    receptor["decode_type"] = lastIR.decode_type;
+    receptor["resultToHumanReadableBasic"] = lastIR.resultToHumanReadableBasic;
+    receptor["resultToSourceCode"] = lastIR.resultToSourceCode;
 
     lastIR.valido = false;  // consome o evento
   }
