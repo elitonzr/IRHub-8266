@@ -29,6 +29,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
     processaComando(payload, length);
 
   }
+
+  // Envia código IR
+  else if (strcmp(topic, topic_command_ir_send) == 0) {
+
+    char buffer[MAX_PAYLOAD];
+    memcpy(buffer, payload, length);
+    buffer[length] = '\0';
+
+    processaIRJson(buffer);
+    // processaIRUniversal(buffer);
+  }
+
   // Controle de LED
   else if (strcmp(topic, topic_command_led) == 0) {
 
@@ -131,6 +143,73 @@ void processaComando(byte* payload, unsigned int length) {
     }
     MQTTsendInfoIR();
   }
+}
+
+// ======================================================
+// Parser IR usando JSON
+// EXEMPLO:
+// {
+// "proto":"NEC",
+// "code":"0x20DF10EF",
+// "bits":32
+// }
+// ======================================================
+void processaIRJson(char* payload) {
+
+  StaticJsonDocument<200> doc;
+
+  DeserializationError error = deserializeJson(doc, payload);
+
+  if (error) {
+    debugPrint("JSON inválido: ");
+    debugPrintln(error.c_str());
+    return;
+  }
+
+  const char* protoStr = doc["protocol"];
+  int bits = doc["bits"];
+  const char* codeStr = doc["code"];
+
+  if (!protoStr || !codeStr || bits <= 0) {
+    debugPrintln("JSON incompleto");
+    return;
+  }
+
+  // ---------- converte protocolo ----------
+  decode_type_t proto;
+
+  if (strcasecmp(protoStr, "NEC") == 0)
+    proto = NEC;
+
+  else if (strcasecmp(protoStr, "SONY") == 0)
+    proto = SONY;
+
+  else if (strcasecmp(protoStr, "RC5") == 0)
+    proto = RC5;
+
+  else if (strcasecmp(protoStr, "SAMSUNG") == 0)
+    proto = SAMSUNG;
+
+  else if (strcasecmp(protoStr, "NIKAI") == 0)
+    proto = NIKAI;
+
+  else {
+    debugPrint("Protocolo desconhecido: ");
+    debugPrintln(protoStr);
+    return;
+  }
+
+  // ---------- converte código ----------
+  uint32_t code;
+
+  if (strncmp(codeStr, "0x", 2) == 0 || strncmp(codeStr, "0X", 2) == 0) {
+    code = strtoul(codeStr, NULL, 16);
+  } else {
+    code = strtoul(codeStr, NULL, 10);
+  }
+
+  // ---------- envia ----------
+  sendIRCode(code, proto, bits);
 }
 
 // ======================================================

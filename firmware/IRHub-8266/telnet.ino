@@ -133,7 +133,19 @@ void debugPrintln(float val) {
   }
 }
 
+void debugPrintf(const char* format, ...) {
 
+  char buffer[128];
+
+  va_list args;
+  va_start(args, format);
+
+  vsnprintf(buffer, sizeof(buffer), format, args);
+
+  va_end(args);
+
+  debugPrintln(buffer);
+}
 
 void debugBuild() {
   debugPrintln("================= BUILD INFO =================");
@@ -264,6 +276,8 @@ void debugMQTT() {
   debugPrintln(topic_command);
   debugPrint("                  ");
   debugPrintln(topic_command_led);
+  debugPrint("                  ");
+  debugPrintln(topic_command_ir_send);
   debugPrint("                  ");
   debugPrintln(topic_command_ir_receptor_protocol);
   debugPrint("                  ");

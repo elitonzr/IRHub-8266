@@ -30,6 +30,7 @@ void setup_mqtt() {
   snprintf(topic_command_led, sizeof(topic_command_led), "%s/command/LEDA", myTopic.c_str());
 
   // -- IR --
+  snprintf(topic_command_ir_send, sizeof(topic_command_ir_send), "%s/command/ir/send", myTopic.c_str());
   snprintf(topic_command_ir_receptor_protocol, sizeof(topic_command_ir_receptor_protocol), "%s/command/ir_receptor/protocol", myTopic.c_str());
   snprintf(topic_command_ir_emissor_nec_dec, sizeof(topic_command_ir_emissor_nec_dec), "%s/command/ir_emissor/nec/dec", myTopic.c_str());
   snprintf(topic_command_ir_emissor_nec_hex, sizeof(topic_command_ir_emissor_nec_hex), "%s/command/ir_emissor/nec/hex", myTopic.c_str());
@@ -98,6 +99,7 @@ void mqtt_reconnect() {
     // Subscriptions
     mqtt_client.subscribe(topic_command);
     mqtt_client.subscribe(topic_command_led);
+    mqtt_client.subscribe(topic_command_ir_send);
     mqtt_client.subscribe(topic_command_ir_receptor_protocol);
     mqtt_client.subscribe(topic_command_ir_emissor_nec_dec);
     mqtt_client.subscribe(topic_command_ir_emissor_nec_hex);

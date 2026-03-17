@@ -1,5 +1,4 @@
 const char HTML_PAGE[] PROGMEM = R"rawliteral(
-<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -373,6 +372,67 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
     </div>
 
     <script>
+      let ws;
+
+      /* ---------------- WEBSOCKET ---------------- */
+
+      function connectWS() {
+        if (ws && ws.readyState === WebSocket.OPEN) return;
+
+        ws = new WebSocket(`ws://${location.host}:81`);
+
+        ws.onopen = () => {
+          console.log("WebSocket conectado");
+        };
+
+        ws.onclose = () => {
+          console.log("WebSocket desconectado");
+          setTimeout(connectWS, 2000);
+        };
+
+        ws.onmessage = handleWSMessage;
+      }
+
+      function handleWSMessage(event) {
+        const data = JSON.parse(event.data);
+
+        switch (data.type) {
+          case "system":
+            updateSystemWS(data);
+            break;
+
+          case "outputs":
+            updateOutputsWS(data);
+            break;
+
+          case "sensor":
+            updateSensorWS(data);
+            break;
+
+          case "ir":
+            updateIRWS(data);
+            break;
+
+          case "ir_emissor":
+            updateIREmissorWS(data);
+            break;
+
+          case "ir_receptor":
+            updateIRReceptorWS(data);
+            break;
+
+          case "network":
+            updateNetworkWS(data);
+            break;
+
+          case "mqtt":
+            updateMQTTWS(data);
+            break;
+        }
+      }
+
+      connectWS();
+
       /* ---------------- FETCH HELPERS ---------------- */
 
       async function fetchJSON(url) {
@@ -390,26 +450,21 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
       /* ---------------- SYSTEM ---------------- */
 
-      async function updateSystem() {
-        const data = await fetchJSON("/system");
-        if (!data) return;
-
-        document.getElementById("name").textContent = data.system?.name || "--";
+      function updateSystemWS(data) {
+        document.getElementById("name").textContent = data.name;
         document.getElementById("buildDateTime").textContent =
-          data.system?.buildDateTime || "--";
-        document.getElementById("buildVersion").textContent =
-          data.system?.buildVersion || "--";
-        document.getElementById("buildFile").textContent =
-          data.system?.buildFile || "--";
-        document.getElementById("uptime").textContent =
-          data.system?.uptime || "--";
-        document.getElementById("heap").textContent = data.system?.heap || "--";
+          data.buildDateTime;
+        document.getElementById("buildVersion").textContent = data.buildVersion;
+        document.getElementById("buildFile").textContent = data.buildFile;
+        document.getElementById("uptime").textContent = data.uptime;
+        document.getElementById("heap").textContent = data.heap;
       }
 
       /* ---------------- NETWORK ---------------- */
 
       async function updateNetwork() {
-        const data = await fetchJSON("/network");
+        const data = await fetchJSON("/network.json");
+
         if (!data) return;
 
         document.getElementById("wifi").textContent =
@@ -422,7 +477,8 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
       /* ---------------- MQTT ---------------- */
 
       async function updateMQTT() {
-        const data = await fetchJSON("/mqtt");
+        const data = await fetchJSON("/mqtt.json");
+
         if (!data) return;
 
         const mqtt = data.mqtt || {};
@@ -450,14 +506,11 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
       /* ---------------- OUTPUTS ---------------- */
 
-      async function updateOutputs() {
-        const data = await fetchJSON("/outputs");
-        if (!data) return;
-
+      function updateOutputsWS(data) {
         const ledState = document.getElementById("ledState");
         const ledDot = document.getElementById("ledDot");
 
-        if (data.led?.state) {
+        if (data.led) {
           ledState.textContent = "Ligado";
           ledDot.className = "dot green";
         } else {
@@ -466,77 +519,83 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         }
       }
 
+      /* ---------------- IR EMISSOR ---------------- */
+
+      function updateIREmissorWS(data) {
+        document.getElementById("irEmitter").textContent = data.emissor_teste
+          ? "Ativo"
+          : "Desligado";
+      }
+
       /* ---------------- AHT10 ---------------- */
 
-      async function updateAHT10() {
-        const data = await fetchJSON("/aht10");
-        if (!data) return;
-
+      function updateSensorWS(data) {
         const status = document.getElementById("sensorAHT10Status");
         const text = document.getElementById("sensorAHT10Data");
 
-        if (data.sensor?.AHT10) {
+        if (data.status) {
           status.className = "status offline";
-          status.textContent = data.sensor.AHT10;
+          status.textContent = data.status;
+
           text.textContent = "";
-        } else if (data.sensor?.temperatura !== undefined) {
-          text.innerHTML = `Temperatura: ${data.sensor.temperatura} °C<br>
-       Umidade: ${data.sensor.umidade} %`;
+        } else {
+          text.innerHTML =
+            `Temperatura: ${data.temperatura} °C<br>` +
+            `Umidade: ${data.umidade} %`;
 
           status.className = "status online";
           status.textContent = "online";
         }
       }
 
-      /* ---------------- IR EMISSOR ---------------- */
+      /* ---------------- IR ---------------- */
 
-      async function updateIREmissor() {
-        const data = await fetchJSON("/ir_emissor");
-        if (!data) return;
-
-        document.getElementById("irEmitter").textContent = data.ir_emissor
-          ?.emissor_teste
-          ? "Testando"
-          : "Inativo";
+      function updateIRReceptorWS(data) {
+        document.getElementById("irMode").textContent = data.protocolo;
       }
 
-      /* ---------------- IR RECEPTOR ---------------- */
-      let lastIRDEC = 0;
+      function updateIRWS(data) {
+        const dot = document.getElementById("irDot");
 
-      async function updateIRReceptor() {
-        const data = await fetchJSON("/ir_receptor");
-        if (!data) return;
+        dot.className = "dot green";
 
-        document.getElementById("irMode").textContent =
-          data.ir_receptor?.type || "--";
-
-        const irDot = document.getElementById("irDot");
-
-        switch (data.ir_receptor?.type) {
-          case "TUDO":
-            irDot.className = "dot green";
-            break;
-
-          case "DESABILITADO":
-            irDot.className = "dot red";
-            break;
-
-          default:
-            irDot.className = "dot yellow";
-        }
-
-        if (data.ir_receptor?.protocolo === undefined||data.ir_receptor?.dec == lastIRDEC) return;
+        setTimeout(() => {
+          dot.className = "dot yellow";
+        }, 300);
 
         const payload = {
           timestamp: new Date().toLocaleTimeString(),
-          protocolo: data.ir_receptor?.protocolo,
-          dec: data.ir_receptor?.dec,
-          hex: data.ir_receptor?.hex,
+          protocolo: data.protocolo,
+          dec: data.dec,
+          hex: data.hex,
         };
 
-        lastIRDEC = data.ir_receptor?.dec;
-
         saveIRToHistory(payload);
+      }
+
+      function updateNetworkWS(data) {
+        document.getElementById("wifi").textContent = data.wifi;
+        document.getElementById("ip").textContent = data.ip;
+        document.getElementById("rssi").textContent = data.rssi;
+      }
+
+      function updateMQTTWS(data) {
+        document.getElementById("mqttServer").textContent = data.server;
+        document.getElementById("mqttClient").textContent = data.client_id;
+        document.getElementById("topic_main").textContent = data.topic_main;
+
+        document.getElementById("mqttSucessos").textContent = data.sucesso;
+        document.getElementById("mqttErros").textContent = data.erro;
+
+        const status = document.getElementById("mqttStatus");
+
+        if (data.status) {
+          status.className = "status online";
+          status.textContent = "online";
+        } else {
+          status.className = "status offline";
+          status.textContent = "offline";
+        }
       }
 
       /* ---------------- HISTORY ---------------- */
@@ -546,6 +605,7 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
       function saveIRToHistory(payload) {
         if (irHistory.length) {
           const last = JSON.parse(irHistory[0]);
+
           if (last.dec === payload.dec) return;
         }
 
@@ -562,6 +622,7 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
       function renderIRHistory() {
         const list = document.getElementById("irHistory");
+
         list.innerHTML = "";
 
         irHistory.forEach((i) => {
@@ -571,9 +632,17 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
           li.textContent = `${data.timestamp} | ${data.protocolo} | ${data.dec} | ${data.hex} 📋`;
 
-          // copiar Linha ao clicar
           li.onclick = () => {
-            navigator.clipboard.writeText(`${data.timestamp} | ${data.protocolo} | ${data.dec} | ${data.hex}`);
+            navigator.clipboard.writeText(data.hex);
+
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(
+                JSON.stringify({
+                  cmd: "sendIR",
+                  hex: data.hex,
+                }),
+              );
+            }
 
             li.classList.add("flash");
 
@@ -584,57 +653,42 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
           list.appendChild(li);
         });
-
-        // list.scrollTop = list.scrollHeight;
       }
 
       function cleanHistory() {
         irHistory = [];
+
         localStorage.removeItem("irHistory");
+
         renderIRHistory();
       }
 
       /* ---------------- COMMANDS ---------------- */
 
-      async function toggleLED() {
-        await fetch("/led/toggle");
-        updateOutputs();
+      function toggleLED() {
+        if (ws.readyState === WebSocket.OPEN) ws.send("toggleLED");
       }
 
-      async function toggleIRReceptor() {
-        await fetch("/IR_ReceptorSET");
-        updateIRReceptor();
+      function toggleIRReceptor() {
+        if (ws.readyState === WebSocket.OPEN) ws.send("toggleIRReceptor");
       }
 
-      async function toggleIREmissor() {
-        await fetch("/IR_EmissorTeste");
-        updateIREmissor();
+      function toggleIREmissor() {
+        if (ws.readyState === WebSocket.OPEN) ws.send("toggleIREmissor");
       }
 
       /* ---------------- TIMERS ---------------- */
 
-      setInterval(updateSystem, 2000);
-      setInterval(updateNetwork, 5000);
-      setInterval(updateMQTT, 3000);
-      setInterval(updateOutputs, 1500);
-      setInterval(updateAHT10, 3000);
-      setInterval(updateIREmissor, 3000);
-      setInterval(updateIRReceptor, 800);
+      // setInterval(updateNetwork, 5000);
+      // setInterval(updateMQTT, 3000);
 
       /* ---------------- INIT ---------------- */
 
-      updateSystem();
       updateNetwork();
       updateMQTT();
-      updateOutputs();
-      updateAHT10();
-      updateIREmissor();
-      updateIRReceptor();
       renderIRHistory();
-      // cleanHistory();
     </script>
   </body>
 </html>
-
 
 )rawliteral";

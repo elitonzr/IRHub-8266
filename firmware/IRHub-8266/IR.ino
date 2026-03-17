@@ -6,8 +6,8 @@ void setup_IR() {
   Serial.println("           IR SETUP              ");
   Serial.println("=================================");
 
-  irsend.begin();
-  irrecv.enableIRIn();
+  irsend.begin();       // Inicializa emissor
+  irrecv.enableIRIn();  // Inicializa receptor
 
   Serial.print("    Emissor   : GPIO ");
   Serial.println(kIrLed);
@@ -15,7 +15,6 @@ void setup_IR() {
   Serial.print("    Receptor  : GPIO ");
   Serial.println(kRecvPin);
 }
-
 
 void myIRdecoder() {
 
@@ -38,7 +37,7 @@ void myIRdecoder() {
   unsigned long now = millis();
 
   // Debounce IR
-  if (results.value == lastIRCode && (now - lastIRTime) < IR_DEBOUNCE_MS) {
+  if ((now - lastIRTime) < IR_DEBOUNCE_MS) {
     irrecv.resume();
     return;
   }
@@ -51,19 +50,16 @@ void myIRdecoder() {
 
     bool aceitar = false;
 
-    if (results.decode_type == NEC && isValidNEC(results.value) && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_NECe24bits)) {
+    // if (results.decode_type == NEC && isValidNEC(results.value) && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_PROTOCOL_NEC_NIKAI)) {
+    if (IR_ReceptorEstado == IR_ALL) {
 
       aceitar = true;
 
-    } else if (results.decode_type == NIKAI && results.bits == 24 && IR_ReceptorEstado == IR_NECe24bits) {
+    } else if (results.decode_type == NEC && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_PROTOCOL_NEC_NIKAI)) {
 
       aceitar = true;
 
-    } else if (results.bits == 24 && IR_ReceptorEstado == IR_NECe24bits) {
-
-      aceitar = true;
-
-    } else if (IR_ReceptorEstado == IR_TUDO) {
+    } else if (results.decode_type == NIKAI && (IR_ReceptorEstado == IR_PROTOCOL_NIKAI || IR_ReceptorEstado == IR_PROTOCOL_NEC_NIKAI)) {
 
       aceitar = true;
     }
@@ -76,29 +72,16 @@ void myIRdecoder() {
   irrecv.resume();
 }
 
-
-/************ Validação NEC ************/
-
-bool isValidNEC(uint32_t code) {
-
-  uint8_t address = (code >> 24) & 0xFF;
-  uint8_t notAddress = (code >> 16) & 0xFF;
-  uint8_t command = (code >> 8) & 0xFF;
-  uint8_t notCommand = code & 0xFF;
-
-  return (notAddress == (uint8_t)~address) && (notCommand == (uint8_t)~command);
-}
-
-
 /************ Controle receptor ************/
 
 void IR_RecepitorSET(int n) {
 
-  if (n < 0 || n > 3) return;
+  if (n < 0 || n > 4) return;
 
   IR_ReceptorEstado = static_cast<IR_ReceptorMode>(n);
 
   MQTTsendInfoIR();
+  wsSendIR_Receptor();
 }
 
 
@@ -139,6 +122,7 @@ void lastIR_Receptor() {
 
   debugIR();
   MQTTsendIR_Receptor();
+  wsSendIR();
 }
 
 
@@ -159,12 +143,10 @@ const char* getIRProtocol(decode_type_t type) {
     case WHYNTER: return "WHYNTER";
     case NIKAI: return "NIKAI";
 
-    case UNKNOWN:
     default:
-      return "DESCONHECIDO";
+      return typeToString(type).c_str();
   }
 }
-
 
 /************ Estado do receptor ************/
 
@@ -178,15 +160,85 @@ const char* EstadoIRReceptor() {
     case IR_PROTOCOL_NEC:
       return "NEC";
 
-    case IR_NECe24bits:
-      return "NEC, NIKAI e 24bits";
+    case IR_PROTOCOL_NIKAI:
+      return "NIKAI";
 
-    case IR_TUDO:
+    case IR_PROTOCOL_NEC_NIKAI:
+      return "NEC e NIKAI";
+
+    case IR_ALL:
       return "TUDO";
 
     default:
       return "unknown";
   }
+}
+
+void sendIRCode(uint32_t code, decode_type_t proto, uint8_t bits) {
+
+  if (bits == 0) bits = 32;
+
+  debugPrintf(
+    "IR SEND -> Protocol:%s Bits:%d Code:0x%lX",
+    getIRProtocol(proto),
+    bits,
+    code);
+
+  enviandoCod = true;
+
+  switch (proto) {
+
+    case NEC:
+      irsend.sendNEC(code, bits);
+      break;
+
+    case SONY:
+      irsend.sendSony(code, bits);
+      break;
+
+    case RC5:
+      irsend.sendRC5(code, bits);
+      break;
+
+    case RC6:
+      irsend.sendRC6(code, bits);
+      break;
+
+    case NIKAI:
+      irsend.sendNikai(code, bits);
+      break;
+
+    case SAMSUNG:
+      if (bits == 36)
+        irsend.sendSamsung36(code);
+      else
+        irsend.sendNEC(code, bits);
+      break;
+
+    case LG:
+      irsend.sendLG(code, bits);
+      break;
+
+    case JVC:
+      irsend.sendJVC(code, bits, false);
+      break;
+
+    case WHYNTER:
+      irsend.sendWhynter(code, bits);
+      break;
+
+    default:
+
+      debugPrintf(
+        "Protocolo IR não suportado (%d), usando NEC fallback",
+        proto);
+
+      irsend.sendNEC(code, bits);
+      break;
+  }
+
+  delay(5);  // pequena proteção contra auto-leitura
+  enviandoCod = false;
 }
 
 void desligamentoUniversal() {
@@ -202,21 +254,22 @@ void desligamentoUniversal() {
 
         // ===== NEC (LG / Samsung / genéricos) =====
         debugPrintln("    Enviando: NEC LG...");
-        irsend.sendNEC(0x20DF10EF, 32);  // LG Power comum
+        sendIRCode(0x20DF10EF, NEC, 32);  // LG Power comum
         testN++;
         break;
       }
     case 1:
       {
         debugPrintln("    Enviando: NEC Samsung...");
-        irsend.sendNEC(0xE0E040BF, 32);  // Samsung Power comum
+        sendIRCode(0xE0E040BF, NEC, 32);  // Samsung Power comum
+
         testN++;
         break;
       }
     case 2:
       {
         debugPrintln("    Enviando: NEC Genérico...");
-        irsend.sendNEC(0x00FF02FD, 32);  // Código NEC genérico
+        sendIRCode(0x00FF02FD, NEC, 32);  // Código NEC genérico
         testN++;
         break;
       }
@@ -224,7 +277,8 @@ void desligamentoUniversal() {
       {
         // ===== NIKAY TCL =====
         debugPrintln("    Enviando: NIKAY TCL...");
-        irsend.sendNikai(0xD5F2A, 24);  // Power comum 0xd5f2a
+        sendIRCode(0xD5F2A, NIKAI, 24);  // Código NEC genérico
+
         testN++;
         break;
       }
@@ -232,7 +286,8 @@ void desligamentoUniversal() {
       {
         // ===== Sony SIRC =====
         debugPrintln("    Enviando: Sony SIRC...");
-        irsend.sendSony(0xA90, 12);  // Sony Power comum (12 bits)
+        sendIRCode(0xA90, SONY, 12);  // Sony Power comum (12 bits)
+
         testN++;
         break;
       }
@@ -241,7 +296,7 @@ void desligamentoUniversal() {
 
         // ===== RC5 (Philips e similares) =====
         debugPrintln("    Enviando: RC5...");
-        irsend.sendRC5(0x0C, 12);  // RC5 Power comum
+        sendIRCode(0x0C, RC5, 12);  // RC5 Power comum
         testN++;
         break;
       }
@@ -249,7 +304,9 @@ void desligamentoUniversal() {
       {
         // ===== Panasonic =====
         debugPrintln("    Enviando: Panasonic...");
-        irsend.sendPanasonic(0x4004, 0x100BCBD);  // Exemplo comum
+        enviandoCod = true;
+        irsend.sendPanasonic(0x4004, 0x100BCBD);
+
         testN++;
         break;
       }

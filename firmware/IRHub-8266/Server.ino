@@ -3,28 +3,29 @@
 // ESP8266WebServer server(80);
 
 void setup_server() {
+
   Serial.println();
   Serial.println("=================================");
   Serial.println("  Configurando Servidor HTTP  ");
   Serial.println("=================================");
-  server.on("/", handleRoot);  // Servidor recebe uma solicitação HTTP - chama a função handleRoot
-  server.on("/aht10", HTTP_GET, handleAHT10);
-  server.on("/system", HTTP_GET, handleSystem);
-  server.on("/network", HTTP_GET, handleNetwork);
-  server.on("/mqtt", HTTP_GET, handleMQTT);
-  server.on("/outputs", HTTP_GET, handleOutputs);
-  server.on("/ir_receptor", HTTP_GET, handleIR_Receptor);
-  server.on("/ir_emissor", HTTP_GET, handleIR_Emissor);
+
+  server.on("/", handleRoot);
+
+  // comandos HTTP (opcional manter)
   server.on("/led/toggle", handleLED);
   server.on("/IR_ReceptorSET", handleIR_Recepitor);
   server.on("/IR_EmissorTeste", handleIR_EmissorTeste);
 
-  server.onNotFound(handle_NotFound);                // Servidor recebe uma solicitação HTTP não especificada - chama a função handle_NotFound
-  server.begin();                                    // Inicializa o servidor
-  Serial.println("    Servidor HTTP inicializado");  // Imprime texto na serial.
+  server.onNotFound(handle_NotFound);
+
+  server.begin();
+
+  Serial.println("Servidor HTTP inicializado");
 
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
+
+  Serial.println("WebSocket inicializado");
 }
 
 void handleRoot() {
@@ -33,185 +34,6 @@ void handleRoot() {
 
 void handle_NotFound() {                             // Função para lidar com o erro 404
   server.send(404, "text/plain", "Não encontrado");  // Envia o código 404, especifica o conteúdo como "text/pain" e envia a mensagem "Não encontrado"
-}
-
-void handleSystem() {
-  StaticJsonDocument<128> doc;
-
-  // ---- SYSTEM ----
-  JsonObject system = doc.createNestedObject("system");
-  system["name"] = myTopic.c_str();
-  system["buildDateTime"] = buildDateTime;
-  system["buildVersion"] = buildVersion;
-  system["buildFile"] = buildFile;
-  system["uptime"] = getFormattedUptime();
-  system["heap"] = ESP.getFreeHeap();
-
-
-  size_t len = measureJson(doc);
-  server.setContentLength(len);
-  server.send(200, "application/json", "");
-  serializeJson(doc, server.client());
-}
-
-void handleNetwork() {
-  StaticJsonDocument<128> doc;
-
-  // ---- NETWORK ----
-  JsonObject network = doc.createNestedObject("network");
-  network["wifi"] = wifi_ssid;
-  network["ip"] = WiFi.localIP().toString();
-  network["gateway"] = WiFi.gatewayIP().toString();
-  network["mask"] = WiFi.subnetMask().toString();
-  network["rssi"] = WiFi.RSSI();
-
-  size_t len = measureJson(doc);
-  server.setContentLength(len);
-  server.send(200, "application/json", "");
-  serializeJson(doc, server.client());
-}
-
-void handleMQTT() {
-  StaticJsonDocument<128> doc;
-
-  // ---- MQTT ----
-  char topic_main[64];
-  snprintf(topic_main, sizeof(topic_main), "%s/#", myTopic.c_str());
-
-  JsonObject mqtt = doc.createNestedObject("mqtt");
-  mqtt["server"] = mqtt_server;
-  mqtt["client_id"] = clientID;
-  mqtt["topic_main"] = topic_main;
-  mqtt["status"] = mqtt_client.connected();
-  mqtt["sucesso"] = mqttOK;
-  mqtt["erro"] = mqttErro;
-
-  size_t len = measureJson(doc);
-  server.setContentLength(len);
-  server.send(200, "application/json", "");
-  serializeJson(doc, server.client());
-}
-
-void handleOutputs() {
-  StaticJsonDocument<16> doc;
-
-  // ---- LED ----
-  JsonObject led = doc.createNestedObject("led");
-  led["state"] = ledState;
-
-  size_t len = measureJson(doc);
-  server.setContentLength(len);
-  server.send(200, "application/json", "");
-  serializeJson(doc, server.client());
-}
-
-void handleAHT10() {
-  StaticJsonDocument<128> doc;
-
-  // ---- SENSOR ----
-  JsonObject sensor = doc.createNestedObject("sensor");
-  if (estadoAHT10 != AHT10_ONLINE) {
-    sensor["AHT10"] = EstadoAHT10();
-  } else {
-    sensor["temperatura"] = String(temperatura, 1);
-    sensor["umidade"] = String(umidade, 1);
-  }
-
-  size_t len = measureJson(doc);
-  server.setContentLength(len);
-  server.send(200, "application/json", "");
-  serializeJson(doc, server.client());
-}
-
-void handleIR_Receptor() {
-
-  StaticJsonDocument<640> doc;
-
-  // Objeto principal
-  JsonObject receptor = doc.createNestedObject("ir_receptor");
-
-  // Estado do receptor
-  receptor["type"] = EstadoIRReceptor();
-
-  if (lastIR.valido) {
-
-    receptor["status"] = "ok";
-
-    // Dados principais
-    receptor["timestamp"]   = lastIR.timestamp;
-    receptor["protocolo"]   = lastIR.protocolo;
-    receptor["decode_type"] = lastIR.decode_type;
-    receptor["bits"]        = lastIR.bits;
-
-    // Código do comando
-    receptor["dec"] = lastIR.dec;
-    receptor["hex"] = lastIR.hexStr;
-
-    // Dados do RAW
-    receptor["rawlen"] = lastIR.rawlen;
-
-    // Informações detalhadas
-    receptor["resultToHumanReadableBasic"] = lastIR.resultToHumanReadableBasic;
-    receptor["resultToSourceCode"]         = lastIR.resultToSourceCode;
-
-    // consome o evento
-    lastIR.valido = false;
-
-  } else {
-    receptor["status"] = "idle";
-  }
-
-  // Calcula tamanho da resposta
-  size_t len = measureJson(doc);
-
-  // Envia resposta HTTP
-  server.setContentLength(len);
-  server.send(200, "application/json", "");
-
-  serializeJson(doc, server.client());
-}
-
-// void handleIR_Receptor() {
-
-//   StaticJsonDocument<640> doc;
-//   JsonObject receptor = doc.createNestedObject("ir_receptor");
-
-//   receptor["type"] = EstadoIRReceptor();
-
-//   if (!lastIR.valido) {
-//     receptor["status"] = "idle";
-//   } else {
-//     receptor["status"] = "ok";
-//     receptor["timestamp"] = lastIR.timestamp;
-//     receptor["protocolo"] = lastIR.protocolo;
-//     receptor["decode_type"] = lastIR.decode_type;
-//     receptor["bits"] = lastIR.bits;
-//     receptor["dec"] = lastIR.dec;
-//     receptor["hex"] = lastIR.hexStr;
-//     receptor["rawlen"] = lastIR.rawlen;
-//     receptor["resultToHumanReadableBasic"] = lastIR.resultToHumanReadableBasic;
-//     receptor["resultToSourceCode"] = lastIR.resultToSourceCode;
-
-//     lastIR.valido = false;  // consome o evento
-//   }
-
-//   size_t len = measureJson(doc);
-//   server.setContentLength(len);
-//   server.send(200, "application/json", "");
-//   serializeJson(doc, server.client());
-// }
-
-void handleIR_Emissor() {
-  StaticJsonDocument<128> doc;
-
-  // ---- IR Emissor----
-  JsonObject emissor = doc.createNestedObject("ir_emissor");
-  emissor["emissor_teste"] = IR_EmissorTeste;
-
-  size_t len = measureJson(doc);
-  server.setContentLength(len);
-  server.send(200, "application/json", "");
-  serializeJson(doc, server.client());
 }
 
 // Controle do LED
@@ -226,7 +48,7 @@ void handleIR_Recepitor() {
   static int n = 0;
   n++;
 
-  if (n > 3) {
+  if (n > 4) {
     n = 0;
   }
 
@@ -244,15 +66,210 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
   switch (type) {
 
     case WStype_CONNECTED:
-      Serial.printf("Cliente conectado\n");
+      Serial.printf("WS cliente %u conectado\n", num);
+
+      wsSendSystem();
+      wsSendOutputs();
+      wsSendNetwork();
+      wsSendMQTT();
+      wsSendIR_Emissor();
+      wsSendIR_Receptor();
+      wsSendIR();
+
       break;
 
     case WStype_DISCONNECTED:
-      Serial.printf("Cliente desconectado\n");
+      Serial.printf("WS cliente %u desconectado\n", num);
       break;
 
     case WStype_TEXT:
-      Serial.printf("Recebido: %s\n", payload);
-      break;
+      {
+        String msg = String((char*)payload).substring(0, length);
+        Serial.println(msg);
+
+        /* ---------- COMANDOS SIMPLES ---------- */
+
+        if (msg == "toggleLED") {
+          ledState = !ledState;
+          wsSendOutputs();
+          return;
+        }
+
+        if (msg == "toggleIRReceptor") {
+
+          static int n = 0;
+          n++;
+          if (n > 4) n = 0;
+
+          IR_RecepitorSET(n);
+          wsSendIR_Receptor();
+          return;
+        }
+
+        if (msg == "toggleIREmissor") {
+          IR_EmissorTeste = !IR_EmissorTeste;
+          wsSendIR_Emissor();
+          return;
+        }
+
+        /* ---------- COMANDOS JSON ---------- */
+
+        StaticJsonDocument<128> doc;
+        DeserializationError err = deserializeJson(doc, msg);
+
+        if (err) return;
+
+        const char* cmd = doc["cmd"];
+
+        if (!cmd) return;
+
+        if (strcmp(cmd, "sendIR") == 0) {
+
+          const char* hex = doc["hex"];
+
+          if (hex) {
+
+            uint32_t value = strtoul(hex, NULL, 16);
+
+            Serial.print("Enviando IR HEX: ");
+            Serial.println(hex);
+
+            irsend.sendNEC(value, 32);  // ou protocolo usado
+          }
+        }
+
+        break;
+      }
   }
+}
+
+void wsSendSystem() {
+
+  StaticJsonDocument<256> doc;
+
+  doc["type"] = "system";
+  doc["name"] = myTopic;
+  doc["buildDateTime"] = buildDateTime;
+  doc["buildVersion"] = buildVersion;
+  doc["buildFile"] = buildFile;
+  doc["uptime"] = getFormattedUptime();
+  doc["heap"] = ESP.getFreeHeap();
+
+  char buffer[256];
+  size_t len = serializeJson(doc, buffer);
+  webSocket.broadcastTXT(buffer, len);
+}
+
+void wsSendOutputs() {
+
+  StaticJsonDocument<64> doc;
+
+  doc["type"] = "outputs";
+  doc["led"] = ledState;
+
+  char buffer[64];
+  size_t len = serializeJson(doc, buffer);
+  webSocket.broadcastTXT(buffer, len);
+}
+
+void wsSendAHT10() {
+
+  StaticJsonDocument<128> doc;
+
+  doc["type"] = "sensor";
+
+  if (estadoAHT10 != AHT10_ONLINE) {
+    doc["status"] = EstadoAHT10();
+  } else {
+    doc["temperatura"] = temperatura;
+    doc["umidade"] = umidade;
+  }
+
+  char buffer[128];
+  size_t len = serializeJson(doc, buffer);
+  webSocket.broadcastTXT(buffer, len);
+}
+
+void wsSendIR() {
+
+  if (!lastIR.valido) return;
+
+  StaticJsonDocument<256> doc;
+
+  doc["type"] = "ir";
+  doc["timestamp"] = lastIR.timestamp;
+  doc["protocolo"] = lastIR.protocolo;
+  doc["bits"] = lastIR.bits;
+  doc["dec"] = lastIR.dec;
+  doc["hex"] = lastIR.hexStr;
+
+  char buffer[256];
+  size_t len = serializeJson(doc, buffer);
+  webSocket.broadcastTXT(buffer, len);
+
+  lastIR.valido = false;
+}
+
+void wsSendNetwork() {
+
+  StaticJsonDocument<192> doc;
+
+  doc["type"] = "network";
+
+  doc["wifi"] = wifi_ssid;
+  doc["ip"] = WiFi.localIP().toString();
+  doc["gateway"] = WiFi.gatewayIP().toString();
+  doc["mask"] = WiFi.subnetMask().toString();
+  doc["rssi"] = WiFi.RSSI();
+
+  char buffer[192];
+  size_t len = serializeJson(doc, buffer);
+  webSocket.broadcastTXT(buffer, len);
+}
+
+void wsSendMQTT() {
+
+  StaticJsonDocument<192> doc;
+
+  char topic_main[64];
+  snprintf(topic_main, sizeof(topic_main), "%s/#", myTopic.c_str());
+
+  doc["type"] = "mqtt";
+
+  doc["server"] = mqtt_server;
+  doc["client_id"] = clientID;
+  doc["topic_main"] = topic_main;
+  doc["status"] = mqtt_client.connected();
+  doc["sucesso"] = mqttOK;
+  doc["erro"] = mqttErro;
+
+  char buffer[192];
+  size_t len = serializeJson(doc, buffer);
+  webSocket.broadcastTXT(buffer, len);
+}
+
+void wsSendIR_Emissor() {
+  StaticJsonDocument<64> doc;
+
+  // ---- IR Emissor----
+  doc["type"] = "ir_emissor";
+  doc["emissor_teste"] = IR_EmissorTeste;
+
+
+  char buffer[64];
+  size_t len = serializeJson(doc, buffer);
+  webSocket.broadcastTXT(buffer, len);
+}
+
+void wsSendIR_Receptor() {
+  StaticJsonDocument<64> doc;
+
+  // ---- IR Receptor----
+  doc["type"] = "ir_receptor";
+  doc["protocolo"] = EstadoIRReceptor();
+
+
+  char buffer[64];
+  size_t len = serializeJson(doc, buffer);
+  webSocket.broadcastTXT(buffer, len);
 }

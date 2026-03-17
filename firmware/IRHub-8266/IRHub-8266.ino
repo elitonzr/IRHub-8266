@@ -14,11 +14,8 @@
 #include <Adafruit_AHTX0.h>
 #include <ArduinoJson.h>
 #include <WebSocketsServer.h>
-
-// #include <Arduino.h>
-// #include <assert.h>
-
-
+#include <LittleFS.h>
+#include <stdarg.h>
 
 /************ ARQUIVOS AUXILIARES ************/
 #include "globals.h"
@@ -80,6 +77,7 @@ char topic_command[64];
 char topic_command_led[64];
 
 //IR
+char topic_command_ir_send[250];
 char topic_command_ir_receptor_protocol[250];
 
 char topic_command_ir_emissor_nec_dec[64];
@@ -109,13 +107,14 @@ IRrecv irrecv(kRecvPin);
 decode_results results;
 
 enum IR_ReceptorMode {
-  IR_DESABILITADO,  // Não envia nada.
-  IR_PROTOCOL_NEC,  // Somente NEC.
-  IR_NECe24bits,    // NEC e 24bits.
-  IR_TUDO           // Tudo.
+  IR_DESABILITADO,        // Não envia nada.
+  IR_PROTOCOL_NEC,        // Somente NEC.
+  IR_PROTOCOL_NIKAI,      // Somente NIKAI.
+  IR_PROTOCOL_NEC_NIKAI,  // NEC e NIKAI.
+  IR_ALL                  // Tudo.
 };
 
-IR_ReceptorMode IR_ReceptorEstado = IR_TUDO;  // Flag para indicar tipo de recepção IR
+IR_ReceptorMode IR_ReceptorEstado = IR_ALL;  // Flag para indicar tipo de recepção IR
 
 uint32_t lastIRCode = 0;
 unsigned long lastIRTime = 0;
@@ -136,20 +135,10 @@ struct IRLastData {
   unsigned long timestamp;
 
   char resultToHumanReadableBasic[64];
-  char resultToSourceCode[512];
+  char resultToSourceCode[640];
 
   bool valido;
 };
-
-// struct IRLastData {
-//   char protocolo[16];
-//   uint32_t dec;
-//   uint32_t hexStr;
-//   unsigned long timestamp;
-//   char resultToHumanReadableBasic[64];
-//   char resultToSourceCode[256];
-//   bool valido;
-// };
 
 IRLastData lastIR = {
   "", 0, 0, 0, false
@@ -188,6 +177,12 @@ void setup() {
   Serial.println();
   Serial.println("======= Iniciando Setup =======");
 
+  if (!LittleFS.begin()) {
+    Serial.println("Erro ao iniciar LittleFS");
+    return;
+  }
+  Serial.println("LittleFS pronto");
+
   setup_IR();      // inicializa IR
   setup_wifi();    // inicializa WiFi
   setup_ota();     // inicializa OTA
@@ -214,60 +209,110 @@ void setup() {
 void loop() {
 
   ArduinoOTA.handle();
-  server.handleClient();  // Chama o método handleClient(), para ouvir solicitações HTTP de clientes
+
+  server.handleClient();
   webSocket.loop();
 
   mqtt_reconnect();
   mqtt_client.loop();
 
-  myIRdecoder();  // Chama função que trata a decodificação do IR.
+  unsigned long now = millis();
+
+  // ---- IR DECODER ----
+  myIRdecoder();
+
+  // ---- SENSOR WS ----
+  static unsigned long tSensor = 0;
+  if (now - tSensor > 2000) {
+    tSensor = now;
+    wsSendAHT10();
+  }
+
+  // ---- SYSTEM WS ----
+  static unsigned long tSystem = 0;
+  if (now - tSystem > 5000) {
+    tSystem = now;
+    wsSendSystem();
+  }
+
+  // ---- TELNET ----
   handleTelnet();
 
-  // Aplica estado ao LED
+  // ---- LED ----
   digitalWrite(LEDA, ledState ? LOW : HIGH);
 
-  // Publica somente se houve mudança lógica
+  // WS + MQTT somente se mudar
   if (ledState != lastLedState) {
+
     lastLedState = ledState;
+
+    wsSendOutputs();
     MQTTsendOutputs();
   }
 
-  unsigned long now = millis();
+  // ---- WS NETWORK ----
+  static unsigned long tNetwork = 0;
 
+  if (now - tNetwork > 10000) {
+    tNetwork = now;
+    wsSendNetwork();
+  }
+
+  // ---- WS MQTT ----
+  static unsigned long tMQTT = 0;
+
+  if (now - tMQTT > 5000) {
+    tMQTT = now;
+    wsSendMQTT();
+  }
+
+
+  // ---- IR TESTE ----
   if (IR_EmissorTeste) {
+
     static unsigned long lastMsgTest = 0;
-    if (now - lastMsgTest > 2 * 1000) {
+
+    if (now - lastMsgTest > 2000) {
       lastMsgTest = now;
       desligamentoUniversal();
+      wsSendIR_Emissor();
     }
   }
 
+  // ---- MQTT NETWORK ----
   static unsigned long lastMsgnetwork = 0;
-  if (now - lastMsgnetwork > 5 * 60 * 1000) {
+  if (now - lastMsgnetwork > 300000) {
     lastMsgnetwork = now;
     MQTTsendInfoNetwork();
   }
 
+  // ---- MQTT UPTIME ----
   static unsigned long lastMsgUptime = 0;
-  if (now - lastMsgUptime > 5 * 60 * 1000) {
+  if (now - lastMsgUptime > 300000) {
     lastMsgUptime = now;
     MQTTsendUptime();
   }
 
+  // ---- MQTT SENSOR ----
   static unsigned long lastMsgAHT10 = 0;
-  if (now - lastMsgAHT10 > 5 * 60 * 1000) {
+  if (now - lastMsgAHT10 > 300000) {
     lastMsgAHT10 = now;
     MQTTsendAHT10();
   }
 
-  // Conexão com cliente Telnet
+  // ---- TELNET CLIENT ----
   if (telnetServer.hasClient()) {
+
     if (!telnetClient || !telnetClient.connected()) {
+
       telnetClient = telnetServer.available();
+
       debugPrint("");
       debugPrintln("\n[Telnet] Cliente conectado!");
       debugHelp();
+
     } else {
+
       WiFiClient newClient = telnetServer.available();
       newClient.println("Outro cliente já está conectado.");
       newClient.stop();
