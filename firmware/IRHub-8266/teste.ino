@@ -9,7 +9,7 @@ void saveIRCode() {
   File file = LittleFS.open("/ircodes.txt", "a");
 
   if (!file) {
-    Serial.println("Erro abrindo arquivo");
+    debugPrintln("Erro abrindo arquivo");
     return;
   }
 
@@ -18,7 +18,7 @@ void saveIRCode() {
 
   file.close();
 
-  Serial.println("Código IR salvo na flash");
+  debugPrintln("Código IR salvo na flash");
 }
 
 void listIRCodes() {
@@ -26,13 +26,13 @@ void listIRCodes() {
   File file = LittleFS.open("/ircodes.txt", "r");
 
   if (!file) {
-    Serial.println("Nenhum código salvo");
+    debugPrintln("Nenhum código salvo");
     return;
   }
 
   while (file.available()) {
     String line = file.readStringUntil('\n');
-    Serial.println(line);
+    debugPrintln(line);
   }
 
   file.close();

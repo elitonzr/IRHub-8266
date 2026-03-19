@@ -158,6 +158,9 @@ void debugBuild() {
 
   debugPrint("  Arquivo       : ");
   debugPrintln(buildFile);
+  debugPrintln("========================================");
+  debugPrintln("");
+  debugPrintln("");
 }
 
 void debugHelp() {
@@ -173,6 +176,8 @@ void debugHelp() {
   debugPrintln("  heap     -> Mostra memoria livre");
   debugPrintln("  reboot   -> Reinicia o dispositivo");
   debugPrintln("  help     -> Mostra esta lista");
+  debugPrintln("========================================");
+  debugPrintln("");
   debugPrintln("");
 };
 
@@ -181,8 +186,9 @@ void debugUptime() {
   debugPrintln(" ");
   debugPrint("  Uptime: ");
   debugPrintln(getFormattedUptime());
-  debugPrintln(" ");
-  debugPrintln(" ");
+  debugPrintln("========================================");
+  debugPrintln("");
+  debugPrintln("");
 }
 
 void debugLED() {
@@ -190,6 +196,7 @@ void debugLED() {
   debugPrintln("");
   debugPrint("  LED A: ");
   debugPrintln(ledState ? "Ligado" : "Desligado");
+  debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
 }
@@ -203,6 +210,7 @@ void debugAHT10() {
   if (estadoAHT10 != AHT10_ONLINE) {
     debugPrint("  AHT10: ");
     debugPrintln(EstadoAHT10());
+    debugPrintln("========================================");
     debugPrintln("");
     debugPrintln("");
     return;
@@ -220,6 +228,7 @@ void debugAHT10() {
 
 void debugIR() {
   debugPrintln("============= IR Receptor ==============");
+  debugPrintln("");
 
   debugPrint("Timestamp : ");
   debugPrintln(lastIR.timestamp);
@@ -255,7 +264,6 @@ void debugIR() {
 }
 
 void debugMQTT() {
-  debugPrintln("");
   debugPrintln("================= MQTT =================");
   debugPrintln(" ");
   debugPrint("  Status        : ");
@@ -277,17 +285,9 @@ void debugMQTT() {
   debugPrint("                  ");
   debugPrintln(topic_command_led);
   debugPrint("                  ");
-  debugPrintln(topic_command_ir_send);
-  debugPrint("                  ");
   debugPrintln(topic_command_ir_receptor_protocol);
   debugPrint("                  ");
-  debugPrintln(topic_command_ir_emissor_nec_dec);
-  debugPrint("                  ");
-  debugPrintln(topic_command_ir_emissor_nec_hex);
-  debugPrint("                  ");
-  debugPrintln(topic_command_ir_emissor_nikai_dec);
-  debugPrint("                  ");
-  debugPrintln(topic_command_ir_emissor_nikai_hex);
+  debugPrintln(topic_command_ir_emissor_send);
   debugPrintln("  Publisher     : ");
 
   debugPrint("                  ");
@@ -311,9 +311,10 @@ void debugMQTT() {
   debugPrint("                  ");
   debugPrintln(topic_sensor_ir_status);
   debugPrint("                  ");
-  debugPrintln(topic_sensor_ir_receptor);
+  debugPrintln(topic_sensor_ir_receptor_status);
   debugPrint("                  ");
-  debugPrintln(topic_sensor_ir_emissor);
+  debugPrintln(topic_sensor_ir_emissor_status);
+  debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
 }

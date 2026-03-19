@@ -174,7 +174,9 @@ const char* EstadoIRReceptor() {
   }
 }
 
-void sendIRCode(uint32_t code, decode_type_t proto, uint8_t bits) {
+bool sendIRCode(uint32_t code, decode_type_t proto, uint8_t bits) {
+
+  bool success = true;
 
   if (bits == 0) bits = 32;
 
@@ -232,13 +234,52 @@ void sendIRCode(uint32_t code, decode_type_t proto, uint8_t bits) {
       debugPrintf(
         "Protocolo IR não suportado (%d), usando NEC fallback",
         proto);
-
+      success = false;
       irsend.sendNEC(code, bits);
       break;
   }
 
   delay(5);  // pequena proteção contra auto-leitura
   enviandoCod = false;
+  return success;
+}
+
+// ======================================================
+// Builder único de JSON IR
+// ======================================================
+size_t buildIRJson(
+  char* buffer,
+  size_t size,
+  uint32_t code,
+  decode_type_t proto,
+  uint8_t bits,  
+  const char* status,
+  const char* origem) {
+
+  StaticJsonDocument<192> doc;
+
+  doc["type"] = "ir_emissor";
+  doc["emissor_teste"] = IR_EmissorTeste;
+  doc["status"] = status;
+  doc["erro"] = status;
+  doc["origem"] = origem;
+
+  doc["protocolo"] = getIRProtocol(proto);
+  doc["bits"] = bits;
+
+
+if (code != 0) {
+
+  char hexStr[12];
+  snprintf(hexStr, sizeof(hexStr), "0x%lX", code);
+
+  doc["dec"] = code;
+  doc["hex"] = hexStr;
+}
+
+  doc["millis"] = millis();
+
+  return serializeJson(doc, buffer, size);
 }
 
 void desligamentoUniversal() {

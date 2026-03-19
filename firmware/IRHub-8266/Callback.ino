@@ -31,14 +31,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
   // Envia código IR
-  else if (strcmp(topic, topic_command_ir_send) == 0) {
+  else if (strcmp(topic, topic_command_ir_emissor_send) == 0) {
 
     char buffer[MAX_PAYLOAD];
-    memcpy(buffer, payload, length);
-    buffer[length] = '\0';
+    unsigned int len = (length < (MAX_PAYLOAD - 1)) ? length : (MAX_PAYLOAD - 1);
+
+    memcpy(buffer, payload, len);
+    buffer[len] = '\0';
 
     processaIRJson(buffer);
-    // processaIRUniversal(buffer);
+
   }
 
   // Controle de LED
@@ -79,11 +81,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
       debugPrintln(cmd);
       return;
     }
-
-  }
-  // Envia sinais IR
-  else if (strncmp(topic, topic_command_ir_emissor_prefix, strlen(topic_command_ir_emissor_prefix)) == 0) {
-    processaIR(topic, payload, length);
   }
 }
 
@@ -149,7 +146,7 @@ void processaComando(byte* payload, unsigned int length) {
 // Parser IR usando JSON
 // EXEMPLO:
 // {
-// "proto":"NEC",
+// "protocolo":"NEC",
 // "code":"0x20DF10EF",
 // "bits":32
 // }
@@ -163,179 +160,72 @@ void processaIRJson(char* payload) {
   if (error) {
     debugPrint("JSON inválido: ");
     debugPrintln(error.c_str());
+    sendIRFeedback(0, UNKNOWN, 0, "JSON inválido", "mqtt");
     return;
   }
 
   const char* protoStr = doc["protocol"];
-  int bits = doc["bits"];
-  const char* codeStr = doc["code"];
+  uint8_t bits = doc["bits"] | 0;
+  if (bits == 0) bits = 32;
 
-  if (!protoStr || !codeStr || bits <= 0) {
+  if (!protoStr || bits == 0 || bits > 64 || doc["code"].isNull()) {
     debugPrintln("JSON incompleto");
+    sendIRFeedback(0, UNKNOWN, 0, "JSON incompleto", "mqtt");
     return;
   }
 
-  // ---------- converte protocolo ----------
+  // ---------- protocolo ----------
   decode_type_t proto;
 
-  if (strcasecmp(protoStr, "NEC") == 0)
-    proto = NEC;
-
-  else if (strcasecmp(protoStr, "SONY") == 0)
-    proto = SONY;
-
-  else if (strcasecmp(protoStr, "RC5") == 0)
-    proto = RC5;
-
-  else if (strcasecmp(protoStr, "SAMSUNG") == 0)
-    proto = SAMSUNG;
-
-  else if (strcasecmp(protoStr, "NIKAI") == 0)
-    proto = NIKAI;
-
+  if (strcasecmp(protoStr, "NEC") == 0) proto = NEC;
+  else if (strcasecmp(protoStr, "SONY") == 0) proto = SONY;
+  else if (strcasecmp(protoStr, "RC5") == 0) proto = RC5;
+  else if (strcasecmp(protoStr, "SAMSUNG") == 0) proto = SAMSUNG;
+  else if (strcasecmp(protoStr, "NIKAI") == 0) proto = NIKAI;
   else {
     debugPrint("Protocolo desconhecido: ");
     debugPrintln(protoStr);
+    sendIRFeedback(0, UNKNOWN, 0, "Protocolo desconhecido", "mqtt");
     return;
   }
 
-  // ---------- converte código ----------
-  uint32_t code;
+  // ---------- código ----------
+  uint32_t code = 0;
 
-  if (strncmp(codeStr, "0x", 2) == 0 || strncmp(codeStr, "0X", 2) == 0) {
-    code = strtoul(codeStr, NULL, 16);
+  if (doc["code"].is<const char*>()) {
+
+    const char* codeStr = doc["code"];
+    char* endptr;
+
+    if (strncmp(codeStr, "0x", 2) == 0 || strncmp(codeStr, "0X", 2) == 0)
+      code = strtoul(codeStr, &endptr, 16);
+    else
+      code = strtoul(codeStr, &endptr, 10);
+
+    if (endptr == codeStr) {
+      debugPrintln("Código IR inválido");
+      sendIRFeedback(0, UNKNOWN, 0, "Code inválido", "mqtt");
+      return;
+    }
+
+  } else if (doc["code"].is<uint32_t>()) {
+
+    code = doc["code"];
+
   } else {
-    code = strtoul(codeStr, NULL, 10);
+
+    debugPrintln("Tipo de code inválido");
+    sendIRFeedback(0, UNKNOWN, 0, "Tipo code inválido", "mqtt");
+    return;
   }
 
-  // ---------- envia ----------
-  sendIRCode(code, proto, bits);
+  // ---------- envio (FORA do if) ----------
+  const char* success = sendIRCode(code, proto, bits) ? "ok" : "fail";
+
+  sendIRFeedback(code, proto, bits, success, "mqtt");
 }
 
-// ======================================================
-// Processamento de comandos IR
-// ======================================================
-void processaIR(const char* topic, byte* payload, unsigned int length) {
-
-  if (length == 0) return;
-
-  char buffer[MAX_PAYLOAD];
-  unsigned int copyLen = (length < (MAX_PAYLOAD - 1)) ? length : (MAX_PAYLOAD - 1);
-
-  memcpy(buffer, payload, copyLen);
-  buffer[copyLen] = '\0';
-
-  // ---------- IR NEC decimal ----------
-  if (strcmp(topic, topic_command_ir_emissor_nec_dec) == 0) {
-
-    char* endPtr;
-    long tecla = strtol(buffer, &endPtr, 10);
-
-    // Valida se a conversão foi válida
-    if (*endPtr != '\0') return;
-
-    enviandoCod = true;
-    irsend.sendNEC(tecla, 32);
-
-    char mqttMsg[100];
-    snprintf(mqttMsg, sizeof(mqttMsg),
-             "Codigo IR NEC enviado: %ld", tecla);
-
-    mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
-  }
-
-  // ---------- IR NEC hexadecimal ----------
-  else if (strcmp(topic, topic_command_ir_emissor_nec_hex) == 0) {
-
-    char* endPtr;
-    uint32_t irCode = strtoul(buffer, &endPtr, 16);
-
-    if (*endPtr != '\0') return;
-
-    enviandoCod = true;
-    irsend.sendNEC(irCode, 32);
-
-    char mqttMsg[100];
-    snprintf(mqttMsg, sizeof(mqttMsg),
-             "IR NEC enviado (HEX): 0x%X", irCode);
-
-    mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
-  }
-
-  // ---------- IR NIKAI decimal ----------
-  else if (strcmp(topic, topic_command_ir_emissor_nikai_dec) == 0) {
-
-    char* endPtr;
-    uint32_t irCode = strtoul(buffer, &endPtr, 16);
-
-    if (*endPtr != '\0') return;
-
-    enviandoCod = true;
-    irsend.sendNikai(irCode, 24);
-
-    // Feedback MQTT
-    char mqttMsg[100];
-    snprintf(mqttMsg, sizeof(mqttMsg),
-             "IR NIKAI enviado (DEC): %lu", irCode);
-
-    mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
-  }
-
-  // ---------- IR NIKAI hexadecimal ----------
-  else if (strcmp(topic, topic_command_ir_emissor_nikai_hex) == 0) {
-
-    char* endPtr;
-    uint32_t irCode = strtoul(buffer, &endPtr, 16);
-
-    if (*endPtr != '\0') return;
-
-    enviandoCod = true;
-    irsend.sendNikai(irCode, 24);  // Envia código NIKAI (24 bits)
-
-    char mqttMsg[100];
-    snprintf(mqttMsg, sizeof(mqttMsg),
-             "IR NIKAI enviado (HEX): 0x%X", irCode);
-
-    mqtt_client.publish(topic_sensor_ir_emissor, mqttMsg);
-  }
-
-  // ---------- Alteração de modo ----------
-  else if (strcmp(topic, topic_command_ir_receptor_protocol) == 0) {
-
-    char comando[MAX_PAYLOAD];
-    memcpy(comando, payload, copyLen);
-    comando[copyLen] = '\0';
-
-    // Buffer pequeno para normalização
-    char cmd[25];
-    size_t len = strlen(comando);
-    if (len >= sizeof(cmd)) len = sizeof(cmd) - 1;
-
-    memcpy(cmd, comando, len);
-    cmd[len] = '\0';
-
-    // Normaliza para lowercase
-    for (size_t i = 0; i < len; i++) {
-      cmd[i] = tolower(cmd[i]);
-    }
-
-    if (strcmp(cmd, "desabilita") == 0) {
-
-      IR_RecepitorSET(0);
-    }
-
-    else if (strcmp(cmd, "nec") == 0) {
-      IR_RecepitorSET(1);
-    }
-
-    else if (strcmp(cmd, "nec, nikay e 24bits") == 0) {
-      IR_RecepitorSET(2);
-    }
-
-    else if (strcmp(cmd, "tudo") == 0) {
-      IR_RecepitorSET(3);
-    }
-    // debugPrint(" cmd");
-    // debugPrint(cmd);
-  }
+void sendIRFeedback(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
+  wsSendIR_Emissor(code, proto, bits, status, origem);
+  MQTTsendIR_Emissor(code, proto, bits, status, origem);
 }

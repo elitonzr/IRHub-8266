@@ -1,3 +1,24 @@
+/************************************************************
+  Subscriptions :
+                  IRHub-8266-Sala/command
+                  IRHub-8266-Sala/command/LEDA
+                  IRHub-8266-Sala/command/ir/receptor/protocol
+                  IRHub-8266-Sala/command/ir/emissor/send
+  Publisher     :
+                  IRHub-8266-Sala/info/status
+                  IRHub-8266-Sala/info/build
+                  IRHub-8266-Sala/info/software
+                  IRHub-8266-Sala/info/network
+                  IRHub-8266-Sala/info/mqtt
+                  IRHub-8266-Sala/info/uptime
+                  IRHub-8266-Sala/info/outputs
+                  IRHub-8266-Sala/sensor/AHT10/status
+                  IRHub-8266-Sala/sensor/AHT10
+                  IRHub-8266-Sala/sensor/ir/status
+                  IRHub-8266-Sala/sensor/ir/receptor/status
+                  IRHub-8266-Sala/sensor/ir/emissor/status
+************************************************************/
+
 /************ MQTT ************/
 void setup_mqtt() {
 
@@ -21,21 +42,17 @@ void setup_mqtt() {
   snprintf(topic_sensor_AHT10, sizeof(topic_sensor_AHT10), "%s/sensor/AHT10", myTopic.c_str());
 
   // -- IR --
-  snprintf(topic_sensor_ir_status, sizeof(topic_sensor_ir_status), "%s/sensor/ir_status", myTopic.c_str());
-  snprintf(topic_sensor_ir_receptor, sizeof(topic_sensor_ir_receptor), "%s/sensor/ir_receptor", myTopic.c_str());
-  snprintf(topic_sensor_ir_emissor, sizeof(topic_sensor_ir_emissor), "%s/sensor/ir_emissor", myTopic.c_str());
+  snprintf(topic_sensor_ir_status, sizeof(topic_sensor_ir_status), "%s/sensor/ir/status", myTopic.c_str());
+  snprintf(topic_sensor_ir_receptor_status, sizeof(topic_sensor_ir_receptor_status), "%s/sensor/ir/receptor/status", myTopic.c_str());
+  snprintf(topic_sensor_ir_emissor_status, sizeof(topic_sensor_ir_emissor_status), "%s/sensor/ir/emissor/status", myTopic.c_str());
 
   /************ Subscriptions ************/
   snprintf(topic_command, sizeof(topic_command), "%s/command", myTopic.c_str());
   snprintf(topic_command_led, sizeof(topic_command_led), "%s/command/LEDA", myTopic.c_str());
 
   // -- IR --
-  snprintf(topic_command_ir_send, sizeof(topic_command_ir_send), "%s/command/ir/send", myTopic.c_str());
-  snprintf(topic_command_ir_receptor_protocol, sizeof(topic_command_ir_receptor_protocol), "%s/command/ir_receptor/protocol", myTopic.c_str());
-  snprintf(topic_command_ir_emissor_nec_dec, sizeof(topic_command_ir_emissor_nec_dec), "%s/command/ir_emissor/nec/dec", myTopic.c_str());
-  snprintf(topic_command_ir_emissor_nec_hex, sizeof(topic_command_ir_emissor_nec_hex), "%s/command/ir_emissor/nec/hex", myTopic.c_str());
-  snprintf(topic_command_ir_emissor_nikai_dec, sizeof(topic_command_ir_emissor_nikai_dec), "%s/command/ir_emissor/nikai/dec", myTopic.c_str());
-  snprintf(topic_command_ir_emissor_nikai_hex, sizeof(topic_command_ir_emissor_nikai_hex), "%s/command/ir_emissor/nikai/hex", myTopic.c_str());
+  snprintf(topic_command_ir_receptor_protocol, sizeof(topic_command_ir_receptor_protocol), "%s/command/ir/receptor/protocol", myTopic.c_str());
+  snprintf(topic_command_ir_emissor_send, sizeof(topic_command_ir_emissor_send), "%s/command/ir/emissor/send", myTopic.c_str());
 
   mqtt_client.setServer(mqtt_server, 1883);
   mqtt_client.setCallback(callback);
@@ -51,7 +68,6 @@ void setup_mqtt() {
   Serial.println();
   Serial.println("    MQTT configurado!");
 }
-
 
 void mqtt_reconnect() {
 
@@ -99,12 +115,8 @@ void mqtt_reconnect() {
     // Subscriptions
     mqtt_client.subscribe(topic_command);
     mqtt_client.subscribe(topic_command_led);
-    mqtt_client.subscribe(topic_command_ir_send);
     mqtt_client.subscribe(topic_command_ir_receptor_protocol);
-    mqtt_client.subscribe(topic_command_ir_emissor_nec_dec);
-    mqtt_client.subscribe(topic_command_ir_emissor_nec_hex);
-    mqtt_client.subscribe(topic_command_ir_emissor_nikai_dec);
-    mqtt_client.subscribe(topic_command_ir_emissor_nikai_hex);
+    mqtt_client.subscribe(topic_command_ir_emissor_send);
 
     // Publica os feedbacks iniciais
     debugPrintln("    Publicando os feedbacks iniciais...");
@@ -424,13 +436,13 @@ void MQTTsendIR_Receptor() {
   // ----- Monta JSON -----
   StaticJsonDocument<128> doc;
 
-  doc["status"]      = "ok";
-  doc["timestamp"]   = lastIR.timestamp;
-  doc["protocolo"]   = lastIR.protocolo;
+  doc["status"] = "ok";
+  doc["timestamp"] = lastIR.timestamp;
+  doc["protocolo"] = lastIR.protocolo;
   doc["decode_type"] = lastIR.decode_type;
-  doc["bits"]        = lastIR.bits;
-  doc["dec"]         = lastIR.dec;
-  doc["hex"]         = lastIR.hexStr;
+  doc["bits"] = lastIR.bits;
+  doc["dec"] = lastIR.dec;
+  doc["hex"] = lastIR.hexStr;
 
   // ----- Serializa -----
   char payload[128];
@@ -445,7 +457,7 @@ void MQTTsendIR_Receptor() {
   if (!mqtt_client.connected()) {
 
     debugPrint("[MQTT] Offline - topic [");
-    debugPrint(topic_sensor_ir_receptor);
+    debugPrint(topic_sensor_ir_receptor_status);
     debugPrint("] payload: ");
     debugPrintln(payload);
 
@@ -453,58 +465,66 @@ void MQTTsendIR_Receptor() {
   }
 
   // ----- Publica -----
-  bool ok = mqtt_client.publish(topic_sensor_ir_receptor, payload, len);
+  bool ok = mqtt_client.publish(topic_sensor_ir_receptor_status, payload, len);
 
   if (!ok) {
 
     debugPrintln("[MQTT] Falha ao publicar");
     debugPrint("topic [");
-    debugPrint(topic_sensor_ir_receptor);
+    debugPrint(topic_sensor_ir_receptor_status);
     debugPrint("] payload: ");
     debugPrintln(payload);
 
   } else {
 
     debugPrint("[MQTT] Publicado em ");
-    debugPrintln(topic_sensor_ir_receptor);
-
+    debugPrintln(topic_sensor_ir_receptor_status);
   }
 }
 
-// void MQTTsendIR_Receptor() {
 
-//   StaticJsonDocument<128> doc;
+void MQTTsendIR_Emissor(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
 
-//   doc["status"] = "ok";
-//   doc["timestamp"] = lastIR.timestamp;
-//   doc["protocolo"] = lastIR.protocolo;
-//   doc["decode_type"] = lastIR.decode_type;
-//   doc["bits"] = lastIR.bits;
-//   doc["dec"] = lastIR.dec;
-//   doc["hex"] = lastIR.hexStr;
+  char payload[192];
 
-//   char MQTT_Msg[128];
-//   size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
+  size_t len = buildIRJson(
+    payload,
+    sizeof(payload),
+    code,
+    proto,
+    bits,
+    status,
+    origem);
 
-//   if (len == 0 || len >= sizeof(MQTT_Msg)) {
-//     debugPrintln("Erro ao serializar JSON IR");
-//     return;
-//   }
+  if (len == 0 || len >= sizeof(payload)) {
+    debugPrintln("[MQTT] Erro ao serializar JSON IR Emissor");
+    return;
+  }
 
-//   if (!mqtt_client.connected()) {
-//     debugPrint("[MQTT] Offline - ");
-//     debugPrint("topic [");
-//     debugPrint(topic_sensor_ir_receptor);
-//     debugPrint("] payload: ");
-//     debugPrintln(MQTT_Msg);
-//     return;
-//   }
+  // ----- Verifica conexão -----
+  if (!mqtt_client.connected()) {
 
-//   if (!mqtt_client.publish(topic_sensor_ir_receptor, MQTT_Msg, len)) {
-//     debugPrintln("[MQTT] Falha ao publicar");
-//     debugPrint("topic [");
-//     debugPrint(topic_sensor_ir_receptor);
-//     debugPrint("] payload: ");
-//     debugPrintln(MQTT_Msg);
-//   }
-// }
+    debugPrint("[MQTT] Offline - topic [");
+    debugPrint(topic_sensor_ir_emissor_status);
+    debugPrint("] payload: ");
+    debugPrintln(payload);
+    return;
+  }
+
+  // ----- Publica -----
+  bool ok = mqtt_client.publish(topic_sensor_ir_emissor_status, payload, len);
+
+  if (!ok) {
+
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_sensor_ir_emissor_status);
+    debugPrint("] payload: ");
+    debugPrintln(payload);
+
+  } else {
+
+    debugPrint("[MQTT] Publicado em ");
+    debugPrintln(topic_sensor_ir_emissor_status);
+  }
+}

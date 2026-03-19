@@ -68,8 +68,8 @@ char topic_status_AHT10[250];
 
 //IR
 char topic_sensor_ir_status[64];
-char topic_sensor_ir_receptor[64];
-char topic_sensor_ir_emissor[64];
+char topic_sensor_ir_receptor_status[64];
+char topic_sensor_ir_emissor_status[64];
 
 
 // -- TOPICS MQTT SUBSCRIPTIONS --
@@ -77,15 +77,8 @@ char topic_command[64];
 char topic_command_led[64];
 
 //IR
-char topic_command_ir_send[250];
 char topic_command_ir_receptor_protocol[250];
-
-char topic_command_ir_emissor_nec_dec[64];
-char topic_command_ir_emissor_nec_hex[64];
-char topic_command_ir_emissor_nikai_dec[64];
-char topic_command_ir_emissor_nikai_hex[64];
-
-char topic_command_ir_emissor_prefix[64];
+char topic_command_ir_emissor_send[250];
 
 // BUFFERS
 #define MAX_PAYLOAD 250
@@ -275,7 +268,7 @@ void loop() {
     if (now - lastMsgTest > 2000) {
       lastMsgTest = now;
       desligamentoUniversal();
-      wsSendIR_Emissor();
+      wsSendIR_EmissorStatus();
     }
   }
 

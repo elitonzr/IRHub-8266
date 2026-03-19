@@ -72,7 +72,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
       wsSendOutputs();
       wsSendNetwork();
       wsSendMQTT();
-      wsSendIR_Emissor();
+      wsSendIR_EmissorStatus();
       wsSendIR_Receptor();
       wsSendIR();
 
@@ -108,7 +108,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         if (msg == "toggleIREmissor") {
           IR_EmissorTeste = !IR_EmissorTeste;
-          wsSendIR_Emissor();
+          wsSendIR_EmissorStatus();
           return;
         }
 
@@ -181,8 +181,8 @@ void wsSendAHT10() {
   if (estadoAHT10 != AHT10_ONLINE) {
     doc["status"] = EstadoAHT10();
   } else {
-    doc["temperatura"] = temperatura;
-    doc["umidade"] = umidade;
+    doc["temperatura"] = String(temperatura, 1);
+    doc["umidade"] = String(umidade, 1);
   }
 
   char buffer[128];
@@ -248,12 +248,12 @@ void wsSendMQTT() {
   webSocket.broadcastTXT(buffer, len);
 }
 
-void wsSendIR_Emissor() {
+void wsSendIR_Receptor() {
   StaticJsonDocument<64> doc;
 
-  // ---- IR Emissor----
-  doc["type"] = "ir_emissor";
-  doc["emissor_teste"] = IR_EmissorTeste;
+  // ---- IR Receptor----
+  doc["type"] = "ir_receptor";
+  doc["protocolo"] = EstadoIRReceptor();
 
 
   char buffer[64];
@@ -261,12 +261,33 @@ void wsSendIR_Emissor() {
   webSocket.broadcastTXT(buffer, len);
 }
 
-void wsSendIR_Receptor() {
+void wsSendIR_Emissor(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
+
+  char payload[192];
+
+  size_t len = buildIRJson(
+    payload,
+    sizeof(payload),
+    code,
+    proto,
+    bits,
+    status,
+    origem);
+
+  if (len == 0 || len >= sizeof(payload)) {
+    debugPrintln("[WS] Erro JSON IR");
+    return;
+  }
+
+  webSocket.broadcastTXT(payload, len);
+}
+
+void wsSendIR_EmissorStatus() {
   StaticJsonDocument<64> doc;
 
-  // ---- IR Receptor----
-  doc["type"] = "ir_receptor";
-  doc["protocolo"] = EstadoIRReceptor();
+  // ---- IR Emissor----
+  doc["type"] = "ir_emissor";
+  doc["emissor_teste"] = IR_EmissorTeste;
 
 
   char buffer[64];

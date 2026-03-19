@@ -13,5 +13,5 @@ String clientID = String(myTopic) + "-" + ESP.getChipId();  // Este texto é con
 
 // -------- Constantes globais com informações de compilação --------
 extern const String buildDateTime = String(__DATE__) + " " + String(__TIME__);  // Data e hora da compilação
-extern const String buildVersion = "0.2.60";                                    // Versão (ex: "7.3.0")
+extern const String buildVersion = "0.2.70";                                    // Versão (ex: "7.3.0")
 extern const String buildFile = String(MQTT_ID);                                // Nome do arquivo atual (ex: "main.cpp")
