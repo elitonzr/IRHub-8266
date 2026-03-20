@@ -1,11 +1,10 @@
 #pragma once
 
-#include "Wifi-Home.h"
-// #include "Wifi-Work.h"
+// -------- Credenciais --------
+// #include "Wifi-Home.h"
+#include "Wifi-Work.h"
 
-// ---------------------
-// Configurações MQTT
-// ---------------------
+// -------- Configurações MQTT --------
 #define GRUPO "Sala"
 #define MQTT_ID "IRHub-8266"
 String myTopic = String(MQTT_ID) + "-" + String(GRUPO);     // Configura nome de cliente MQTT e OTA

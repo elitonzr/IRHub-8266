@@ -219,7 +219,7 @@ void processaIRJson(char* payload) {
     return;
   }
 
-  // ---------- envio (FORA do if) ----------
+  // ---------- envio ----------
   const char* success = sendIRCode(code, proto, bits) ? "ok" : "fail";
 
   sendIRFeedback(code, proto, bits, success, "mqtt");
