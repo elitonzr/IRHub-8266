@@ -1,35 +1,44 @@
-/************ INCLUDES ************/
-#include <ESP8266WiFi.h>       // Biblioteca para funcionamento do WiFi do ESP
-#include <ESP8266WebServer.h>  // Biblioteca para o ESP funcionar como servidor
-#include <PubSubClient.h>      // For MQTT git clone git@github.com:knolleary/pubsubclient.git
-#include <ESP8266mDNS.h>       // For OTA
-#include <WiFiUdp.h>           // For OTA
-#include <ArduinoOTA.h>        // For OTA
-#include <IRremoteESP8266.h>   // Biblioteca para funcionamento do IR, git clone git@github.com:sebastienwarin/IRremoteESP8266.git Verificar essa versão https://github.com/crankyoldgit/IRremoteESP8266
-#include <IRrecv.h>            // Biblioteca para funcionamento do IR
-#include <IRsend.h>            // Biblioteca para funcionamento do IR
-#include <IRutils.h>           // Biblioteca para funcionamento do IR
-#include <IRac.h>              // Biblioteca para funcionamento do IR
-#include <IRtext.h>            // Biblioteca para funcionamento do IR
-#include <Adafruit_AHTX0.h>
-#include <ArduinoJson.h>
+/************ CORE ************/
+#include <Arduino.h>
+
+/************ REDE ************/
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#include <DNSServer.h>
+#include <WiFiManager.h>
+
+/************ OTA ************/
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+
+/************ COMUNICAÇÃO ************/
+#include <PubSubClient.h>  // For MQTT git clone git@github.com:knolleary/pubsubclient.git
 #include <WebSocketsServer.h>
+
+/************ IR ************/
+#include <IRremoteESP8266.h>  // Biblioteca para funcionamento do IR, git clone git@github.com:sebastienwarin/IRremoteESP8266.git Verificar essa versão https://github.com/crankyoldgit/IRremoteESP8266
+#include <IRrecv.h>
+#include <IRsend.h>
+#include <IRutils.h>
+#include <IRac.h>
+#include <IRtext.h>
+
+/************ SENSORES ************/
+#include <Adafruit_AHTX0.h>
+
+/************ SISTEMA ************/
 #include <LittleFS.h>
+#include <ArduinoJson.h>
+
+/************ UTIL ************/
 #include <stdarg.h>
 
 /************ ARQUIVOS AUXILIARES ************/
 #include "globals.h"
 #include "webpage.h"
 
-/************ CREDENCIAIS ************/
-// Rede Wi-Fi
-#define wifi_ssid WIFI_SSID
-#define wifi_password WIFI_PASSWORD
-
-// Definição de IP Fixo
-IPAddress ip = STATIC_IP;
-IPAddress gateway = GATEWAY_IP;
-IPAddress subnet = SUBNET_MASK;
+bool shouldSaveConfig = false;
 
 /************ Telnet ************/
 // Necessário para fazer com que o software Arduino detecte automaticamente o dispositivo OTA
@@ -39,11 +48,6 @@ WiFiClient telnetClient;
 /************ Web Server ************/
 ESP8266WebServer server(80);  // server na porta 80
 WebSocketsServer webSocket = WebSocketsServer(81);
-
-// /************ MQTT configuração ************/
-#define mqtt_server MQTT_SERVER
-String mqtt_user = MQTT_USER;
-String mqtt_password = MQTT_PASSWORD;
 
 // MQTT cliente
 WiFiClient espClient;
@@ -84,6 +88,9 @@ char topic_command_ir_emissor_send[250];
 #define MAX_PAYLOAD 250
 char MQTT_Topic[MAX_PAYLOAD];
 char MQTT_Msg[MAX_PAYLOAD];
+
+/************ Botão de Reset ************/
+#define BTN_RESET 0  // GPIO0
 
 /************ LED ************/
 #define LEDA 2              // LED A GPIO02
@@ -158,6 +165,9 @@ boolean IR_EmissorTeste = false;  // executa teste do emissor
 /************ SETUP ************/
 void setup() {
 
+  //clean FS, for testing
+  //SPIFFS.format();
+
   Serial.begin(115200);
   delay(1500);
 
@@ -166,7 +176,6 @@ void setup() {
   Serial.println("=================================");
   Serial.println("    Data e hora           : " + buildDateTime);
   Serial.println("    Versão do compilador  : " + buildVersion);
-  Serial.println("    Arquivo fonte         : " + buildFile);
   Serial.println();
   Serial.println("======= Iniciando Setup =======");
 
@@ -176,14 +185,16 @@ void setup() {
   }
   Serial.println("LittleFS pronto");
 
-  setup_IR();      // inicializa IR
-  setup_wifi();    // inicializa WiFi
+  setup_WiFiManager();
   setup_ota();     // inicializa OTA
   setup_mqtt();    // inicializa MQTT
-  setup_AHT10();   // Inicializa AHT10
   setup_server();  // Inicializa o servidor
+  setup_IR();      // inicializa IR
+  setup_AHT10();   // Inicializa AHT10
 
+  pinMode(BTN_RESET, INPUT_PULLUP);
   pinMode(LEDA, OUTPUT);  // LED A GPIO02
+
   // Irá piscar o LED 10x com intervalo de 0,5 Segundo
   for (long x = 0; x < 10; x++) {
     digitalWrite(LEDA, !digitalRead(LEDA));  // Inverte o estado do LED.
@@ -201,6 +212,43 @@ void setup() {
 /************ LOOP ************/
 void loop() {
 
+  MDNS.update();
+
+  static unsigned long pressStart = 0;
+  static bool portalOpened = false;
+
+  if (digitalRead(BTN_RESET) == LOW) {
+
+    if (pressStart == 0) {
+      pressStart = millis();
+      portalOpened = false;
+    }
+
+    unsigned long pressTime = millis() - pressStart;
+
+    // ==========================
+    // 1s → abre portal
+    // ==========================
+    // DEPOIS
+    if (pressTime > 1000 && pressTime < 3000 && !portalOpened) {
+      debugPrintln("[BTN] Abrindo portal WiFi...");
+      portalOpened = true;
+      pressStart = millis();
+      startWiFiManagerPortal();
+    }
+
+    // ==========================
+    // 3s → reset total
+    // ==========================
+    if (pressTime > 5000) {
+      debugPrintln("[BTN] Reset total solicitado via botão");
+      resetConfig();
+    }
+
+  } else {
+    pressStart = 0;
+  }
+
   ArduinoOTA.handle();
 
   server.handleClient();
@@ -210,6 +258,14 @@ void loop() {
   mqtt_client.loop();
 
   unsigned long now = millis();
+
+  // ---- WIFI WATCHDOG ----
+  static unsigned long tWifi = 0;
+
+  if (now - tWifi > 30000) {  // verifica a cada 30 segundos
+    tWifi = now;
+    wifi_watchdog();
+  }
 
   // ---- IR DECODER ----
   myIRdecoder();

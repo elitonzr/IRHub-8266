@@ -252,7 +252,7 @@ size_t buildIRJson(
   size_t size,
   uint32_t code,
   decode_type_t proto,
-  uint8_t bits,  
+  uint8_t bits,
   const char* status,
   const char* origem) {
 
@@ -268,14 +268,14 @@ size_t buildIRJson(
   doc["bits"] = bits;
 
 
-if (code != 0) {
+  if (code != 0) {
 
-  char hexStr[12];
-  snprintf(hexStr, sizeof(hexStr), "0x%lX", code);
+    char hexStr[12];
+    snprintf(hexStr, sizeof(hexStr), "0x%lX", code);
 
-  doc["dec"] = code;
-  doc["hex"] = hexStr;
-}
+    doc["dec"] = code;
+    doc["hex"] = hexStr;
+  }
 
   doc["millis"] = millis();
 
@@ -343,11 +343,11 @@ void desligamentoUniversal() {
       }
     case 6:
       {
-        // ===== Panasonic =====
         debugPrintln("    Enviando: Panasonic...");
         enviandoCod = true;
         irsend.sendPanasonic(0x4004, 0x100BCBD);
-
+        delay(5);
+        enviandoCod = false;
         testN++;
         break;
       }

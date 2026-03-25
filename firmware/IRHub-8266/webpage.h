@@ -261,54 +261,110 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
   <body>
     <h1 id="name">IRHub-8266</h1>
+    <div id="wsStatus" style="text-align: center; margin-bottom: 16px">
+      <span class="status offline">⚡ WebSocket desconectado</span>
+    </div>
 
     <div class="grid">
-      <!-- SYSTEM -->
+      <!-- IR RECEPTOR -->
       <section class="card">
-        <header>System</header>
+        <header>IR Receptor</header>
         <div class="item">
-          Build Date: <span id="buildDateTime" class="value">--</span>
+          <span id="irDot" class="dot yellow"></span>
+          Protocolo: <span id="irMode" class="value">--</span>
         </div>
         <div class="item">
-          Version: <span id="buildVersion" class="value">--</span>
+          <button class="btn-ir-receptor" onclick="toggleIRReceptor()">
+            Alternar Protocolo
+          </button>
         </div>
-        <div class="item">
-          File: <span id="buildFile" class="value">--</span>
-        </div>
-        <div class="item">
-          Uptime: <span id="uptime" class="value">--</span>
-        </div>
-        <div class="item">Heap: <span id="heap" class="value">--</span></div>
       </section>
 
-      <!-- NETWORK -->
+      <!-- IR EMISSOR -->
       <section class="card">
-        <header>Network</header>
-        <div class="item">SSID: <span id="wifi" class="value">--</span></div>
-        <div class="item">IP: <span id="ip" class="value">--</span></div>
-        <div class="item">RSSI: <span id="rssi" class="value">--</span></div>
+        <header>IR Emissor</header>
+        <div class="item">
+          Modo Teste: <span id="irEmitter" class="value">--</span>
+        </div>
+        <div class="item">
+          <button class="btn-ir-emitter" onclick="toggleIREmissor()">
+            Alternar Teste
+          </button>
+        </div>
+        <hr style="border-color: #374151; margin: 10px 0" />
+        <div class="item">
+          <select
+            id="irProto"
+            style="
+              width: 100%;
+              padding: 6px;
+              border-radius: 6px;
+              background: #111827;
+              color: #f9fafb;
+              border: 1px solid #374151;
+              font-size: 12px;
+            "
+          >
+            <option value="NEC">NEC</option>
+            <option value="SAMSUNG">SAMSUNG</option>
+            <option value="SONY">SONY</option>
+            <option value="RC5">RC5</option>
+            <option value="RC6">RC6</option>
+            <option value="NIKAI">NIKAI</option>
+            <option value="LG">LG</option>
+            <option value="JVC">JVC</option>
+          </select>
+        </div>
+        <div class="item">
+          <input
+            id="irCode"
+            type="text"
+            placeholder="Código hex (ex: 0x20DF10EF)"
+            style="
+              width: 100%;
+              padding: 6px;
+              border-radius: 6px;
+              background: #111827;
+              color: #f9fafb;
+              border: 1px solid #374151;
+              font-size: 12px;
+              box-sizing: border-box;
+            "
+          />
+        </div>
+        <div class="item">
+          <input
+            id="irBits"
+            type="number"
+            placeholder="Bits (ex: 32)"
+            value="32"
+            min="1"
+            max="64"
+            style="
+              width: 100%;
+              padding: 6px;
+              border-radius: 6px;
+              background: #111827;
+              color: #f9fafb;
+              border: 1px solid #374151;
+              font-size: 12px;
+              box-sizing: border-box;
+            "
+          />
+        </div>
+        <div class="item">
+          <button class="btn-primary" onclick="sendIRManual()">
+            📡 Enviar IR
+          </button>
+        </div>
       </section>
 
-      <!-- MQTT -->
-      <section class="card">
-        <header>MQTT</header>
+      <!-- IR HISTORY -->
+      <section class="card ir-history">
+        <header>Últimos IR Recebidos</header>
+        <ul id="irHistory"></ul>
         <div class="item">
-          Server: <span id="mqttServer" class="value">--</span>
-        </div>
-        <div class="item">
-          Client ID: <span id="mqttClient" class="value">--</span>
-        </div>
-        <div class="item">
-          Tópico: <span id="topic_main" class="value">--</span>
-        </div>
-        <div class="item">
-          Sucessos: <span id="mqttSucessos" class="value">--</span>
-        </div>
-        <div class="item">
-          Erros: <span id="mqttErros" class="value">--</span>
-        </div>
-        <div class="item">
-          Status: <span id="mqttStatus" class="status offline">offline</span>
+          <button class="btn-clean" onclick="cleanHistory()">🗑 Limpar</button>
         </div>
       </section>
 
@@ -334,39 +390,70 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         </div>
       </section>
 
-      <!-- IR EMISSOR -->
+      <!-- NETWORK -->
       <section class="card">
-        <header>IR Emissor</header>
+        <header>Network</header>
+        <div class="item">mDNS: <span id="mdns" class="value">--</span></div>
+        <div class="item">SSID: <span id="wifi" class="value">--</span></div>
+        <div class="item">IP: <span id="ip" class="value">--</span></div>
         <div class="item">
-          Modo Teste: <span id="irEmitter" class="value">--</span>
+          Gateway: <span id="gateway" class="value">--</span>
+        </div>
+        <div class="item">Mask: <span id="mask" class="value">--</span></div>
+        <div class="item">RSSI: <span id="rssi" class="value">--</span></div>
+        <hr style="border-color: #374151; margin: 10px 0" />
+        <div class="item">
+          <button class="btn-primary" onclick="openWifiPortal()">
+            📶 Abrir Portal WiFi
+          </button>
         </div>
         <div class="item">
-          <button class="btn-ir-emitter" onclick="toggleIREmissor()">
-            Alternar Teste
-          </button>
+          <button class="btn-clean" onclick="resetWifi()">⚠️ Reset Wifi</button>
         </div>
       </section>
 
-      <!-- IR RECEPTOR -->
+      <!-- MQTT -->
       <section class="card">
-        <header>IR Receptor</header>
+        <header>MQTT</header>
         <div class="item">
-          <span id="irDot" class="dot yellow"></span>
-          Protocolo: <span id="irMode" class="value">--</span>
+          Server: <span id="mqttServer" class="value">--</span>
         </div>
         <div class="item">
-          <button class="btn-ir-receptor" onclick="toggleIRReceptor()">
-            Alternar Protocolo
-          </button>
+          Client ID: <span id="mqttClient" class="value">--</span>
+        </div>
+        <div class="item">
+          Tópico: <span id="topic_main" class="value">--</span>
+        </div>
+        <div class="item">
+          Sucessos: <span id="mqttSucessos" class="value">--</span>
+        </div>
+        <div class="item">
+          Erros: <span id="mqttErros" class="value">--</span>
+        </div>
+        <div class="item">
+          Status: <span id="mqttStatus" class="status offline">offline</span>
         </div>
       </section>
 
-      <!-- IR HISTORY -->
-      <section class="card ir-history">
-        <header>Últimos IR Recebidos</header>
-        <ul id="irHistory"></ul>
+      <!-- SYSTEM -->
+      <section class="card">
+        <header>System</header>
         <div class="item">
-          <button class="btn-clean" onclick="cleanHistory()">🗑 Limpar</button>
+          Build Date: <span id="buildDateTime" class="value">--</span>
+        </div>
+        <div class="item">
+          Version: <span id="buildVersion" class="value">--</span>
+        </div>
+        <div class="item">
+          Uptime: <span id="uptime" class="value">--</span>
+        </div>
+        <div class="item">Heap: <span id="heap" class="value">--</span></div>
+        <hr style="border-color: #374151; margin: 10px 0" />
+        <div class="item">
+          <button class="btn-clean" onclick="rebootDevice()">🔄 Reboot</button>
+        </div>
+        <div class="item">
+          <button class="btn-clean" onclick="resetConfig()">⚠️ Reset Total</button>
         </div>
       </section>
     </div>
@@ -383,10 +470,12 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
         ws.onopen = () => {
           console.log("WebSocket conectado");
+          updateWSStatus(true);
         };
 
         ws.onclose = () => {
           console.log("WebSocket desconectado");
+          updateWSStatus(false);
           setTimeout(connectWS, 2000);
         };
 
@@ -428,25 +517,32 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
           case "mqtt":
             updateMQTTWS(data);
             break;
+
+          case "reboot":
+            updateWSStatus(false);
+            alert("Dispositivo reiniciando...");
+            break;
+
+          case "wifiPortal":
+            updateWSStatus(false);
+            alert(
+              "Portal WiFi aberto! Conecte-se à rede 'irhub8266' para configurar.",
+            );
+            break;
+
+          case "wifiReset":
+            updateWSStatus(false);
+            alert("WiFi resetado! O dispositivo está reiniciando...");
+            break;
+
+          case "configReset":
+            updateWSStatus(false);
+            alert("WiFi resetado! O dispositivo está reiniciando...");
+            break;
         }
       }
 
       connectWS();
-
-      /* ---------------- FETCH HELPERS ---------------- */
-
-      async function fetchJSON(url) {
-        try {
-          const r = await fetch(url);
-
-          if (!r.ok) throw new Error("HTTP " + r.status);
-
-          return await r.json();
-        } catch (e) {
-          console.log("Erro:", url);
-          return null;
-        }
-      }
 
       /* ---------------- SYSTEM ---------------- */
 
@@ -455,53 +551,11 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         document.getElementById("buildDateTime").textContent =
           data.buildDateTime;
         document.getElementById("buildVersion").textContent = data.buildVersion;
-        document.getElementById("buildFile").textContent = data.buildFile;
-        document.getElementById("uptime").textContent = data.uptime;
         document.getElementById("heap").textContent = data.heap;
-      }
 
-      /* ---------------- NETWORK ---------------- */
+        setUptimeBase(data.uptime_seconds); // ← chama a base
 
-      async function updateNetwork() {
-        const data = await fetchJSON("/network.json");
-
-        if (!data) return;
-
-        document.getElementById("wifi").textContent =
-          data.network?.wifi || "--";
-        document.getElementById("ip").textContent = data.network?.ip || "--";
-        document.getElementById("rssi").textContent =
-          data.network?.rssi || "--";
-      }
-
-      /* ---------------- MQTT ---------------- */
-
-      async function updateMQTT() {
-        const data = await fetchJSON("/mqtt.json");
-
-        if (!data) return;
-
-        const mqtt = data.mqtt || {};
-
-        document.getElementById("mqttServer").textContent = mqtt.server || "--";
-        document.getElementById("mqttClient").textContent =
-          mqtt.client_id || "--";
-        document.getElementById("topic_main").textContent =
-          mqtt.topic_main || "--";
-
-        document.getElementById("mqttSucessos").textContent =
-          mqtt.sucesso ?? "--";
-        document.getElementById("mqttErros").textContent = mqtt.erro ?? "--";
-
-        const status = document.getElementById("mqttStatus");
-
-        if (mqtt.status) {
-          status.className = "status online";
-          status.textContent = "online";
-        } else {
-          status.className = "status offline";
-          status.textContent = "offline";
-        }
+        updateWSStatus(ws && ws.readyState === WebSocket.OPEN);
       }
 
       /* ---------------- OUTPUTS ---------------- */
@@ -556,9 +610,7 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
       function updateIRWS(data) {
         const dot = document.getElementById("irDot");
-
         dot.className = "dot green";
-
         setTimeout(() => {
           dot.className = "dot yellow";
         }, 300);
@@ -566,6 +618,7 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         const payload = {
           timestamp: new Date().toLocaleTimeString(),
           protocolo: data.protocolo,
+          bits: data.bits,
           dec: data.dec,
           hex: data.hex,
         };
@@ -574,8 +627,11 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
       }
 
       function updateNetworkWS(data) {
+        document.getElementById("mdns").textContent = data.mdns;
         document.getElementById("wifi").textContent = data.wifi;
         document.getElementById("ip").textContent = data.ip;
+        document.getElementById("gateway").textContent = data.gateway;
+        document.getElementById("mask").textContent = data.mask;
         document.getElementById("rssi").textContent = data.rssi;
       }
 
@@ -598,95 +654,169 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         }
       }
 
+      function updateWSStatus(connected) {
+        const el = document.getElementById("wsStatus");
+        el.innerHTML = connected
+          ? '<span class="status online">⚡ WebSocket conectado</span>'
+          : '<span class="status offline">⚡ WebSocket desconectado</span>';
+
+        const name =
+          document.getElementById("name").textContent || "IRHub-8266";
+        document.title = connected ? `✅ ${name}` : `❌ ${name}`;
+      }
+
+      /* ---------------- UPTIME ---------------- */
+
+      let uptimeSeconds = 0;
+
+      function formatUptime(s) {
+        const d = Math.floor(s / 86400);
+        const h = Math.floor((s % 86400) / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = s % 60;
+        return `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(sec).padStart(2, "0")}s`;
+      }
+
+      // Recebe base do dispositivo via WS
+      function setUptimeBase(seconds) {
+        uptimeSeconds = seconds;
+      }
+
+      // Incrementa localmente a cada 1s
+      setInterval(() => {
+        uptimeSeconds++;
+        document.getElementById("uptime").textContent =
+          formatUptime(uptimeSeconds);
+      }, 1000);
+
       /* ---------------- HISTORY ---------------- */
 
-      let irHistory = JSON.parse(localStorage.getItem("irHistory")) || [];
+      let irHistory = []; // apenas em memória
 
       function saveIRToHistory(payload) {
         if (irHistory.length) {
-          const last = JSON.parse(irHistory[0]);
-
-          if (last.dec === payload.dec) return;
+          const last = irHistory[0];
+          if (last.dec === payload.dec) return; // ignora repetido
         }
-
-        payload = JSON.stringify(payload);
 
         irHistory.unshift(payload);
 
         if (irHistory.length > 10) irHistory = irHistory.slice(0, 10);
 
-        localStorage.setItem("irHistory", JSON.stringify(irHistory));
+        renderIRHistory();
+      }
 
+      function cleanHistory() {
+        irHistory = [];
         renderIRHistory();
       }
 
       function renderIRHistory() {
         const list = document.getElementById("irHistory");
-
         list.innerHTML = "";
 
-        irHistory.forEach((i) => {
-          const data = JSON.parse(i);
-
+        irHistory.forEach((data) => {
           const li = document.createElement("li");
-
-          li.textContent = `${data.timestamp} | ${data.protocolo} | ${data.dec} | ${data.hex} 📋`;
-
+          li.textContent = `${data.timestamp} | ${data.protocolo} | ${data.bits}b | ${data.dec} | ${data.hex} 📋`;
           li.onclick = () => {
             navigator.clipboard.writeText(data.hex);
-
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(
-                JSON.stringify({
-                  cmd: "sendIR",
-                  hex: data.hex,
-                }),
-              );
-            }
-
+            wsSend(
+              JSON.stringify({
+                cmd: "sendIR",
+                hex: data.hex,
+                protocolo: data.protocolo,
+                bits: data.bits,
+              }),
+            );
             li.classList.add("flash");
-
             setTimeout(() => {
               li.classList.remove("flash");
             }, 400);
           };
-
           list.appendChild(li);
         });
       }
 
-      function cleanHistory() {
-        irHistory = [];
-
-        localStorage.removeItem("irHistory");
-
-        renderIRHistory();
-      }
-
       /* ---------------- COMMANDS ---------------- */
 
+      function wsSend(msg) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(msg);
+        } else {
+          console.warn("[WS] Não conectado, comando ignorado:", msg);
+        }
+      }
+
+      function sendIRManual() {
+        const proto = document.getElementById("irProto").value;
+        const code = document.getElementById("irCode").value.trim();
+        const bits = parseInt(document.getElementById("irBits").value) || 32;
+
+        if (!code) {
+          alert("Digite um código IR.");
+          return;
+        }
+
+        wsSend(
+          JSON.stringify({
+            cmd: "sendIR",
+            hex: code,
+            protocolo: proto,
+            bits: bits,
+          }),
+        );
+      }
+
       function toggleLED() {
-        if (ws.readyState === WebSocket.OPEN) ws.send("toggleLED");
+        wsSend("toggleLED");
       }
 
       function toggleIRReceptor() {
-        if (ws.readyState === WebSocket.OPEN) ws.send("toggleIRReceptor");
+        wsSend("toggleIRReceptor");
       }
 
       function toggleIREmissor() {
-        if (ws.readyState === WebSocket.OPEN) ws.send("toggleIREmissor");
+        wsSend("toggleIREmissor");
       }
 
-      /* ---------------- TIMERS ---------------- */
+      function rebootDevice() {
+        if (!confirm("Reiniciar o dispositivo?")) return;
+        wsSend(JSON.stringify({ cmd: "reboot" }));
+      }
 
-      // setInterval(updateNetwork, 5000);
-      // setInterval(updateMQTT, 3000);
+      /* ---------------- WIFI ---------------- */
+
+      function openWifiPortal() {
+        if (
+          !confirm(
+            "Abrir portal de configuração WiFi?\nO dispositivo ficará inacessível durante o portal.",
+          )
+        )
+          return;
+        wsSend(JSON.stringify({ cmd: "wifiPortal" }));
+      }
+
+      function resetWifi() {
+        if (
+          !confirm(
+            "Resetar configurações Wifi?\nO dispositivo será reiniciado e perderá a conexão.",
+          )
+        )
+          return;
+        wsSend(JSON.stringify({ cmd: "wifiReset" }));
+      }
+
+      function resetConfig() {
+        if (
+          !confirm(
+            "Resetar totas as configurações?\nO dispositivo será reiniciado e perderá a conexão.",
+          )
+        )
+          return;
+        wsSend(JSON.stringify({ cmd: "configReset" }));
+      }
 
       /* ---------------- INIT ---------------- */
-
-      updateNetwork();
-      updateMQTT();
-      renderIRHistory();
     </script>
   </body>
 </html>

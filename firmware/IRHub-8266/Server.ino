@@ -114,7 +114,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         /* ---------- COMANDOS JSON ---------- */
 
-        StaticJsonDocument<128> doc;
+        StaticJsonDocument<256> doc;
         DeserializationError err = deserializeJson(doc, msg);
 
         if (err) return;
@@ -126,16 +126,55 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         if (strcmp(cmd, "sendIR") == 0) {
 
           const char* hex = doc["hex"];
+          const char* protoStr = doc["protocolo"] | "NEC";
+          uint8_t bits = doc["bits"] | 32;
 
           if (hex) {
-
             uint32_t value = strtoul(hex, NULL, 16);
 
-            Serial.print("Enviando IR HEX: ");
-            Serial.println(hex);
+            // Resolve protocolo
+            decode_type_t proto = NEC;
+            if (strcasecmp(protoStr, "SAMSUNG") == 0) proto = SAMSUNG;
+            else if (strcasecmp(protoStr, "SONY") == 0) proto = SONY;
+            else if (strcasecmp(protoStr, "RC5") == 0) proto = RC5;
+            else if (strcasecmp(protoStr, "RC6") == 0) proto = RC6;
+            else if (strcasecmp(protoStr, "NIKAI") == 0) proto = NIKAI;
+            else if (strcasecmp(protoStr, "LG") == 0) proto = LG;
+            else if (strcasecmp(protoStr, "JVC") == 0) proto = JVC;
 
-            irsend.sendNEC(value, 32);  // ou protocolo usado
+            debugPrintf("[WS] sendIR proto:%s bits:%d hex:%s", protoStr, bits, hex);
+
+            bool ok = sendIRCode(value, proto, bits);
+            sendIRFeedback(value, proto, bits, ok ? "ok" : "fail", "ws");
           }
+        }
+
+        if (strcmp(cmd, "reboot") == 0) {
+          debugPrintln("[WS] Reboot solicitado via WebSocket");
+          webSocket.broadcastTXT("{\"type\":\"reboot\"}");
+          delay(500);
+          ESP.restart();
+        }
+
+        if (strcmp(cmd, "wifiPortal") == 0) {
+          debugPrintln("[WS] Abrindo portal WiFi via WebSocket");
+          webSocket.broadcastTXT("{\"type\":\"wifiPortal\"}");
+          delay(500);
+          startWiFiManagerPortal();
+        }
+
+        if (strcmp(cmd, "wifiReset") == 0) {
+          debugPrintln("[WS] Reset Wifi solicitado via WebSocket");
+          webSocket.broadcastTXT("{\"type\":\"wifiReset\"}");
+          delay(500);
+          resetWifi();
+        }
+
+        if (strcmp(cmd, "configReset") == 0) {
+          debugPrintln("[WS] Reset total solicitado via WebSocket");
+          webSocket.broadcastTXT("{\"type\":\"configReset\"}");
+          delay(500);
+          resetConfig();
         }
 
         break;
@@ -151,8 +190,8 @@ void wsSendSystem() {
   doc["name"] = myTopic;
   doc["buildDateTime"] = buildDateTime;
   doc["buildVersion"] = buildVersion;
-  doc["buildFile"] = buildFile;
   doc["uptime"] = getFormattedUptime();
+  doc["uptime_seconds"] = millis() / 1000UL;
   doc["heap"] = ESP.getFreeHeap();
 
   char buffer[256];
@@ -215,8 +254,8 @@ void wsSendNetwork() {
   StaticJsonDocument<192> doc;
 
   doc["type"] = "network";
-
-  doc["wifi"] = wifi_ssid;
+  doc["mdns"] = String("http://") + hostname_buf + ".local";
+  doc["wifi"] = WiFi.SSID();
   doc["ip"] = WiFi.localIP().toString();
   doc["gateway"] = WiFi.gatewayIP().toString();
   doc["mask"] = WiFi.subnetMask().toString();

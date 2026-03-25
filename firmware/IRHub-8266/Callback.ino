@@ -101,6 +101,7 @@ void processaComando(byte* payload, unsigned int length) {
         {
           MQTTsendInfoSatus();
           MQTTsendInfoBuild();
+          MQTTsendInfoSoftware();
           MQTTsendInfoNetwork();
           MQTTsendInfoMQTT();
           break;
@@ -164,7 +165,7 @@ void processaIRJson(char* payload) {
     return;
   }
 
-  const char* protoStr = doc["protocol"];
+  const char* protoStr = doc["protocolo"];
   uint8_t bits = doc["bits"] | 0;
   if (bits == 0) bits = 32;
 
@@ -177,17 +178,20 @@ void processaIRJson(char* payload) {
   // ---------- protocolo ----------
   decode_type_t proto;
 
-  if (strcasecmp(protoStr, "NEC") == 0) proto = NEC;
-  else if (strcasecmp(protoStr, "SONY") == 0) proto = SONY;
-  else if (strcasecmp(protoStr, "RC5") == 0) proto = RC5;
-  else if (strcasecmp(protoStr, "SAMSUNG") == 0) proto = SAMSUNG;
-  else if (strcasecmp(protoStr, "NIKAI") == 0) proto = NIKAI;
-  else {
+if      (strcasecmp(protoStr, "NEC")     == 0) proto = NEC;
+else if (strcasecmp(protoStr, "SONY")    == 0) proto = SONY;
+else if (strcasecmp(protoStr, "RC5")     == 0) proto = RC5;
+else if (strcasecmp(protoStr, "RC6")     == 0) proto = RC6;
+else if (strcasecmp(protoStr, "SAMSUNG") == 0) proto = SAMSUNG;
+else if (strcasecmp(protoStr, "NIKAI")   == 0) proto = NIKAI;
+else if (strcasecmp(protoStr, "LG")      == 0) proto = LG;
+else if (strcasecmp(protoStr, "JVC")     == 0) proto = JVC;
+else {
     debugPrint("Protocolo desconhecido: ");
     debugPrintln(protoStr);
     sendIRFeedback(0, UNKNOWN, 0, "Protocolo desconhecido", "mqtt");
     return;
-  }
+}
 
   // ---------- código ----------
   uint32_t code = 0;

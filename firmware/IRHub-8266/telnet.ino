@@ -1,5 +1,4 @@
 /************ TELNET CLI ************/
-
 #define TELNET_BUFFER 64
 char telnetBuffer[TELNET_BUFFER];
 
@@ -155,9 +154,6 @@ void debugBuild() {
 
   debugPrint("  Versão        : ");
   debugPrintln(buildVersion);
-
-  debugPrint("  Arquivo       : ");
-  debugPrintln(buildFile);
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");

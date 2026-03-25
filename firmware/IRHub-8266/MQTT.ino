@@ -70,25 +70,20 @@ void setup_mqtt() {
 }
 
 void mqtt_reconnect() {
+  static unsigned long lastAttempt = 0;
+  static bool firstAttempt = true;  // flag para tentativa imediata
+  const unsigned long retryInterval = 60000;
 
-  static unsigned long lastAttempt = 60000;
-  const unsigned long retryInterval = 60000;  // 60 segundos
-
-  // Se já está conectado, não faz nada
-  if (mqtt_client.connected()) {
-    return;
-  }
+  if (mqtt_client.connected()) return;
 
   unsigned long now = millis();
 
-  // Só tenta reconectar se passou o intervalo
-  if (now - lastAttempt < retryInterval) {
-    return;
-  }
+  // Na primeira vez, tenta imediatamente sem esperar o intervalo
+  if (!firstAttempt && (now - lastAttempt < retryInterval)) return;
 
+  firstAttempt = false;
   lastAttempt = now;
 
-  // if (!mqtt_client.connected()) {
   debugPrintln("");
   debugPrintln("    Tentando conexão MQTT...");
 
@@ -100,8 +95,8 @@ void mqtt_reconnect() {
 
   bool conectado = mqtt_client.connect(
     clientID.c_str(),
-    mqtt_user.c_str(),
-    mqtt_password.c_str(),
+    mqtt_user_buf,
+    mqtt_password_buf,
     topic_info_status,
     1,
     true,
@@ -123,6 +118,7 @@ void mqtt_reconnect() {
 
     MQTTsendInfoSatus();  // Publica birth message
     MQTTsendInfoBuild();
+    MQTTsendInfoSoftware();
     MQTTsendInfoNetwork();
     MQTTsendInfoMQTT();
 
@@ -147,7 +143,7 @@ void mqtt_reconnect() {
     debugPrint("    Falha MQTT. rc=");
     debugPrintln(String(mqtt_client.state()));
   }
-  // }
+
 }
 
 /************************************************************
@@ -189,7 +185,6 @@ void MQTTsendInfoBuild() {
   StaticJsonDocument<256> doc;
   doc["build_datetime"] = buildDateTime;  // Data e hora de compilação
   doc["version"] = buildVersion;          // Versão do compilador
-  doc["build_file"] = buildFile;          // Arquivo compilado
   doc["chip_id"] = ESP.getChipId();
 
   char MQTT_Msg[256];
@@ -214,13 +209,48 @@ void MQTTsendInfoBuild() {
 }
 
 /************************************************************
+* INFO SOFTWARE
+* Publica informações sobre o software
+************************************************************/
+void MQTTsendInfoSoftware() {
+
+  StaticJsonDocument<256> doc;
+  doc["hostname"] = hostname_buf;
+  doc["mqtt_id"] = mqtt_id_buf;
+  doc["grupo"] = grupo_buf;
+  doc["topic_main"] = myTopic;
+  doc["client_id"] = clientID;
+
+  char MQTT_Msg[256];
+  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
+
+  if (!mqtt_client.connected()) {
+    debugPrint("[MQTT] Offline - ");
+    debugPrint("topic [");
+    debugPrint(topic_info_software);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+    return;
+  }
+
+  if (!mqtt_client.publish(topic_info_software, MQTT_Msg, len)) {
+    debugPrintln("[MQTT] Falha ao publicar");
+    debugPrint("topic [");
+    debugPrint(topic_info_software);
+    debugPrint("] payload: ");
+    debugPrintln(MQTT_Msg);
+  }
+}
+
+/************************************************************
 * INFO NETWORK
 * Publica informações sobre a rede
 ************************************************************/
 void MQTTsendInfoNetwork() {
 
   StaticJsonDocument<256> doc;
-  doc["wifi"] = wifi_ssid;
+  // doc["wifi"] = wifi_ssid;
+  doc["wifi"] = WiFi.SSID();
   doc["ip"] = WiFi.localIP().toString();
   doc["gateway"] = WiFi.gatewayIP().toString();
   doc["mask"] = WiFi.subnetMask().toString();
