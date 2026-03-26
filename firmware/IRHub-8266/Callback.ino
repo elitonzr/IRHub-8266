@@ -3,83 +3,61 @@
 // ======================================================
 void callback(char* topic, byte* payload, unsigned int length) {
 
-  // Proteção contra payload vazio
   if (length == 0) return;
 
-  // Copia o payload para um buffer fixo e adiciona terminador nulo
   char mensagem[MAX_PAYLOAD];
   unsigned int copyLen = (length < (MAX_PAYLOAD - 1)) ? length : (MAX_PAYLOAD - 1);
-
   memcpy(mensagem, payload, copyLen);
   mensagem[copyLen] = '\0';
 
-  // Exibe o tópico e a mensagem recebida no monitor serial
-  debugPrint("[Callback] [");
-  debugPrint("topic [");
+  debugPrint("[Callback] topic [");
   debugPrint(topic);
-  debugPrint("] ");
-  debugPrint(" payload [");
+  debugPrint("] payload [");
   debugPrint(mensagem);
-  debugPrint("] ");
-  debugPrintln("");
+  debugPrintln("]");
 
   // Comando geral
   if (strcmp(topic, topic_command) == 0) {
-
     processaComando(payload, length);
-
   }
 
   // Envia código IR
-  else if (strcmp(topic, topic_command_ir_emissor_send) == 0) {
-
+  else if (strcmp(topic, topic_sensor_ir_send_command) == 0) {
     char buffer[MAX_PAYLOAD];
     unsigned int len = (length < (MAX_PAYLOAD - 1)) ? length : (MAX_PAYLOAD - 1);
-
     memcpy(buffer, payload, len);
     buffer[len] = '\0';
-
     processaIRJson(buffer);
+  }
 
+  // Controle do receptor IR
+  else if (strcmp(topic, topic_sensor_ir_receptor_command) == 0) {
+    int modo = atoi(mensagem);
+    if (modo >= 0 && modo <= 4) {
+      IR_RecepitorSET(modo);
+    } else {
+      debugPrintln("[Callback] Modo IR inválido.");
+    }
   }
 
   // Controle de LED
-  else if (strcmp(topic, topic_command_led) == 0) {
-
-    char comando[MAX_PAYLOAD];
-    memcpy(comando, mensagem, copyLen);
-    comando[copyLen] = '\0';
-
-    // Buffer pequeno para normalização
+  else if (strcmp(topic, topic_switch_led_command) == 0) {
     char cmd[16];
-    size_t len = strlen(comando);
+    size_t len = strlen(mensagem);
     if (len >= sizeof(cmd)) len = sizeof(cmd) - 1;
-
-    memcpy(cmd, comando, len);
+    memcpy(cmd, mensagem, len);
     cmd[len] = '\0';
-
-    // Normaliza para lowercase
-    for (size_t i = 0; i < len; i++) {
-      cmd[i] = tolower(cmd[i]);
-    }
+    for (size_t i = 0; i < len; i++) cmd[i] = tolower(cmd[i]);
 
     if (strcmp(cmd, "toggle") == 0) {
-
       ledState = !ledState;
-
     } else if (strcmp(cmd, "on") == 0) {
-
       ledState = true;
-
     } else if (strcmp(cmd, "off") == 0) {
-
       ledState = false;
-
     } else {
-
-      debugPrintln("Comando inválido para LED.");
+      debugPrint("[Callback] Comando LED inválido: ");
       debugPrintln(cmd);
-      return;
     }
   }
 }
@@ -89,7 +67,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
 // ======================================================
 void processaComando(byte* payload, unsigned int length) {
 
-  // Garante pelo menos dois caracteres
   if (length < 2) return;
 
   char cmd = (char)payload[0];
@@ -98,36 +75,23 @@ void processaComando(byte* payload, unsigned int length) {
   if (cmd == 'a') {
     switch (valor) {
       case 0:
-        {
-          MQTTsendInfoSatus();
-          MQTTsendInfoBuild();
-          MQTTsendInfoSoftware();
-          MQTTsendInfoNetwork();
-          MQTTsendInfoMQTT();
-          break;
-        }
+        MQTTsendStatus();
+        MQTTsendInfoDevice();
+        MQTTsendInfoNetwork();
+        MQTTsendInfoMQTT();
+        break;
       case 1:
-        {
-          MQTTsendUptime();
-          break;
-        }
+        MQTTsendUptime();
+        break;
       case 2:
-        {
-
-          MQTTsendInfoIR();
-
-          break;
-        }
+        MQTTsendIRConfig();
+        break;
       case 3:
-        {
-          MQTTsendAHT10();
-          break;
-        }
+        MQTTsendAHT10();
+        break;
       case 4:
-        {
-          MQTTsendOutputs();
-          break;
-        }
+        MQTTsendLED();
+        break;
       default:
         break;
     }
@@ -139,7 +103,9 @@ void processaComando(byte* payload, unsigned int length) {
     } else if (valor == 1) {
       IR_EmissorTeste = true;
     }
-    MQTTsendInfoIR();
+    MQTTsendIRConfig();
+    debugsendInfoIR();
+    wsSendInfoIR();
   }
 }
 
@@ -178,20 +144,20 @@ void processaIRJson(char* payload) {
   // ---------- protocolo ----------
   decode_type_t proto;
 
-if      (strcasecmp(protoStr, "NEC")     == 0) proto = NEC;
-else if (strcasecmp(protoStr, "SONY")    == 0) proto = SONY;
-else if (strcasecmp(protoStr, "RC5")     == 0) proto = RC5;
-else if (strcasecmp(protoStr, "RC6")     == 0) proto = RC6;
-else if (strcasecmp(protoStr, "SAMSUNG") == 0) proto = SAMSUNG;
-else if (strcasecmp(protoStr, "NIKAI")   == 0) proto = NIKAI;
-else if (strcasecmp(protoStr, "LG")      == 0) proto = LG;
-else if (strcasecmp(protoStr, "JVC")     == 0) proto = JVC;
-else {
+  if      (strcasecmp(protoStr, "NEC")     == 0) proto = NEC;
+  else if (strcasecmp(protoStr, "SONY")    == 0) proto = SONY;
+  else if (strcasecmp(protoStr, "RC5")     == 0) proto = RC5;
+  else if (strcasecmp(protoStr, "RC6")     == 0) proto = RC6;
+  else if (strcasecmp(protoStr, "SAMSUNG") == 0) proto = SAMSUNG;
+  else if (strcasecmp(protoStr, "NIKAI")   == 0) proto = NIKAI;
+  else if (strcasecmp(protoStr, "LG")      == 0) proto = LG;
+  else if (strcasecmp(protoStr, "JVC")     == 0) proto = JVC;
+  else {
     debugPrint("Protocolo desconhecido: ");
     debugPrintln(protoStr);
     sendIRFeedback(0, UNKNOWN, 0, "Protocolo desconhecido", "mqtt");
     return;
-}
+  }
 
   // ---------- código ----------
   uint32_t code = 0;
@@ -231,5 +197,5 @@ else {
 
 void sendIRFeedback(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
   wsSendIR_Emissor(code, proto, bits, status, origem);
-  MQTTsendIR_Emissor(code, proto, bits, status, origem);
+  MQTTsendIR_Sent(code, proto, bits, status, origem);
 }

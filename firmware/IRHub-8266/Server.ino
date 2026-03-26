@@ -58,6 +58,9 @@ void handleIR_Recepitor() {
 
 void handleIR_EmissorTeste() {
   IR_EmissorTeste = !IR_EmissorTeste;
+  MQTTsendIRConfig();
+  debugsendInfoIR();
+  wsSendInfoIR();
   server.send(200, "application/json", "");
 }
 
@@ -72,9 +75,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
       wsSendOutputs();
       wsSendNetwork();
       wsSendMQTT();
-      wsSendIR_EmissorStatus();
-      wsSendIR_Receptor();
-      wsSendIR();
+      wsSendInfoIR();
+      wsSendInfoIR_Receptor();
 
       break;
 
@@ -102,13 +104,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           if (n > 4) n = 0;
 
           IR_RecepitorSET(n);
-          wsSendIR_Receptor();
           return;
         }
 
         if (msg == "toggleIREmissor") {
           IR_EmissorTeste = !IR_EmissorTeste;
-          wsSendIR_EmissorStatus();
+          MQTTsendIRConfig();
+          debugsendInfoIR();
+          wsSendInfoIR();
           return;
         }
 
@@ -229,26 +232,6 @@ void wsSendAHT10() {
   webSocket.broadcastTXT(buffer, len);
 }
 
-void wsSendIR() {
-
-  if (!lastIR.valido) return;
-
-  StaticJsonDocument<256> doc;
-
-  doc["type"] = "ir";
-  doc["timestamp"] = lastIR.timestamp;
-  doc["protocolo"] = lastIR.protocolo;
-  doc["bits"] = lastIR.bits;
-  doc["dec"] = lastIR.dec;
-  doc["hex"] = lastIR.hexStr;
-
-  char buffer[256];
-  size_t len = serializeJson(doc, buffer);
-  webSocket.broadcastTXT(buffer, len);
-
-  lastIR.valido = false;
-}
-
 void wsSendNetwork() {
 
   StaticJsonDocument<192> doc;
@@ -267,37 +250,50 @@ void wsSendNetwork() {
 }
 
 void wsSendMQTT() {
-
   StaticJsonDocument<192> doc;
-
-  char topic_main[64];
-  snprintf(topic_main, sizeof(topic_main), "%s/#", myTopic.c_str());
-
   doc["type"] = "mqtt";
-
   doc["server"] = mqtt_server;
   doc["client_id"] = clientID;
-  doc["topic_main"] = topic_main;
+  doc["topic_main"] = myTopic + "/#";
   doc["status"] = mqtt_client.connected();
   doc["sucesso"] = mqttOK;
   doc["erro"] = mqttErro;
-
   char buffer[192];
   size_t len = serializeJson(doc, buffer);
   webSocket.broadcastTXT(buffer, len);
 }
 
-void wsSendIR_Receptor() {
+void wsSendInfoIR() {
   StaticJsonDocument<64> doc;
 
-  // ---- IR Receptor----
-  doc["type"] = "ir_receptor";
-  doc["protocolo"] = EstadoIRReceptor();
-
+  // ---- IR ----
+  doc["type"] = "ir";
+  doc["receptor_protocolo"] = EstadoIRReceptor();
+  doc["emissor_teste"] = IR_EmissorTeste;
 
   char buffer[64];
   size_t len = serializeJson(doc, buffer);
   webSocket.broadcastTXT(buffer, len);
+}
+
+void wsSendInfoIR_Receptor() {
+
+  if (!lastIR.valido) return;
+
+  StaticJsonDocument<256> doc;
+
+  doc["type"] = "ir_receptor";
+  doc["timestamp"] = lastIR.timestamp;
+  doc["protocolo"] = lastIR.protocolo;
+  doc["bits"] = lastIR.bits;
+  doc["dec"] = lastIR.dec;
+  doc["hex"] = lastIR.hexStr;
+
+  char buffer[256];
+  size_t len = serializeJson(doc, buffer);
+  webSocket.broadcastTXT(buffer, len);
+
+  lastIR.valido = false;
 }
 
 void wsSendIR_Emissor(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
@@ -319,17 +315,4 @@ void wsSendIR_Emissor(uint32_t code, decode_type_t proto, uint8_t bits, const ch
   }
 
   webSocket.broadcastTXT(payload, len);
-}
-
-void wsSendIR_EmissorStatus() {
-  StaticJsonDocument<64> doc;
-
-  // ---- IR Emissor----
-  doc["type"] = "ir_emissor";
-  doc["emissor_teste"] = IR_EmissorTeste;
-
-
-  char buffer[64];
-  size_t len = serializeJson(doc, buffer);
-  webSocket.broadcastTXT(buffer, len);
 }

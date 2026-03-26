@@ -73,20 +73,40 @@ void myIRdecoder() {
 }
 
 /************ Controle receptor ************/
-
 void IR_RecepitorSET(int n) {
-
   if (n < 0 || n > 4) return;
-
   IR_ReceptorEstado = static_cast<IR_ReceptorMode>(n);
-
-  MQTTsendInfoIR();
-  wsSendIR_Receptor();
+  MQTTsendIRConfig();
+  debugsendInfoIR();
+  wsSendInfoIR();
 }
 
+/************ Estado do receptor ************/
+const char* EstadoIRReceptor() {
+
+  switch (IR_ReceptorEstado) {
+
+    case IR_DESABILITADO:
+      return "DESABILITADO";
+
+    case IR_PROTOCOL_NEC:
+      return "NEC";
+
+    case IR_PROTOCOL_NIKAI:
+      return "NIKAI";
+
+    case IR_PROTOCOL_NEC_NIKAI:
+      return "NEC e NIKAI";
+
+    case IR_ALL:
+      return "TUDO";
+
+    default:
+      return "unknown";
+  }
+}
 
 /************ Registro do último IR ************/
-
 void lastIR_Receptor() {
 
   unsigned long now = millis();
@@ -121,13 +141,13 @@ void lastIR_Receptor() {
   lastIR.valido = true;
 
   debugIR();
-  MQTTsendIR_Receptor();
-  wsSendIR();
+  MQTTsendIR_Received();  // ← renomeado
+  wsSendInfoIR_Receptor();
+
 }
 
 
 /************ Tradução de protocolo ************/
-
 const char* getIRProtocol(decode_type_t type) {
 
   switch (type) {
@@ -148,31 +168,7 @@ const char* getIRProtocol(decode_type_t type) {
   }
 }
 
-/************ Estado do receptor ************/
 
-const char* EstadoIRReceptor() {
-
-  switch (IR_ReceptorEstado) {
-
-    case IR_DESABILITADO:
-      return "DESABILITADO";
-
-    case IR_PROTOCOL_NEC:
-      return "NEC";
-
-    case IR_PROTOCOL_NIKAI:
-      return "NIKAI";
-
-    case IR_PROTOCOL_NEC_NIKAI:
-      return "NEC e NIKAI";
-
-    case IR_ALL:
-      return "TUDO";
-
-    default:
-      return "unknown";
-  }
-}
 
 bool sendIRCode(uint32_t code, decode_type_t proto, uint8_t bits) {
 
@@ -359,6 +355,9 @@ void desligamentoUniversal() {
         debugPrintln(" ");
         IR_EmissorTeste = false;
         testN = 0;
+        MQTTsendIRConfig();
+        debugsendInfoIR();
+        wsSendInfoIR();
         break;
       }
     default:

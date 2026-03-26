@@ -573,12 +573,14 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         }
       }
 
-      /* ---------------- IR EMISSOR ---------------- */
+      /* ---------------- IR ---------------- */
 
-      function updateIREmissorWS(data) {
+      function updateIRWS(data) {
         document.getElementById("irEmitter").textContent = data.emissor_teste
           ? "Ativo"
           : "Desligado";
+        
+        document.getElementById("irMode").textContent = data.receptor_protocolo;
       }
 
       /* ---------------- AHT10 ---------------- */
@@ -602,13 +604,7 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         }
       }
 
-      /* ---------------- IR ---------------- */
-
       function updateIRReceptorWS(data) {
-        document.getElementById("irMode").textContent = data.protocolo;
-      }
-
-      function updateIRWS(data) {
         const dot = document.getElementById("irDot");
         dot.className = "dot green";
         setTimeout(() => {

@@ -56,33 +56,56 @@ PubSubClient mqtt_client(espClient);
 int mqttErro = 0;  // Variável para armazenar erro de conexão do MQTT.
 int mqttOK = 0;    // Variável para armazenar número de conexãos do MQTT.
 
+// // -- TOPICS MQTT PUBLISHERS --
+// //info
+// char topic_status[250];
+// char topic_info_device[250];
+// char topic_info_software[250];
+// char topic_info_network[250];
+// char topic_info_mqtt[250];
+// char topic_info_uptime[250];
+// char topic_switch_led_state[64];
+
+// //AHT10
+// char topic_sensor_AHT10[250];
+// char topic_sensor_aht10_status[250];
+
+// //IR
+// char topic_sensor_ir_config[64];
+// char topic_sensor_ir_received[64];
+// char topic_sensor_ir_sent[64];
+
+
+// // -- TOPICS MQTT SUBSCRIPTIONS --
+// char topic_command[64];
+// char topic_command_led[64];
+
+// //IR
+// char topic_command_ir_receptor_protocol[250];
+// char topic_command_ir_emissor_send[250];
+
 // -- TOPICS MQTT PUBLISHERS --
-//info
-char topic_info_status[250];
-char topic_info_Build[250];
-char topic_info_software[250];
-char topic_info_network[250];
-char topic_info_mqtt[250];
-char topic_info_uptime[250];
-char topic_info_outputs[64];
+char topic_status[64];  // birth/will
 
-//AHT10
-char topic_sensor_AHT10[250];
-char topic_status_AHT10[250];
+char topic_info_device[128];
+char topic_info_network[128];
+char topic_info_mqtt[128];
+char topic_info_uptime[128];
 
-//IR
-char topic_sensor_ir_status[64];
-char topic_sensor_ir_receptor_status[64];
-char topic_sensor_ir_emissor_status[64];
+char topic_switch_led_state[128];
 
+char topic_sensor_aht10[128];
+char topic_sensor_aht10_status[128];
+
+char topic_sensor_ir_config[128];
+char topic_sensor_ir_received[128];
+char topic_sensor_ir_sent[128];
 
 // -- TOPICS MQTT SUBSCRIPTIONS --
 char topic_command[64];
-char topic_command_led[64];
-
-//IR
-char topic_command_ir_receptor_protocol[250];
-char topic_command_ir_emissor_send[250];
+char topic_switch_led_command[128];
+char topic_sensor_ir_send_command[128];
+char topic_sensor_ir_receptor_command[128];
 
 // BUFFERS
 #define MAX_PAYLOAD 250
@@ -296,7 +319,8 @@ void loop() {
     lastLedState = ledState;
 
     wsSendOutputs();
-    MQTTsendOutputs();
+    MQTTsendLED();
+    debugLED();
   }
 
   // ---- WS NETWORK ----
@@ -324,7 +348,7 @@ void loop() {
     if (now - lastMsgTest > 2000) {
       lastMsgTest = now;
       desligamentoUniversal();
-      wsSendIR_EmissorStatus();
+      wsSendInfoIR();
     }
   }
 
