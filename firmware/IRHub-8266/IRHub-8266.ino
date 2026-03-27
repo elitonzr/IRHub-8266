@@ -56,34 +56,6 @@ PubSubClient mqtt_client(espClient);
 int mqttErro = 0;  // Variável para armazenar erro de conexão do MQTT.
 int mqttOK = 0;    // Variável para armazenar número de conexãos do MQTT.
 
-// // -- TOPICS MQTT PUBLISHERS --
-// //info
-// char topic_status[250];
-// char topic_info_device[250];
-// char topic_info_software[250];
-// char topic_info_network[250];
-// char topic_info_mqtt[250];
-// char topic_info_uptime[250];
-// char topic_switch_led_state[64];
-
-// //AHT10
-// char topic_sensor_AHT10[250];
-// char topic_sensor_aht10_status[250];
-
-// //IR
-// char topic_sensor_ir_config[64];
-// char topic_sensor_ir_received[64];
-// char topic_sensor_ir_sent[64];
-
-
-// // -- TOPICS MQTT SUBSCRIPTIONS --
-// char topic_command[64];
-// char topic_command_led[64];
-
-// //IR
-// char topic_command_ir_receptor_protocol[250];
-// char topic_command_ir_emissor_send[250];
-
 // -- TOPICS MQTT PUBLISHERS --
 char topic_status[64];  // birth/will
 
@@ -203,10 +175,10 @@ void setup() {
   Serial.println("======= Iniciando Setup =======");
 
   if (!LittleFS.begin()) {
-    Serial.println("Erro ao iniciar LittleFS");
+    Serial.println("[FS] Erro ao montar LittleFS");
     return;
   }
-  Serial.println("LittleFS pronto");
+  Serial.println("[FS] LittleFS pronto");
 
   setup_WiFiManager();
   setup_ota();     // inicializa OTA

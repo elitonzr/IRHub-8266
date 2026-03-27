@@ -1,3 +1,7 @@
+//Implementações futuras
+
+// - Configuar porta do MQTT
+
 // void saveIRCode() {
 
 //   StaticJsonDocument<256> doc;

@@ -129,3 +129,42 @@ IRHub-8266-Sala
 - Payloads são montados com `snprintf` e buffers fixos
 - Tópicos críticos usam **retain**
 - Reconexão MQTT é não bloqueante
+
+
+já corrigi todos os bugs.
+Agora crie um arquivo .md com o funcionamento de cada tópico do MQTT para que o usuário entenda com o dispositivo funciona, o arquivo deve ter exemplos de uso para melhor entendimento.
+
+
+  Subscriptions:
+
+    IRHub-8266-Sala/command
+
+    IRHub-8266-Sala/switch/led/command
+
+    IRHub-8266-Sala/sensor/ir/send/command
+
+    IRHub-8266-Sala/sensor/ir/receptor/command
+
+  Publishers:
+
+    IRHub-8266-Sala/status
+
+    IRHub-8266-Sala/info/device
+
+    IRHub-8266-Sala/info/network
+
+    IRHub-8266-Sala/info/mqtt
+
+    IRHub-8266-Sala/info/uptime
+
+    IRHub-8266-Sala/switch/led/state
+
+    IRHub-8266-Sala/sensor/aht10/state
+
+    IRHub-8266-Sala/sensor/aht10/status
+
+    IRHub-8266-Sala/sensor/ir/config/state
+
+    IRHub-8266-Sala/sensor/ir/received/state
+
+    IRHub-8266-Sala/sensor/ir/sent/state

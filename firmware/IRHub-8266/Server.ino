@@ -69,7 +69,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
   switch (type) {
 
     case WStype_CONNECTED:
-      Serial.printf("WS cliente %u conectado\n", num);
+      debugPrintf("[WS] cliente %u conectado\n", num);
 
       wsSendSystem();
       wsSendOutputs();
@@ -81,13 +81,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
       break;
 
     case WStype_DISCONNECTED:
-      Serial.printf("WS cliente %u desconectado\n", num);
+      debugPrintf("[WS] cliente %u desconectado\n", num);
+
       break;
 
     case WStype_TEXT:
       {
         String msg = String((char*)payload).substring(0, length);
-        Serial.println(msg);
+        debugPrintln(msg);
 
         /* ---------- COMANDOS SIMPLES ---------- */
 
@@ -252,6 +253,7 @@ void wsSendNetwork() {
 void wsSendMQTT() {
   StaticJsonDocument<192> doc;
   doc["type"] = "mqtt";
+  doc["enabled"] = mqttEnabled();
   doc["server"] = mqtt_server;
   doc["client_id"] = clientID;
   doc["topic_main"] = myTopic + "/#";
@@ -264,14 +266,14 @@ void wsSendMQTT() {
 }
 
 void wsSendInfoIR() {
-  StaticJsonDocument<64> doc;
+  StaticJsonDocument<128> doc;
 
   // ---- IR ----
   doc["type"] = "ir";
   doc["receptor_protocolo"] = EstadoIRReceptor();
   doc["emissor_teste"] = IR_EmissorTeste;
 
-  char buffer[64];
+  char buffer[128];
   size_t len = serializeJson(doc, buffer);
   webSocket.broadcastTXT(buffer, len);
 }
@@ -292,8 +294,6 @@ void wsSendInfoIR_Receptor() {
   char buffer[256];
   size_t len = serializeJson(doc, buffer);
   webSocket.broadcastTXT(buffer, len);
-
-  lastIR.valido = false;
 }
 
 void wsSendIR_Emissor(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {

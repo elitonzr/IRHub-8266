@@ -453,99 +453,160 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
           <button class="btn-clean" onclick="rebootDevice()">🔄 Reboot</button>
         </div>
         <div class="item">
-          <button class="btn-clean" onclick="resetConfig()">⚠️ Reset Total</button>
+          <button class="btn-clean" onclick="resetConfig()">
+            ⚠️ Reset Total
+          </button>
         </div>
       </section>
     </div>
 
     <script>
-      let ws;
+      /* =========================================================
+   STATE
+========================================================= */
+      let ws = null;
+      let reconnectTimer = null;
+      let wsQueue = [];
 
-      /* ---------------- WEBSOCKET ---------------- */
+      let uptimeSeconds = 0;
+      let irHistory = [];
 
+      /* =========================================================
+   WEBSOCKET
+========================================================= */
       function connectWS() {
         if (ws && ws.readyState === WebSocket.OPEN) return;
 
-        ws = new WebSocket(`ws://${location.host}:81`);
+        ws = new WebSocket(`ws://${location.hostname}:81`);
 
         ws.onopen = () => {
-          console.log("WebSocket conectado");
+          console.log("[WS] conectado");
           updateWSStatus(true);
+
+          flushQueue();
+
+          if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+          }
         };
 
         ws.onclose = () => {
-          console.log("WebSocket desconectado");
+          console.log("[WS] desconectado");
           updateWSStatus(false);
-          setTimeout(connectWS, 2000);
+
+          scheduleReconnect();
+        };
+
+        ws.onerror = (err) => {
+          console.warn("[WS] erro:", err);
+          ws.close();
         };
 
         ws.onmessage = handleWSMessage;
       }
 
+      function scheduleReconnect() {
+        if (reconnectTimer) return;
+
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null;
+          connectWS();
+        }, 2000);
+      }
+
+      /* =========================================================
+   WS SEND (COM FILA)
+========================================================= */
+      function wsSend(msg) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(msg);
+        } else {
+          wsQueue.push(msg);
+          console.warn("[WS] fila:", msg);
+        }
+      }
+
+      function flushQueue() {
+        while (wsQueue.length && ws.readyState === WebSocket.OPEN) {
+          ws.send(wsQueue.shift());
+        }
+      }
+
+      /* =========================================================
+   WS MESSAGE
+========================================================= */
       function handleWSMessage(event) {
-        const data = JSON.parse(event.data);
+        let data;
+
+        try {
+          data = JSON.parse(event.data);
+        } catch {
+          console.error("[WS] JSON inválido:", event.data);
+          return;
+        }
+
+        if (!data.type) {
+          console.warn("[WS] sem tipo:", data);
+          return;
+        }
 
         switch (data.type) {
           case "system":
             updateSystemWS(data);
             break;
-
           case "outputs":
             updateOutputsWS(data);
             break;
-
           case "sensor":
             updateSensorWS(data);
             break;
-
           case "ir":
             updateIRWS(data);
             break;
-
-          case "ir_emissor":
-            updateIREmissorWS(data);
-            break;
-
           case "ir_receptor":
             updateIRReceptorWS(data);
             break;
-
           case "network":
             updateNetworkWS(data);
             break;
-
           case "mqtt":
             updateMQTTWS(data);
             break;
 
           case "reboot":
-            updateWSStatus(false);
             alert("Dispositivo reiniciando...");
             break;
 
           case "wifiPortal":
-            updateWSStatus(false);
-            alert(
-              "Portal WiFi aberto! Conecte-se à rede 'irhub8266' para configurar.",
-            );
+            alert("Conecte-se à rede 'irhub8266'");
             break;
 
           case "wifiReset":
-            updateWSStatus(false);
-            alert("WiFi resetado! O dispositivo está reiniciando...");
+            alert("WiFi resetado!");
             break;
 
           case "configReset":
-            updateWSStatus(false);
-            alert("WiFi resetado! O dispositivo está reiniciando...");
+            alert("Configurações resetadas!");
             break;
         }
       }
 
-      connectWS();
+      /* =========================================================
+   UI UPDATE
+========================================================= */
+      function updateWSStatus(connected) {
+        const el = document.getElementById("wsStatus");
+
+        el.innerHTML = connected
+          ? '<span class="status online">⚡ Conectado</span>'
+          : '<span class="status offline">⚡ Desconectado</span>';
+
+        const name = document.getElementById("name").textContent;
+        document.title = connected ? `✅ ${name}` : `❌ ${name}`;
+      }
 
       /* ---------------- SYSTEM ---------------- */
-
       function updateSystemWS(data) {
         document.getElementById("name").textContent = data.name;
         document.getElementById("buildDateTime").textContent =
@@ -553,38 +614,28 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         document.getElementById("buildVersion").textContent = data.buildVersion;
         document.getElementById("heap").textContent = data.heap;
 
-        setUptimeBase(data.uptime_seconds); // ← chama a base
-
-        updateWSStatus(ws && ws.readyState === WebSocket.OPEN);
+        setUptimeBase(data.uptime_seconds);
       }
 
       /* ---------------- OUTPUTS ---------------- */
-
       function updateOutputsWS(data) {
         const ledState = document.getElementById("ledState");
         const ledDot = document.getElementById("ledDot");
 
-        if (data.led) {
-          ledState.textContent = "Ligado";
-          ledDot.className = "dot green";
-        } else {
-          ledState.textContent = "Desligado";
-          ledDot.className = "dot red";
-        }
+        ledState.textContent = data.led ? "Ligado" : "Desligado";
+        ledDot.className = `dot ${data.led ? "green" : "red"}`;
       }
 
       /* ---------------- IR ---------------- */
-
       function updateIRWS(data) {
         document.getElementById("irEmitter").textContent = data.emissor_teste
           ? "Ativo"
           : "Desligado";
-        
+
         document.getElementById("irMode").textContent = data.receptor_protocolo;
       }
 
-      /* ---------------- AHT10 ---------------- */
-
+      /* ---------------- SENSOR ---------------- */
       function updateSensorWS(data) {
         const status = document.getElementById("sensorAHT10Status");
         const text = document.getElementById("sensorAHT10Data");
@@ -592,56 +643,54 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         if (data.status) {
           status.className = "status offline";
           status.textContent = data.status;
-
           text.textContent = "";
-        } else {
-          text.innerHTML =
-            `Temperatura: ${data.temperatura} °C<br>` +
-            `Umidade: ${data.umidade} %`;
-
-          status.className = "status online";
-          status.textContent = "online";
+          return;
         }
+
+        text.innerHTML =
+          `Temperatura: ${data.temperatura} °C<br>` +
+          `Umidade: ${data.umidade} %`;
+
+        status.className = "status online";
+        status.textContent = "online";
       }
 
+      /* ---------------- IR RECEPTOR ---------------- */
       function updateIRReceptorWS(data) {
         const dot = document.getElementById("irDot");
+
         dot.className = "dot green";
-        setTimeout(() => {
-          dot.className = "dot yellow";
-        }, 300);
+        setTimeout(() => (dot.className = "dot yellow"), 300);
 
         const payload = {
           timestamp: new Date().toLocaleTimeString(),
-          protocolo: data.protocolo,
-          bits: data.bits,
-          dec: data.dec,
-          hex: data.hex,
+          ...data,
         };
 
         saveIRToHistory(payload);
       }
 
+      /* ---------------- NETWORK ---------------- */
       function updateNetworkWS(data) {
-        document.getElementById("mdns").textContent = data.mdns;
-        document.getElementById("wifi").textContent = data.wifi;
-        document.getElementById("ip").textContent = data.ip;
-        document.getElementById("gateway").textContent = data.gateway;
-        document.getElementById("mask").textContent = data.mask;
-        document.getElementById("rssi").textContent = data.rssi;
+        ["mdns", "wifi", "ip", "gateway", "mask", "rssi"].forEach((id) => {
+          document.getElementById(id).textContent = data[id];
+        });
       }
 
+      /* ---------------- MQTT ---------------- */
       function updateMQTTWS(data) {
         document.getElementById("mqttServer").textContent = data.server;
         document.getElementById("mqttClient").textContent = data.client_id;
         document.getElementById("topic_main").textContent = data.topic_main;
-
         document.getElementById("mqttSucessos").textContent = data.sucesso;
         document.getElementById("mqttErros").textContent = data.erro;
 
         const status = document.getElementById("mqttStatus");
 
-        if (data.status) {
+        if (!data.enabled) {
+          status.className = "status warn";
+          status.textContent = "desabilitado";
+        } else if (data.status) {
           status.className = "status online";
           status.textContent = "online";
         } else {
@@ -650,54 +699,36 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         }
       }
 
-      function updateWSStatus(connected) {
-        const el = document.getElementById("wsStatus");
-        el.innerHTML = connected
-          ? '<span class="status online">⚡ WebSocket conectado</span>'
-          : '<span class="status offline">⚡ WebSocket desconectado</span>';
-
-        const name =
-          document.getElementById("name").textContent || "IRHub-8266";
-        document.title = connected ? `✅ ${name}` : `❌ ${name}`;
+      /* =========================================================
+   UPTIME
+========================================================= */
+      function setUptimeBase(sec) {
+        uptimeSeconds = sec || 0;
       }
-
-      /* ---------------- UPTIME ---------------- */
-
-      let uptimeSeconds = 0;
 
       function formatUptime(s) {
         const d = Math.floor(s / 86400);
         const h = Math.floor((s % 86400) / 3600);
         const m = Math.floor((s % 3600) / 60);
         const sec = s % 60;
+
         return `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(sec).padStart(2, "0")}s`;
       }
 
-      // Recebe base do dispositivo via WS
-      function setUptimeBase(seconds) {
-        uptimeSeconds = seconds;
-      }
-
-      // Incrementa localmente a cada 1s
       setInterval(() => {
         uptimeSeconds++;
         document.getElementById("uptime").textContent =
           formatUptime(uptimeSeconds);
       }, 1000);
 
-      /* ---------------- HISTORY ---------------- */
-
-      let irHistory = []; // apenas em memória
-
+      /* =========================================================
+   IR HISTORY
+========================================================= */
       function saveIRToHistory(payload) {
-        if (irHistory.length) {
-          const last = irHistory[0];
-          if (last.dec === payload.dec) return; // ignora repetido
-        }
+        if (irHistory[0]?.dec === payload.dec) return;
 
         irHistory.unshift(payload);
-
-        if (irHistory.length > 10) irHistory = irHistory.slice(0, 10);
+        if (irHistory.length > 10) irHistory.pop();
 
         renderIRHistory();
       }
@@ -711,108 +742,83 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         const list = document.getElementById("irHistory");
         list.innerHTML = "";
 
-        irHistory.forEach((data) => {
+        irHistory.forEach((d) => {
           const li = document.createElement("li");
-          li.textContent = `${data.timestamp} | ${data.protocolo} | ${data.bits}b | ${data.dec} | ${data.hex} 📋`;
+
+          li.textContent = `${d.timestamp} | ${d.protocolo} | ${d.bits}b | ${d.dec} | ${d.hex} 📋`;
+
+          // clique = copiar
           li.onclick = () => {
-            navigator.clipboard.writeText(data.hex);
+            navigator.clipboard.writeText(d.hex).catch(() => {});
+          };
+
+          // duplo clique = enviar
+          li.ondblclick = () => {
             wsSend(
               JSON.stringify({
                 cmd: "sendIR",
-                hex: data.hex,
-                protocolo: data.protocolo,
-                bits: data.bits,
+                hex: d.hex,
+                protocolo: d.protocolo,
+                bits: d.bits,
               }),
             );
+
             li.classList.add("flash");
-            setTimeout(() => {
-              li.classList.remove("flash");
-            }, 400);
+            setTimeout(() => li.classList.remove("flash"), 400);
           };
+
           list.appendChild(li);
         });
       }
 
-      /* ---------------- COMMANDS ---------------- */
-
-      function wsSend(msg) {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(msg);
-        } else {
-          console.warn("[WS] Não conectado, comando ignorado:", msg);
-        }
-      }
-
+      /* =========================================================
+   COMMANDS
+========================================================= */
       function sendIRManual() {
-        const proto = document.getElementById("irProto").value;
-        const code = document.getElementById("irCode").value.trim();
-        const bits = parseInt(document.getElementById("irBits").value) || 32;
+        const proto = irProto.value;
+        const code = irCode.value.trim();
+        const bits = parseInt(irBits.value) || 32;
 
-        if (!code) {
-          alert("Digite um código IR.");
-          return;
-        }
+        if (!code) return alert("Digite um código IR.");
 
         wsSend(
           JSON.stringify({
             cmd: "sendIR",
             hex: code,
             protocolo: proto,
-            bits: bits,
+            bits,
           }),
         );
       }
 
-      function toggleLED() {
-        wsSend("toggleLED");
-      }
-
-      function toggleIRReceptor() {
-        wsSend("toggleIRReceptor");
-      }
-
-      function toggleIREmissor() {
-        wsSend("toggleIREmissor");
-      }
+      const toggleLED = () => wsSend("toggleLED");
+      const toggleIRReceptor = () => wsSend("toggleIRReceptor");
+      const toggleIREmissor = () => wsSend("toggleIREmissor");
 
       function rebootDevice() {
-        if (!confirm("Reiniciar o dispositivo?")) return;
-        wsSend(JSON.stringify({ cmd: "reboot" }));
+        if (confirm("Reiniciar?")) wsSend(JSON.stringify({ cmd: "reboot" }));
       }
 
-      /* ---------------- WIFI ---------------- */
-
       function openWifiPortal() {
-        if (
-          !confirm(
-            "Abrir portal de configuração WiFi?\nO dispositivo ficará inacessível durante o portal.",
-          )
-        )
-          return;
-        wsSend(JSON.stringify({ cmd: "wifiPortal" }));
+        if (confirm("Abrir portal WiFi?"))
+          wsSend(JSON.stringify({ cmd: "wifiPortal" }));
       }
 
       function resetWifi() {
-        if (
-          !confirm(
-            "Resetar configurações Wifi?\nO dispositivo será reiniciado e perderá a conexão.",
-          )
-        )
-          return;
-        wsSend(JSON.stringify({ cmd: "wifiReset" }));
+        if (confirm("Resetar WiFi?"))
+          wsSend(JSON.stringify({ cmd: "wifiReset" }));
       }
 
       function resetConfig() {
-        if (
-          !confirm(
-            "Resetar totas as configurações?\nO dispositivo será reiniciado e perderá a conexão.",
-          )
-        )
-          return;
-        wsSend(JSON.stringify({ cmd: "configReset" }));
+        if (confirm("Reset total?"))
+          wsSend(JSON.stringify({ cmd: "configReset" }));
       }
 
-      /* ---------------- INIT ---------------- */
+      /* =========================================================
+   INIT
+========================================================= */
+      document.getElementById("uptime").textContent = "0d 00h 00m 00s";
+      connectWS();
     </script>
   </body>
 </html>
