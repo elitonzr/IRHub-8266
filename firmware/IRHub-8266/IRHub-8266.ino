@@ -33,6 +33,7 @@
 
 /************ UTIL ************/
 #include <stdarg.h>
+// #include <ESP.h>
 
 /************ ARQUIVOS AUXILIARES ************/
 #include "globals.h"

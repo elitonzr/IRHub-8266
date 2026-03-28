@@ -269,8 +269,16 @@ void MQTTsendAHT10Status() {
 ************************************************************/
 void MQTTsendIRConfig() {
   StaticJsonDocument<128> doc;
-  doc["receptor_protocolo"] = EstadoIRReceptor();
-  doc["emissor_teste"] = IR_EmissorTeste;
+
+  JsonObject sender = doc.createNestedObject("sender");
+  sender["cmd_test"] = IR_EmissorTeste;
+
+  JsonObject received = doc.createNestedObject("received");
+  received["protocol"] = EstadoIRReceptor();
+
+  // StaticJsonDocument<128> doc;
+  // doc["receptor_protocolo"] = EstadoIRReceptor();
+  // doc["emissor_teste"] = IR_EmissorTeste;
 
   char msg[128];
   size_t len = serializeJson(doc, msg, sizeof(msg));
@@ -283,7 +291,7 @@ void MQTTsendIRConfig() {
 ************************************************************/
 void MQTTsendIR_Received() {
   StaticJsonDocument<128> doc;
-  doc["protocolo"] = lastIR.protocolo;
+  doc["protocol"] = lastIR.protocolo;
   doc["decode_type"] = lastIR.decode_type;
   doc["bits"] = lastIR.bits;
   doc["dec"] = lastIR.dec;

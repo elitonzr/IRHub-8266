@@ -22,44 +22,58 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
   // Envia código IR
-  else if (strcmp(topic, topic_sensor_ir_send_command) == 0) {
-    char buffer[MAX_PAYLOAD];
-    unsigned int len = (length < (MAX_PAYLOAD - 1)) ? length : (MAX_PAYLOAD - 1);
-    memcpy(buffer, payload, len);
-    buffer[len] = '\0';
-    processaIRJson(buffer);
-  }
+  // else if (strcmp(topic, topic_sensor_ir_send_command) == 0) {
+  //   char buffer[MAX_PAYLOAD];
+  //   unsigned int len = (length < (MAX_PAYLOAD - 1)) ? length : (MAX_PAYLOAD - 1);
+  //   memcpy(buffer, payload, len);
+  //   buffer[len] = '\0';
+  //   processaIRJson(buffer);
+  // }
 
   // Controle do receptor IR
-  else if (strcmp(topic, topic_sensor_ir_receptor_command) == 0) {
-    int modo = atoi(mensagem);
-    if (modo >= 0 && modo <= 4) {
-      IR_RecepitorSET(modo);
-    } else {
-      debugPrintln("[Callback] Modo IR inválido.");
-    }
-  }
+  // else if (strcmp(topic, topic_sensor_ir_receptor_command) == 0) {
 
-  // Controle de LED
-  else if (strcmp(topic, topic_switch_led_command) == 0) {
-    char cmd[16];
-    size_t len = strlen(mensagem);
-    if (len >= sizeof(cmd)) len = sizeof(cmd) - 1;
-    memcpy(cmd, mensagem, len);
-    cmd[len] = '\0';
-    for (size_t i = 0; i < len; i++) cmd[i] = tolower(cmd[i]);
+  //   int modo = -1;
 
-    if (strcmp(cmd, "toggle") == 0) {
-      ledState = !ledState;
-    } else if (strcmp(cmd, "on") == 0) {
-      ledState = true;
-    } else if (strcmp(cmd, "off") == 0) {
-      ledState = false;
-    } else {
-      debugPrint("[Callback] Comando LED inválido: ");
-      debugPrintln(cmd);
-    }
-  }
+  //   if (strcmp(mensagem, "DESABILITADO") == 0) {
+  //     modo = 0;
+  //   } else if (strcmp(mensagem, "NEC") == 0) {
+  //     modo = 1;
+  //   } else if (strcmp(mensagem, "NIKAI") == 0) {
+  //     modo = 2;
+  //   } else if (strcmp(mensagem, "NEC e NIKAI") == 0) {
+  //     modo = 3;
+  //   } else if (strcmp(mensagem, "TUDO") == 0) {
+  //     modo = 4;
+  //   }
+
+  //   if (modo != -1) {
+  //     IR_RecepitorSET(modo);
+  //   } else {
+  //     debugPrintln("[Callback] Modo IR inválido.");
+  //   }
+  // }
+
+  // // Controle de LED
+  // else if (strcmp(topic, topic_switch_led_command) == 0) {
+  //   char cmd[16];
+  //   size_t len = strlen(mensagem);
+  //   if (len >= sizeof(cmd)) len = sizeof(cmd) - 1;
+  //   memcpy(cmd, mensagem, len);
+  //   cmd[len] = '\0';
+  //   for (size_t i = 0; i < len; i++) cmd[i] = tolower(cmd[i]);
+
+  //   if (strcmp(cmd, "toggle") == 0) {
+  //     ledState = !ledState;
+  //   } else if (strcmp(cmd, "on") == 0) {
+  //     ledState = true;
+  //   } else if (strcmp(cmd, "off") == 0) {
+  //     ledState = false;
+  //   } else {
+  //     debugPrint("[Callback] Comando LED inválido: ");
+  //     debugPrintln(cmd);
+  //   }
+  // }
 }
 
 // ======================================================
@@ -67,45 +81,190 @@ void callback(char* topic, byte* payload, unsigned int length) {
 // ======================================================
 void processaComando(byte* payload, unsigned int length) {
 
-  if (length < 2) return;
+  StaticJsonDocument<256> doc;
 
-  char cmd = (char)payload[0];
-  int valor = payload[1] - '0';
+  DeserializationError error = deserializeJson(doc, payload, length);
+  if (error) {
+    debugPrintln("[processaComando] JSON inválido");
+    return;
+  }
 
-  if (cmd == 'a') {
-    switch (valor) {
-      case 0:
-        MQTTsendStatus();
-        MQTTsendInfoDevice();
-        MQTTsendInfoNetwork();
-        MQTTsendInfoMQTT();
-        break;
-      case 1:
-        MQTTsendUptime();
-        break;
-      case 2:
-        MQTTsendIRConfig();
-        break;
-      case 3:
-        MQTTsendAHT10();
-        break;
-      case 4:
-        MQTTsendLED();
-        break;
-      default:
-        break;
+  const char* cmd = doc["cmd"];
+
+  if (!cmd) {
+    debugPrintln("[processaComando] Campo 'cmd' ausente");
+    return;
+  }
+
+  // =========================
+  // 📡 COMANDOS DE INFORMAÇÃO
+  // =========================
+  if (strcmp(cmd, "info") == 0) {
+
+    const char* type = doc["type"];
+    if (!type) return;
+
+    if (strcmp(type, "all") == 0) {
+      MQTTsendStatus();
+      MQTTsendInfoDevice();
+      MQTTsendInfoNetwork();
+      MQTTsendInfoMQTT();
+    } else if (strcmp(type, "uptime") == 0) {
+      MQTTsendUptime();
+    } else if (strcmp(type, "ir") == 0) {
+      MQTTsendIRConfig();
+    } else if (strcmp(type, "aht10") == 0) {
+      MQTTsendAHT10();
+    } else if (strcmp(type, "led") == 0) {
+      MQTTsendLED();
+    }
+  }
+
+  // =========================
+  // 💡 CONTROLE DO LED
+  // =========================
+  else if (strcmp(cmd, "led") == 0) {
+
+    const char* action = doc["action"];
+
+    if (!action) {
+      debugPrintln("[processaComando] Campo 'action' ausente");
+      return;
     }
 
-  } else if (cmd == 'b') {
-
-    if (valor == 0) {
-      IR_EmissorTeste = false;
-    } else if (valor == 1) {
-      IR_EmissorTeste = true;
+    if (strcasecmp(action, "toggle") == 0) {
+      ledState = !ledState;
+    } else if (strcasecmp(action, "on") == 0) {
+      ledState = true;
+    } else if (strcasecmp(action, "off") == 0) {
+      ledState = false;
+    } else {
+      debugPrint("[processaComando] Comando LED inválido: ");
+      debugPrintln(action);
+      return;
     }
+  }
+
+  // =========================
+  // CONTROLE DO RECEPTOR IR
+  // =========================
+  else if (strcmp(cmd, "ir_receptor") == 0) {
+
+    const char* mode = doc["mode"];
+
+    if (!mode) {
+      debugPrintln("[processaComando] Campo 'mode' ausente");
+      return;
+    }
+
+    int modo = -1;
+
+    if (strcasecmp(mode, "DESABILITADO") == 0) {
+      modo = 0;
+    } else if (strcasecmp(mode, "NEC") == 0) {
+      modo = 1;
+    } else if (strcasecmp(mode, "NIKAI") == 0) {
+      modo = 2;
+    } else if (strcasecmp(mode, "NEC e NIKAI") == 0) {
+      modo = 3;
+    } else if (strcasecmp(mode, "TUDO") == 0) {
+      modo = 4;
+    }
+
+    if (modo != -1) {
+      IR_RecepitorSET(modo);
+
+      // 🔄 já publica o novo estado
+      MQTTsendIRConfig();
+      debugsendInfoIR();
+      wsSendInfoIR();
+
+    } else {
+      debugPrintln("[processaComando] Modo IR inválido");
+    }
+  }
+
+  // =========================
+  // 🔴 TESTE IR
+  // =========================
+  else if (strcmp(cmd, "ir_test") == 0) {
+
+    bool enabled = doc["enabled"] | false;
+
+    IR_EmissorTeste = enabled;
+
     MQTTsendIRConfig();
     debugsendInfoIR();
     wsSendInfoIR();
+  }
+
+  // =========================
+  // 🔄 REBOOT
+  // =========================
+  else if (strcmp(cmd, "reboot") == 0) {
+
+    debugPrintln("[processaComando] Reboot solicitado");
+    MQTTsendStatus();
+
+    delay(500);
+    ESP.restart();
+  }
+
+  // =========================
+  // 📶 RESET WIFI
+  // =========================
+  else if (strcmp(cmd, "wifi_reset") == 0) {
+
+    debugPrintln("[processaComando] Reset WiFi solicitado");
+
+    WiFi.disconnect(true);  // limpa credenciais
+    delay(500);
+
+    ESP.restart();
+  }
+
+  // =========================
+  // 📡 ENVIO IR (UNIFICADO)
+  // =========================
+  else if (strcmp(cmd, "ir_send") == 0) {
+
+    char buffer[MAX_PAYLOAD];
+
+    size_t len = serializeJson(doc, buffer, sizeof(buffer));
+
+    if (len == 0) {
+      debugPrintln("[processaComando] Erro ao serializar JSON IR");
+      return;
+    }
+
+    processaIRJson(buffer);
+  }
+
+  // =========================
+  // ⚙️ CONFIGURAÇÕES
+  // =========================
+  else if (strcmp(cmd, "config") == 0) {
+
+    // Exemplo: alterar hostname
+    const char* hostname = doc["hostname"];
+
+    if (hostname) {
+      strlcpy(hostname_buf, hostname, sizeof(hostname_buf));
+      saveConfig();
+      debugPrintln("[processaComando] Hostname atualizado");
+    }
+
+    // Aqui você pode expandir:
+    // - mqtt server
+    // - porta
+    // - intervalo sensores
+  }
+
+  // =========================
+  // ❌ COMANDO DESCONHECIDO
+  // =========================
+  else {
+    debugPrintln("[processaComando] Comando desconhecido");
   }
 }
 
@@ -113,7 +272,7 @@ void processaComando(byte* payload, unsigned int length) {
 // Parser IR usando JSON
 // EXEMPLO:
 // {
-// "protocolo":"NEC",
+// "protocol":"NEC",
 // "code":"0x20DF10EF",
 // "bits":32
 // }
@@ -131,7 +290,7 @@ void processaIRJson(char* payload) {
     return;
   }
 
-  const char* protoStr = doc["protocolo"];
+  const char* protoStr = doc["protocol"];
   uint8_t bits = doc["bits"] | 0;
   if (bits == 0) bits = 32;
 
@@ -141,21 +300,21 @@ void processaIRJson(char* payload) {
     return;
   }
 
-  // ---------- protocolo ----------
+  // ---------- protocol ----------
   decode_type_t proto;
 
-  if      (strcasecmp(protoStr, "NEC")     == 0) proto = NEC;
-  else if (strcasecmp(protoStr, "SONY")    == 0) proto = SONY;
-  else if (strcasecmp(protoStr, "RC5")     == 0) proto = RC5;
-  else if (strcasecmp(protoStr, "RC6")     == 0) proto = RC6;
+  if (strcasecmp(protoStr, "NEC") == 0) proto = NEC;
+  else if (strcasecmp(protoStr, "SONY") == 0) proto = SONY;
+  else if (strcasecmp(protoStr, "RC5") == 0) proto = RC5;
+  else if (strcasecmp(protoStr, "RC6") == 0) proto = RC6;
   else if (strcasecmp(protoStr, "SAMSUNG") == 0) proto = SAMSUNG;
-  else if (strcasecmp(protoStr, "NIKAI")   == 0) proto = NIKAI;
-  else if (strcasecmp(protoStr, "LG")      == 0) proto = LG;
-  else if (strcasecmp(protoStr, "JVC")     == 0) proto = JVC;
+  else if (strcasecmp(protoStr, "NIKAI") == 0) proto = NIKAI;
+  else if (strcasecmp(protoStr, "LG") == 0) proto = LG;
+  else if (strcasecmp(protoStr, "JVC") == 0) proto = JVC;
   else {
-    debugPrint("Protocolo desconhecido: ");
+    debugPrint("protocol desconhecido: ");
     debugPrintln(protoStr);
-    sendIRFeedback(0, UNKNOWN, 0, "Protocolo desconhecido", "mqtt");
+    sendIRFeedback(0, UNKNOWN, 0, "protocol desconhecido", "mqtt");
     return;
   }
 

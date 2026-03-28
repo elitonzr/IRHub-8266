@@ -260,7 +260,7 @@ size_t buildIRJson(
   doc["erro"] = status;
   doc["origem"] = origem;
 
-  doc["protocolo"] = getIRProtocol(proto);
+  doc["protocol"] = getIRProtocol(proto);
   doc["bits"] = bits;
 
 

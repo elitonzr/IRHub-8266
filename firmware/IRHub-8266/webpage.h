@@ -861,7 +861,7 @@ function populateConfig(data) {
   document.getElementById("cfg_mqtt_server").value   = data.mqtt_server   || "";
   document.getElementById("cfg_mqtt_user").value     = data.mqtt_user     || "";
   document.getElementById("cfg_mqtt_password").value = data.mqtt_password || "";
-  document.getElementById("cfg_mqtt_enabled").value  = data.mqtt_enabled  || "yes";
+  document.getElementById("cfg_mqtt_enabled").value  = data.mqtt_enabled  || "no";
 }
 
 function saveDeviceConfig() {

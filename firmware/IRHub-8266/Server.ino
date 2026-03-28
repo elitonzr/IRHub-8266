@@ -232,7 +232,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 }
 
 void wsSendSystem() {
-  StaticJsonDocument<512> doc;  // ← aumentar para 512
+  StaticJsonDocument<512> doc;
 
   doc["type"] = "system";
   doc["name"] = myTopic;
@@ -242,7 +242,6 @@ void wsSendSystem() {
   doc["uptime_seconds"] = millis() / 1000UL;
   doc["heap"] = ESP.getFreeHeap();
 
-  // ← Adicione o objeto config
   JsonObject cfg = doc.createNestedObject("config");
   cfg["hostname"] = hostname_buf;
   cfg["mqtt_id"] = mqtt_id_buf;
@@ -253,7 +252,6 @@ void wsSendSystem() {
   cfg["mqtt_server"] = mqtt_server;
   cfg["mqtt_user"] = mqtt_user_buf;
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
-  // ← senha não enviada por segurança
 
   char buffer[512];
   size_t len = serializeJson(doc, buffer);
