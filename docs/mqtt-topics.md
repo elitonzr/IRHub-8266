@@ -1,170 +1,338 @@
-# MQTT Topics — IRHub-8266
-
-Este documento descreve todos os tópicos MQTT utilizados pelo **IRHub-8266**, incluindo direção, payload e observações.
-
-## Base Topic
+```txt
+  Subscriptions:
+    IRHub-8266-Sala/command
+    IRHub-8266-Sala/switch/led/command
+    IRHub-8266-Sala/sensor/ir/send/command
+    IRHub-8266-Sala/sensor/ir/receptor/command
+  Publishers:
+    IRHub-8266-Sala/status
+    IRHub-8266-Sala/info/device
+    IRHub-8266-Sala/info/network
+    IRHub-8266-Sala/info/mqtt
+    IRHub-8266-Sala/info/uptime
+    IRHub-8266-Sala/switch/led/state
+    IRHub-8266-Sala/sensor/aht10/state
+    IRHub-8266-Sala/sensor/aht10/status
+    IRHub-8266-Sala/sensor/ir/config/state
+    IRHub-8266-Sala/sensor/ir/received/state
+    IRHub-8266-Sala/sensor/ir/sent/state
 ```
-<myTopic> = IRHub-8266-<nome>
+# 📡 IRHub-8266 - Guia MQTT
+
+Este documento descreve como funciona a comunicação MQTT do projeto **IRHub-8266**, com base na implementação real do arquivo `MQTT.ino`.
+
+---
+
+## 🧠 Conceito Geral
+
+O IRHub-8266 utiliza MQTT para comunicação bidirecional:
+
+* 📥 **Subscriptions:** recebe comandos
+* 📤 **Publishers:** envia estados, sensores e feedbacks
+
+O tópico base é definido por:
+
+```
+<myTopic>/#
 ```
 
 Exemplo:
+
 ```
-IRHub-8266-Sala
+IRHub-8266-Sala/#
 ```
 
 ---
 
-## 📡 Status & Informação
+# 📥 Subscriptions (Entrada)
 
-### `<myTopic>/info/status`
-- **Direção:** publish
-- **Retain:** true
-- **Payload:** `online` | `offline`
-- **Descrição:** Birth / Last Will do dispositivo
+## 🔹 `IRHub-8266-Sala/command` ⭐ (PRINCIPAL)
 
-### `<myTopic>/info/uptime`
-- **Direção:** publish
-- **Payload:** segundos desde o boot
+📌 **Novo padrão oficial (JSON)**
 
-### `<myTopic>/info/software`
-- **Direção:** publish
-- **Payload (JSON):**
+Todos os comandos modernos utilizam esse tópico.
+
+### 🧾 Estrutura padrão
+
+```json
+{ "cmd": "<comando>", ... }
+```
+
+---
+
+## 🔧 Comandos disponíveis
+
+| cmd           | Descrição               |
+| ------------- | ----------------------- |
+| `info`        | Solicita informações    |
+| `led`         | Controla LED            |
+| `ir_send`     | Envia IR                |
+| `ir_receptor` | Define modo do receptor |
+| `ir_test`     | Ativa/desativa teste IR |
+| `reboot`      | Reinicia dispositivo    |
+| `wifi_reset`  | Reseta WiFi             |
+| `config`      | Altera configurações    |
+
+---
+
+## 💡 LED
+
+```json
+{ "cmd": "led", "action": "on" }
+```
+
+Valores:
+
+* on
+* off
+* toggle
+
+---
+
+## 📡 Envio IR
+
 ```json
 {
-  "firmware": "v2025",
-  "version": "gcc",
-  "data": "Feb 15 2026",
-  "hora": "21:30:00",
-  "file": "IRHub-8266.ino",
-  "mqtt_client_id": "IRHub-8266-Sala_123456"
+  "cmd": "ir_send",
+  "protocol": "NEC",
+  "code": "0x20DF10EF",
+  "bits": 32
 }
 ```
 
-### `<myTopic>/info/network`
-- **Direção:** publish
-- **Payload (JSON):**
+✔ Aceita código em decimal ou hexadecimal
+✔ Reutiliza o parser interno (`processaIRJson`)
+
+---
+
+## 📡 Receptor IR
+
 ```json
 {
-  "Wifi": "SSID",
-  "IP": "192.168.1.50",
-  "Gateway": "192.168.1.1",
-  "Mask": "255.255.255.0",
-  "RSSI": -62
+  "cmd": "ir_receptor",
+  "mode": "NEC"
 }
 ```
 
-### `<myTopic>/info/mqtt`
-- **Direção:** publish
-- **Payload (JSON):**
+Valores:
+
+* DESABILITADO
+* NEC
+* NIKAI
+* NEC e NIKAI
+* TUDO
+
+---
+
+## 🔴 Teste IR
+
+```json
+{ "cmd": "ir_test", "enabled": true }
+```
+
+---
+
+## 📡 Info
+
+```json
+{ "cmd": "info", "type": "all" }
+```
+
+Tipos:
+
+* all
+* uptime
+* ir
+* aht10
+* led
+
+---
+
+## 🔄 Reboot
+
+```json
+{ "cmd": "reboot" }
+```
+
+---
+
+## 📶 Reset WiFi
+
+```json
+{ "cmd": "wifi_reset" }
+```
+
+---
+
+## ⚙️ Config
+
+```json
+{ "cmd": "config", "hostname": "IRHub-Sala" }
+```
+
+---
+
+# ⚠️ Tópicos LEGADOS (compatibilidade)
+
+Ainda existentes no firmware, mas recomendados apenas para compatibilidade:
+
+* `switch/led/command`
+* `sensor/ir/send/command`
+* `sensor/ir/receptor/command`
+
+👉 Use preferencialmente `command`
+
+---
+
+# 📤 Publishers (Saída)
+
+## 🔹 `status`
+
+```json
+{ "state": "online" }
+```
+
+✔ Usa **Last Will** → publica `offline` automaticamente
+
+---
+
+## 🔹 `info/device`
+
 ```json
 {
+  "version": "1.0",
+  "hostname": "IRHub-8266-Sala"
+}
+```
+
+Inclui:
+
+* build
+* chip_id
+* grupo
+* topic
+
+---
+
+## 🔹 `info/network`
+
+```json
+{
+  "wifi": "MinhaRede",
+  "ip": "192.168.1.10",
+  "rssi": -60
+}
+```
+
+---
+
+## 🔹 `info/mqtt`
+
+```json
+{
+  "server": "192.168.1.2",
   "connect": 10,
-  "erro": 2
+  "erro": 1
 }
 ```
 
 ---
 
-## 🎛️ IR — Envio e Recepção
+## 🔹 `info/uptime`
 
-### `<myTopic>/IR/typeSendCod`
-- **Direção:** publish
-- **Payload:** inteiro (`0–3`)
-- **Descrição:** modo atual de envio IR
-
-### `<myTopic>/sensores/IR/NEC`
-- **Direção:** publish
-- **Payload (JSON):**
 ```json
 {
-  "DEC": 551489412,
-  "HEX": "20DF10EF"
+  "uptime_formatted": "00:10:32",
+  "uptime_seconds": 632
 }
 ```
 
-### `<myTopic>/sensores/IR/24bits`
-- **Direção:** publish
-- **Payload:** JSON semelhante ao NEC
+---
 
-### `<myTopic>/sensores/IR/Desconhecido`
-- **Direção:** publish
-- **Payload:** JSON semelhante
+## 🔹 `switch/led/state`
+
+```json
+{ "state": "ON" }
+```
 
 ---
 
-## 🌡️ Sensores AHT10
+## 🔹 `sensor/aht10/state`
 
-### `<myTopic>/sensores/temperatura`
-- **Direção:** publish
-- **Payload:** string float (`23.4`)
-
-### `<myTopic>/sensores/umidade`
-- **Direção:** publish
-- **Payload:** string float (`56.1`)
+```json
+{ "temperature": 25.3, "humidity": 60.2 }
+```
 
 ---
 
-## 🚦 Outputs
+## 🔹 `sensor/aht10/status`
 
-### `<myTopic>/info/Outputs`
-- **Direção:** publish
-- **Payload (JSON):**
+```json
+{ "state": "online" }
+```
+
+---
+
+## 🔹 `sensor/ir/config/state`
+
 ```json
 {
-  "value": [1]
+  "sender": { "cmd_test": true },
+  "received": { "protocol": "NEC" }
 }
 ```
 
 ---
 
-## 📥 Comandos (subscribe)
+## 🔹 `sensor/ir/received/state`
 
-### `<myTopic>/command/#`
-- **Direção:** subscribe
-- **Descrição:** comandos gerais (LED, IR, etc)
+```json
+{
+  "protocol": "NEC",
+  "bits": 32,
+  "dec": 123456,
+  "hex": "0x20DF10EF"
+}
+```
 
 ---
 
-## Observações Técnicas
-- Payloads são montados com `snprintf` e buffers fixos
-- Tópicos críticos usam **retain**
-- Reconexão MQTT é não bloqueante
+## 🔹 `sensor/ir/sent/state`
 
+```json
+{
+  "status": "ok",
+  "protocol": "NEC"
+}
+```
 
-já corrigi todos os bugs.
-Agora crie um arquivo .md com o funcionamento de cada tópico do MQTT para que o usuário entenda com o dispositivo funciona, o arquivo deve ter exemplos de uso para melhor entendimento.
+---
 
+# 🔄 Fluxo de funcionamento
 
-  Subscriptions:
+1. Cliente publica JSON em `command`
+2. IRHub processa via `processaComando()`
+3. Executa ação
+4. Publica feedback nos tópicos `state` ou `info`
 
-    IRHub-8266-Sala/command
+---
 
-    IRHub-8266-Sala/switch/led/command
+# ✅ Boas práticas
 
-    IRHub-8266-Sala/sensor/ir/send/command
+* Use sempre JSON
+* Evite tópicos legados
+* Monitore `status` (LWT)
+* Use retain para status
 
-    IRHub-8266-Sala/sensor/ir/receptor/command
+---
 
-  Publishers:
+# 🚀 Conclusão
 
-    IRHub-8266-Sala/status
+O IRHub-8266 agora implementa uma **API MQTT moderna, padronizada e extensível**, ideal para integração com:
 
-    IRHub-8266-Sala/info/device
+* Home Assistant
+* Node-RED
+* Scripts MQTT
 
-    IRHub-8266-Sala/info/network
+---
 
-    IRHub-8266-Sala/info/mqtt
-
-    IRHub-8266-Sala/info/uptime
-
-    IRHub-8266-Sala/switch/led/state
-
-    IRHub-8266-Sala/sensor/aht10/state
-
-    IRHub-8266-Sala/sensor/aht10/status
-
-    IRHub-8266-Sala/sensor/ir/config/state
-
-    IRHub-8266-Sala/sensor/ir/received/state
-
-    IRHub-8266-Sala/sensor/ir/sent/state
