@@ -118,7 +118,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         /* ---------- COMANDOS JSON ---------- */
 
-        StaticJsonDocument<256> doc;
+        StaticJsonDocument<512> doc;
         DeserializationError err = deserializeJson(doc, msg);
 
         if (err) return;
@@ -167,6 +167,51 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           startWiFiManagerPortal();
         }
 
+        if (strcmp(cmd, "saveConfig") == 0) {
+          debugPrintln("[WS] saveConfig recebido");
+
+          // Lê os campos
+          const char* v_hostname = doc["hostname"] | hostname_buf;
+          const char* v_mqtt_id = doc["mqtt_id"] | mqtt_id_buf;
+          const char* v_grupo = doc["grupo"] | grupo_buf;
+          const char* v_ip = doc["ip"] | ipStr;
+          const char* v_gw = doc["gw"] | gwStr;
+          const char* v_sn = doc["sn"] | snStr;
+          const char* v_mqtt_server = doc["mqtt_server"] | mqtt_server;
+          const char* v_mqtt_user = doc["mqtt_user"] | mqtt_user_buf;
+          const char* v_mqtt_password = doc["mqtt_password"] | "";
+          const char* v_mqtt_enabled = doc["mqtt_enabled"] | mqtt_enabled_buf;
+
+          // Aplica
+          strlcpy(hostname_buf, v_hostname, sizeof(hostname_buf));
+          strlcpy(mqtt_id_buf, v_mqtt_id, sizeof(mqtt_id_buf));
+          strlcpy(grupo_buf, v_grupo, sizeof(grupo_buf));
+          strlcpy(ipStr, v_ip, sizeof(ipStr));
+          strlcpy(gwStr, v_gw, sizeof(gwStr));
+          strlcpy(snStr, v_sn, sizeof(snStr));
+          strlcpy(mqtt_server, v_mqtt_server, sizeof(mqtt_server));
+          strlcpy(mqtt_user_buf, v_mqtt_user, sizeof(mqtt_user_buf));
+          if (strcmp(v_mqtt_password, "__keep__") != 0) {
+            strlcpy(mqtt_password_buf, v_mqtt_password, sizeof(mqtt_password_buf));
+          }
+          strlcpy(mqtt_enabled_buf, v_mqtt_enabled, sizeof(mqtt_enabled_buf));
+
+          recalcularTopicos();
+          saveConfig();
+
+          // Reconecta MQTT com novas configurações
+          if (mqttEnabled()) {
+            mqtt_client.disconnect();
+            mqtt_client.setServer(mqtt_server, 1883);
+            debugPrintln("[MQTT] Reconectando com novas configurações...");
+          } else {
+            mqtt_client.disconnect();
+            debugPrintln("[MQTT] Desabilitado, desconectando.");
+          }
+
+          webSocket.broadcastTXT("{\"type\":\"configSaved\"}");
+        }
+
         if (strcmp(cmd, "wifiReset") == 0) {
           debugPrintln("[WS] Reset Wifi solicitado via WebSocket");
           webSocket.broadcastTXT("{\"type\":\"wifiReset\"}");
@@ -187,8 +232,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 }
 
 void wsSendSystem() {
-
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<512> doc;  // ← aumentar para 512
 
   doc["type"] = "system";
   doc["name"] = myTopic;
@@ -198,7 +242,20 @@ void wsSendSystem() {
   doc["uptime_seconds"] = millis() / 1000UL;
   doc["heap"] = ESP.getFreeHeap();
 
-  char buffer[256];
+  // ← Adicione o objeto config
+  JsonObject cfg = doc.createNestedObject("config");
+  cfg["hostname"] = hostname_buf;
+  cfg["mqtt_id"] = mqtt_id_buf;
+  cfg["grupo"] = grupo_buf;
+  cfg["ip"] = ipStr;
+  cfg["gw"] = gwStr;
+  cfg["sn"] = snStr;
+  cfg["mqtt_server"] = mqtt_server;
+  cfg["mqtt_user"] = mqtt_user_buf;
+  cfg["mqtt_enabled"] = mqtt_enabled_buf;
+  // ← senha não enviada por segurança
+
+  char buffer[512];
   size_t len = serializeJson(doc, buffer);
   webSocket.broadcastTXT(buffer, len);
 }

@@ -300,7 +300,7 @@ void MQTTsendIR_Received() {
 * IR SENT — feedback do emissor
 ************************************************************/
 void MQTTsendIR_Sent(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
-  char payload[192];
+  char payload[256];
   size_t len = buildIRJson(payload, sizeof(payload), code, proto, bits, status, origem);
   if (len == 0 || len >= sizeof(payload)) return;
   if (!mqtt_client.connected()) return;

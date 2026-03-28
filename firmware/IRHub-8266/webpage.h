@@ -458,6 +458,69 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
           </button>
         </div>
       </section>
+
+<!-- CONFIG -->
+<section class="card" style="grid-column: 1 / -1; max-width: 800px; margin: 0 auto;">
+  <header>Configuração</header>
+
+  <p style="font-size:11px; opacity:0.5; text-align:center; margin-bottom:12px;">
+    As configurações são salvas e aplicadas sem reiniciar.<br>
+    Mudanças de Hostname e Grupo só têm efeito completo após reboot.
+  </p>
+
+  <hr style="border-color:#374151; margin:10px 0">
+  <p style="font-size:11px; opacity:0.6; margin:6px 0">Identificação</p>
+
+  <div class="item">
+    Hostname: <input id="cfg_hostname" type="text" style="width:100%;padding:5px;border-radius:6px;background:#111827;color:#f9fafb;border:1px solid #374151;font-size:12px;box-sizing:border-box;">
+  </div>
+  <div class="item">
+    MQTT ID: <input id="cfg_mqtt_id" type="text" style="width:100%;padding:5px;border-radius:6px;background:#111827;color:#f9fafb;border:1px solid #374151;font-size:12px;box-sizing:border-box;">
+  </div>
+  <div class="item">
+    Grupo: <input id="cfg_grupo" type="text" style="width:100%;padding:5px;border-radius:6px;background:#111827;color:#f9fafb;border:1px solid #374151;font-size:12px;box-sizing:border-box;">
+  </div>
+
+  <hr style="border-color:#374151; margin:10px 0">
+  <p style="font-size:11px; opacity:0.6; margin:6px 0">Rede</p>
+
+  <div class="item">
+    IP Fixo: <input id="cfg_ip" type="text" placeholder="deixe vazio para DHCP" style="width:100%;padding:5px;border-radius:6px;background:#111827;color:#f9fafb;border:1px solid #374151;font-size:12px;box-sizing:border-box;">
+  </div>
+  <div class="item">
+    Gateway: <input id="cfg_gw" type="text" style="width:100%;padding:5px;border-radius:6px;background:#111827;color:#f9fafb;border:1px solid #374151;font-size:12px;box-sizing:border-box;">
+  </div>
+  <div class="item">
+    Subnet: <input id="cfg_sn" type="text" style="width:100%;padding:5px;border-radius:6px;background:#111827;color:#f9fafb;border:1px solid #374151;font-size:12px;box-sizing:border-box;">
+  </div>
+
+  <hr style="border-color:#374151; margin:10px 0">
+  <p style="font-size:11px; opacity:0.6; margin:6px 0">MQTT</p>
+
+  <div class="item">
+    Servidor: <input id="cfg_mqtt_server" type="text" style="width:100%;padding:5px;border-radius:6px;background:#111827;color:#f9fafb;border:1px solid #374151;font-size:12px;box-sizing:border-box;">
+  </div>
+  <div class="item">
+    Usuário: <input id="cfg_mqtt_user" type="text" style="width:100%;padding:5px;border-radius:6px;background:#111827;color:#f9fafb;border:1px solid #374151;font-size:12px;box-sizing:border-box;">
+  </div>
+  <div class="item">
+    Senha: <input id="cfg_mqtt_password" type="password" style="width:100%;padding:5px;border-radius:6px;background:#111827;color:#f9fafb;border:1px solid #374151;font-size:12px;box-sizing:border-box;">
+  </div>
+  <div class="item">
+    MQTT:
+    <select id="cfg_mqtt_enabled" style="width:100%;padding:5px;border-radius:6px;background:#111827;color:#f9fafb;border:1px solid #374151;font-size:12px;">
+      <option value="yes">Habilitado</option>
+      <option value="no">Desabilitado</option>
+    </select>
+  </div>
+
+  <hr style="border-color:#374151; margin:10px 0">
+  <div class="item">
+    <button class="btn-primary" onclick="saveDeviceConfig()">💾 Salvar Configuração</button>
+  </div>
+  <div id="cfgStatus" style="text-align:center; font-size:11px; margin-top:8px; min-height:16px;"></div>
+</section>
+
     </div>
 
     <script>
@@ -492,10 +555,10 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         };
 
         ws.onclose = () => {
-          console.log("[WS] desconectado");
-          updateWSStatus(false);
-
-          scheduleReconnect();
+            console.log("[WS] desconectado");
+            updateWSStatus(false);
+            configPopulated = false;  // ← reset para popular na próxima conexão
+            scheduleReconnect();
         };
 
         ws.onerror = (err) => {
@@ -586,6 +649,14 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
             alert("WiFi resetado!");
             break;
 
+case "configSaved":
+  showCfgStatus("✅ Configuração salva!", "#22c55e");
+  break;
+
+case "configError":
+  showCfgStatus("❌ Erro ao salvar: " + (data.msg || ""), "#ef4444");
+  break;
+
           case "configReset":
             alert("Configurações resetadas!");
             break;
@@ -607,14 +678,20 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
       }
 
       /* ---------------- SYSTEM ---------------- */
-      function updateSystemWS(data) {
-        document.getElementById("name").textContent = data.name;
-        document.getElementById("buildDateTime").textContent =
-          data.buildDateTime;
-        document.getElementById("buildVersion").textContent = data.buildVersion;
-        document.getElementById("heap").textContent = data.heap;
+      // DEPOIS
+      let configPopulated = false;  // ← flag para popular só uma vez
 
-        setUptimeBase(data.uptime_seconds);
+      function updateSystemWS(data) {
+          document.getElementById("name").textContent = data.name;
+          document.getElementById("buildDateTime").textContent = data.buildDateTime;
+          document.getElementById("buildVersion").textContent = data.buildVersion;
+          document.getElementById("heap").textContent = data.heap;
+          setUptimeBase(data.uptime_seconds);
+
+          if (data.config && !configPopulated) {
+              populateConfig(data.config);
+              configPopulated = true;  // ← só popula na primeira vez
+          }
       }
 
       /* ---------------- OUTPUTS ---------------- */
@@ -770,6 +847,48 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
           list.appendChild(li);
         });
       }
+
+/* =========================================================
+   CONFIG CARD
+========================================================= */
+function populateConfig(data) {
+  document.getElementById("cfg_hostname").value      = data.hostname      || "";
+  document.getElementById("cfg_mqtt_id").value       = data.mqtt_id       || "";
+  document.getElementById("cfg_grupo").value         = data.grupo         || "";
+  document.getElementById("cfg_ip").value            = data.ip            || "";
+  document.getElementById("cfg_gw").value            = data.gw            || "";
+  document.getElementById("cfg_sn").value            = data.sn            || "";
+  document.getElementById("cfg_mqtt_server").value   = data.mqtt_server   || "";
+  document.getElementById("cfg_mqtt_user").value     = data.mqtt_user     || "";
+  document.getElementById("cfg_mqtt_password").value = data.mqtt_password || "";
+  document.getElementById("cfg_mqtt_enabled").value  = data.mqtt_enabled  || "yes";
+}
+
+function saveDeviceConfig() {
+  const payload = {
+    cmd:          "saveConfig",
+    hostname:     document.getElementById("cfg_hostname").value.trim(),
+    mqtt_id:      document.getElementById("cfg_mqtt_id").value.trim(),
+    grupo:        document.getElementById("cfg_grupo").value.trim(),
+    ip:           document.getElementById("cfg_ip").value.trim(),
+    gw:           document.getElementById("cfg_gw").value.trim(),
+    sn:           document.getElementById("cfg_sn").value.trim(),
+    mqtt_server:  document.getElementById("cfg_mqtt_server").value.trim(),
+    mqtt_user:    document.getElementById("cfg_mqtt_user").value.trim(),
+    mqtt_password: document.getElementById("cfg_mqtt_password").value || "__keep__",
+    mqtt_enabled: document.getElementById("cfg_mqtt_enabled").value,
+  };
+
+  wsSend(JSON.stringify(payload));
+  showCfgStatus("⏳ Salvando...", "#facc15");
+}
+
+function showCfgStatus(msg, color) {
+  const el = document.getElementById("cfgStatus");
+  el.textContent = msg;
+  el.style.color = color;
+  setTimeout(() => { el.textContent = ""; }, 3000);
+}
 
       /* =========================================================
    COMMANDS
