@@ -157,6 +157,10 @@ void debugBuild() {
 
   debugPrint("  Versão        : ");
   debugPrintln(buildVersion);
+
+  debugPrint("  OTA Password  : ");
+  debugPrintln(otaPassword);
+
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");

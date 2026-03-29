@@ -50,7 +50,6 @@ void myIRdecoder() {
 
     bool aceitar = false;
 
-    // if (results.decode_type == NEC && isValidNEC(results.value) && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_PROTOCOL_NEC_NIKAI)) {
     if (IR_ReceptorEstado == IR_ALL) {
 
       aceitar = true;
@@ -141,17 +140,34 @@ void lastIR_Receptor() {
   lastIR.valido = true;
 
   debugIR();
-  MQTTsendIR_Received();  // ← renomeado
+  MQTTsendIR_Received();
   wsSendInfoIR_Receptor();
-
 }
 
 
 /************ Tradução de protocolo ************/
+// const char* getIRProtocol(decode_type_t type) {
+
+//   switch (type) {
+
+//     case NEC: return "NEC";
+//     case SONY: return "SONY";
+//     case RC5: return "RC5";
+//     case RC6: return "RC6";
+//     case PANASONIC: return "PANASONIC";
+//     case LG: return "LG";
+//     case SAMSUNG: return "SAMSUNG";
+//     case JVC: return "JVC";
+//     case WHYNTER: return "WHYNTER";
+//     case NIKAI: return "NIKAI";
+
+//     default:
+//       return typeToString(type).c_str();
+//   }
+// }
+
 const char* getIRProtocol(decode_type_t type) {
-
   switch (type) {
-
     case NEC: return "NEC";
     case SONY: return "SONY";
     case RC5: return "RC5";
@@ -164,13 +180,16 @@ const char* getIRProtocol(decode_type_t type) {
     case NIKAI: return "NIKAI";
 
     default:
-      return typeToString(type).c_str();
+      {
+        static char buf[24];
+        typeToString(type).toCharArray(buf, sizeof(buf));
+        return buf;
+      }
   }
 }
 
 
-
-bool sendIRCode(uint32_t code, decode_type_t proto, uint8_t bits) {
+bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits) {
 
   bool success = true;
 
@@ -178,13 +197,13 @@ bool sendIRCode(uint32_t code, decode_type_t proto, uint8_t bits) {
 
   debugPrintf(
     "IR SEND -> Protocol:%s Bits:%d Code:0x%lX",
-    getIRProtocol(proto),
+    getIRProtocol(protocol),
     bits,
     code);
 
   enviandoCod = true;
 
-  switch (proto) {
+  switch (protocol) {
 
     case NEC:
       irsend.sendNEC(code, bits);
@@ -226,12 +245,8 @@ bool sendIRCode(uint32_t code, decode_type_t proto, uint8_t bits) {
       break;
 
     default:
-
-      debugPrintf(
-        "Protocolo IR não suportado (%d), usando NEC fallback",
-        proto);
+      debugPrintf("Protocolo IR não suportado (%d), usando NEC fallback", protocol);
       success = false;
-      irsend.sendNEC(code, bits);
       break;
   }
 
@@ -257,7 +272,7 @@ size_t buildIRJson(
   doc["type"] = "ir_emissor";
   doc["emissor_teste"] = IR_EmissorTeste;
   doc["status"] = status;
-  doc["erro"] = status;
+  // doc["erro"] = status;
   doc["origem"] = origem;
 
   doc["protocol"] = getIRProtocol(proto);

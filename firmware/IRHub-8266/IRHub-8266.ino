@@ -229,7 +229,6 @@ void loop() {
     if (pressTime > 1000 && pressTime < 3000 && !portalOpened) {
       debugPrintln("[BTN] Abrindo portal WiFi...");
       portalOpened = true;
-      pressStart = millis();
       startWiFiManagerPortal();
     }
 

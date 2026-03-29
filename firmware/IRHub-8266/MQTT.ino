@@ -94,8 +94,8 @@ void mqtt_reconnect() {
 
   StaticJsonDocument<64> doc;
   doc["state"] = "offline";
-  char MQTT_Msg[64];
-  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
+  char willMsg[64];
+  size_t len = serializeJson(doc, willMsg, sizeof(willMsg));
 
   bool conectado = mqtt_client.connect(
     clientID.c_str(),
@@ -104,7 +104,7 @@ void mqtt_reconnect() {
     topic_status,  // ← will topic
     1,
     true,
-    MQTT_Msg);
+    willMsg);
 
   if (conectado) {
     mqttOK++;

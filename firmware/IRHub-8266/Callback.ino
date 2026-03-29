@@ -292,13 +292,20 @@ void processaIRJson(char* payload) {
 
   const char* protoStr = doc["protocol"];
   uint8_t bits = doc["bits"] | 0;
-  if (bits == 0) bits = 32;
 
-  if (!protoStr || bits == 0 || bits > 64 || doc["code"].isNull()) {
+  // if (!protoStr || bits == 0 || bits > 64 || doc["code"].isNull()) {
+  //   debugPrintln("JSON incompleto");
+  //   sendIRFeedback(0, UNKNOWN, 0, "JSON incompleto", "mqtt");
+  //   return;
+  // }
+
+  if (!protoStr || bits > 64 || doc["code"].isNull()) {
     debugPrintln("JSON incompleto");
     sendIRFeedback(0, UNKNOWN, 0, "JSON incompleto", "mqtt");
     return;
   }
+
+  if (bits == 0) bits = 32;
 
   // ---------- protocol ----------
   decode_type_t proto;

@@ -6,8 +6,12 @@ void setup_ota() {
   Serial.println("=================================");
   ArduinoOTA.setHostname(clientID.c_str());
 
-  // Sem autenticação por padrão
-  ArduinoOTA.setPassword("admin123");
+  // -------- OTA - Senha --------
+  snprintf(otaPassword, sizeof(otaPassword), "ota-%08X", ESP.getChipId());
+  ArduinoOTA.setPassword(otaPassword);
+
+  Serial.print("   OTA Password: ");
+  Serial.println(otaPassword);
 
   telnetServer.begin();  // Necessário para fazer o software Arduino detectar automaticamente o dispositivo OTA
   ArduinoOTA.onStart([]() {

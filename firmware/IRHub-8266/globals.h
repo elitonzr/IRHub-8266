@@ -6,9 +6,12 @@ char mqtt_id_buf[32] = "IRHub-8266";
 char grupo_buf[32] = "Sala";
 
 // -------- Rede — valores padrão (substituídos pelo portal) --------
-char ipStr[16] = "192.168.1.1";
-char gwStr[16] = "192.168.1.1";
-char snStr[16] = "255.255.255.0";
+char ipStr[16] = "";
+char gwStr[16] = "";
+char snStr[16] = "";
+
+// -------- OTA - Senha --------
+char otaPassword[16];
 
 // -------- MQTT — valores padrão (substituídos pelo portal) --------
 char mqtt_server[64] = "mqtt.local";
@@ -21,6 +24,6 @@ String myTopic = "";
 String clientID = "";
 
 // -------- Informações de compilação --------
-extern const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
-extern const String buildVersion = "0.3.31";
-extern const String buildFile = "";
+const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
+const String buildVersion = "0.3.31";
+const String buildFile = "";

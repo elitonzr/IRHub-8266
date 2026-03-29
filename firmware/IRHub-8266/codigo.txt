@@ -367,13 +367,20 @@ void processaIRJson(char* payload) {
 
   const char* protoStr = doc["protocol"];
   uint8_t bits = doc["bits"] | 0;
-  if (bits == 0) bits = 32;
 
-  if (!protoStr || bits == 0 || bits > 64 || doc["code"].isNull()) {
+  // if (!protoStr || bits == 0 || bits > 64 || doc["code"].isNull()) {
+  //   debugPrintln("JSON incompleto");
+  //   sendIRFeedback(0, UNKNOWN, 0, "JSON incompleto", "mqtt");
+  //   return;
+  // }
+
+  if (!protoStr || bits > 64 || doc["code"].isNull()) {
     debugPrintln("JSON incompleto");
     sendIRFeedback(0, UNKNOWN, 0, "JSON incompleto", "mqtt");
     return;
   }
+
+  if (bits == 0) bits = 32;
 
   // ---------- protocol ----------
   decode_type_t proto;
@@ -445,9 +452,12 @@ char mqtt_id_buf[32] = "IRHub-8266";
 char grupo_buf[32] = "Sala";
 
 // -------- Rede — valores padrão (substituídos pelo portal) --------
-char ipStr[16] = "192.168.1.1";
-char gwStr[16] = "192.168.1.1";
-char snStr[16] = "255.255.255.0";
+char ipStr[16] = "";
+char gwStr[16] = "";
+char snStr[16] = "";
+
+// -------- OTA - Senha --------
+char otaPassword[16];
 
 // -------- MQTT — valores padrão (substituídos pelo portal) --------
 char mqtt_server[64] = "mqtt.local";
@@ -460,74 +470,9 @@ String myTopic = "";
 String clientID = "";
 
 // -------- Informações de compilação --------
-extern const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
-extern const String buildVersion = "0.3.31";
-extern const String buildFile = "";
-
-
-Arquivo: Implementar.ino
-========================================
-//Implementações futuras
-
-// - Configuar porta do MQTT
-
-// void saveIRCode() {
-
-//   StaticJsonDocument<256> doc;
-
-//   doc["Protocol"] = lastIR.protocolo;
-//   doc["bits"] = lastIR.bits;
-//   doc["hex"] = lastIR.hexStr;
-
-//   File file = LittleFS.open("/ircodes.txt", "a");
-
-//   if (!file) {
-//     debugPrintln("Erro abrindo arquivo");
-//     return;
-//   }
-
-//   serializeJson(doc, file);
-//   file.println();
-
-//   file.close();
-
-//   debugPrintln("Código IR salvo na flash");
-// }
-
-// void listIRCodes() {
-
-//   File file = LittleFS.open("/ircodes.txt", "r");
-
-//   if (!file) {
-//     debugPrintln("Nenhum código salvo");
-//     return;
-//   }
-
-//   while (file.available()) {
-//     String line = file.readStringUntil('\n');
-//     debugPrintln(line);
-//   }
-
-//   file.close();
-// }
-
-// void sendSavedIR(String hex, String proto, int bits) {
-
-//   uint32_t code = strtoul(hex.c_str(), NULL, 16);
-
-//   enviandoCod = true;
-
-//   if (proto == "NEC") {
-//     irsend.sendNEC(code, bits);
-//   } else if (proto == "SONY") {
-//     irsend.sendSony(code, bits);
-//   } else if (proto == "RC5") {
-//     irsend.sendRC5(code, bits);
-//   } else if (proto == "NIKAI") {
-//     irsend.sendNikai(code, bits);
-//   }
-// }
-
+const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
+const String buildVersion = "0.3.31";
+const String buildFile = "";
 
 Arquivo: IRHub-8266.ino
 ========================================
@@ -762,7 +707,6 @@ void loop() {
     if (pressTime > 1000 && pressTime < 3000 && !portalOpened) {
       debugPrintln("[BTN] Abrindo portal WiFi...");
       portalOpened = true;
-      pressStart = millis();
       startWiFiManagerPortal();
     }
 
@@ -973,7 +917,6 @@ void myIRdecoder() {
 
     bool aceitar = false;
 
-    // if (results.decode_type == NEC && isValidNEC(results.value) && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_PROTOCOL_NEC_NIKAI)) {
     if (IR_ReceptorEstado == IR_ALL) {
 
       aceitar = true;
@@ -1064,17 +1007,34 @@ void lastIR_Receptor() {
   lastIR.valido = true;
 
   debugIR();
-  MQTTsendIR_Received();  // ← renomeado
+  MQTTsendIR_Received();
   wsSendInfoIR_Receptor();
-
 }
 
 
 /************ Tradução de protocolo ************/
+// const char* getIRProtocol(decode_type_t type) {
+
+//   switch (type) {
+
+//     case NEC: return "NEC";
+//     case SONY: return "SONY";
+//     case RC5: return "RC5";
+//     case RC6: return "RC6";
+//     case PANASONIC: return "PANASONIC";
+//     case LG: return "LG";
+//     case SAMSUNG: return "SAMSUNG";
+//     case JVC: return "JVC";
+//     case WHYNTER: return "WHYNTER";
+//     case NIKAI: return "NIKAI";
+
+//     default:
+//       return typeToString(type).c_str();
+//   }
+// }
+
 const char* getIRProtocol(decode_type_t type) {
-
   switch (type) {
-
     case NEC: return "NEC";
     case SONY: return "SONY";
     case RC5: return "RC5";
@@ -1087,13 +1047,16 @@ const char* getIRProtocol(decode_type_t type) {
     case NIKAI: return "NIKAI";
 
     default:
-      return typeToString(type).c_str();
+      {
+        static char buf[24];
+        typeToString(type).toCharArray(buf, sizeof(buf));
+        return buf;
+      }
   }
 }
 
 
-
-bool sendIRCode(uint32_t code, decode_type_t proto, uint8_t bits) {
+bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits) {
 
   bool success = true;
 
@@ -1101,13 +1064,13 @@ bool sendIRCode(uint32_t code, decode_type_t proto, uint8_t bits) {
 
   debugPrintf(
     "IR SEND -> Protocol:%s Bits:%d Code:0x%lX",
-    getIRProtocol(proto),
+    getIRProtocol(protocol),
     bits,
     code);
 
   enviandoCod = true;
 
-  switch (proto) {
+  switch (protocol) {
 
     case NEC:
       irsend.sendNEC(code, bits);
@@ -1149,12 +1112,8 @@ bool sendIRCode(uint32_t code, decode_type_t proto, uint8_t bits) {
       break;
 
     default:
-
-      debugPrintf(
-        "Protocolo IR não suportado (%d), usando NEC fallback",
-        proto);
+      debugPrintf("Protocolo IR não suportado (%d), usando NEC fallback", protocol);
       success = false;
-      irsend.sendNEC(code, bits);
       break;
   }
 
@@ -1180,7 +1139,7 @@ size_t buildIRJson(
   doc["type"] = "ir_emissor";
   doc["emissor_teste"] = IR_EmissorTeste;
   doc["status"] = status;
-  doc["erro"] = status;
+  // doc["erro"] = status;
   doc["origem"] = origem;
 
   doc["protocol"] = getIRProtocol(proto);
@@ -1387,8 +1346,8 @@ void mqtt_reconnect() {
 
   StaticJsonDocument<64> doc;
   doc["state"] = "offline";
-  char MQTT_Msg[64];
-  size_t len = serializeJson(doc, MQTT_Msg, sizeof(MQTT_Msg));
+  char willMsg[64];
+  size_t len = serializeJson(doc, willMsg, sizeof(willMsg));
 
   bool conectado = mqtt_client.connect(
     clientID.c_str(),
@@ -1397,7 +1356,7 @@ void mqtt_reconnect() {
     topic_status,  // ← will topic
     1,
     true,
-    MQTT_Msg);
+    willMsg);
 
   if (conectado) {
     mqttOK++;
@@ -1620,8 +1579,12 @@ void setup_ota() {
   Serial.println("=================================");
   ArduinoOTA.setHostname(clientID.c_str());
 
-  // Sem autenticação por padrão
-  ArduinoOTA.setPassword("admin123");
+  // -------- OTA - Senha --------
+  snprintf(otaPassword, sizeof(otaPassword), "ota-%08X", ESP.getChipId());
+  ArduinoOTA.setPassword(otaPassword);
+
+  Serial.print("   OTA Password: ");
+  Serial.println(otaPassword);
 
   telnetServer.begin();  // Necessário para fazer o software Arduino detectar automaticamente o dispositivo OTA
   ArduinoOTA.onStart([]() {
@@ -1696,16 +1659,33 @@ void handleLED() {
 }
 
 void handleIR_Recepitor() {
-  static int n = 0;
-  n++;
-
-  if (n > 4) {
-    n = 0;
+  if (!server.hasArg("mode")) {
+    server.send(400, "application/json", "{\"error\":\"mode ausente\"}");
+    return;
   }
 
-  IR_RecepitorSET(n);
+  int mode = server.arg("mode").toInt();
+
+  if (mode < 0 || mode > 4) {
+    server.send(400, "application/json", "{\"error\":\"mode invalido\"}");
+    return;
+  }
+
+  IR_RecepitorSET(mode);
   server.send(200, "application/json", "");
 }
+
+// void handleIR_Recepitor() {
+//   static int n = 0;
+//   n++;
+
+//   if (n > 4) {
+//     n = 0;
+//   }
+
+//   IR_RecepitorSET(n);
+//   server.send(200, "application/json", "");
+// }
 
 void handleIR_EmissorTeste() {
   IR_EmissorTeste = !IR_EmissorTeste;
@@ -1749,15 +1729,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           return;
         }
 
-        if (msg == "toggleIRReceptor") {
+        // if (msg == "toggleIRReceptor") {
 
-          static int n = 0;
-          n++;
-          if (n > 4) n = 0;
+        //   static int n = 0;
+        //   n++;
+        //   if (n > 4) n = 0;
 
-          IR_RecepitorSET(n);
-          return;
-        }
+        //   IR_RecepitorSET(n);
+        //   return;
+        // }
 
         if (msg == "toggleIREmissor") {
           IR_EmissorTeste = !IR_EmissorTeste;
@@ -1777,6 +1757,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         const char* cmd = doc["cmd"];
 
         if (!cmd) return;
+
+        if (strcmp(cmd, "setIRReceptor") == 0) {
+          int mode = doc["mode"] | -1;
+          if (mode >= 0 && mode <= 4) {
+            IR_RecepitorSET(mode);
+          }
+          return;
+        }
 
         if (strcmp(cmd, "sendIR") == 0) {
 
@@ -1883,7 +1871,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 }
 
 void wsSendSystem() {
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<640> doc;
 
   doc["type"] = "system";
   doc["name"] = myTopic;
@@ -1904,8 +1892,12 @@ void wsSendSystem() {
   cfg["mqtt_user"] = mqtt_user_buf;
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
 
-  char buffer[512];
-  size_t len = serializeJson(doc, buffer);
+  char buffer[640];
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+  if (len == 0 || len >= sizeof(buffer)) {
+    debugPrintln("[WS] Erro: JSON system truncado");
+    return;
+  }
   webSocket.broadcastTXT(buffer, len);
 }
 
@@ -2185,6 +2177,10 @@ void debugBuild() {
 
   debugPrint("  Versão        : ");
   debugPrintln(buildVersion);
+
+  debugPrint("  OTA Password  : ");
+  debugPrintln(otaPassword);
+
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
@@ -2676,10 +2672,26 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
           </select>
         </div>
         <div class="item">
-          <input
-            id="irCode"
-            type="text"
-            placeholder="Código hex (ex: 0x20DF10EF)"
+        <select
+        id="irFormat"
+        style="
+          width: 100%;
+          padding: 6px;
+          border-radius: 6px;
+          background: #111827;
+          color: #f9fafb;
+          border: 1px solid #374151;
+          font-size: 12px;
+          margin-bottom: 4px;
+        "
+      >
+        <option value="hex">Hex (ex: 0x20DF10EF)</option>
+        <option value="dec">Decimal (ex: 551489775)</option>
+      </select>
+      <input
+        id="irCode"
+        type="text"
+        placeholder="Código hex (ex: 0x20DF10EF)"
             style="
               width: 100%;
               padding: 6px;
@@ -3190,15 +3202,27 @@ case "configError":
           };
 
           // duplo clique = enviar
+          // li.ondblclick = () => {
+          //   wsSend(
+          //     JSON.stringify({
+          //       cmd: "sendIR",
+          //       hex: d.hex,
+          //       protocolo: d.protocolo,
+          //       bits: d.bits,
+          //     }),
+          //   );
+
+          //   li.classList.add("flash");
+          //   setTimeout(() => li.classList.remove("flash"), 400);
+          // };
+
+          // duplo clique = carregar no formulário
           li.ondblclick = () => {
-            wsSend(
-              JSON.stringify({
-                cmd: "sendIR",
-                hex: d.hex,
-                protocolo: d.protocolo,
-                bits: d.bits,
-              }),
-            );
+            document.getElementById("irProto").value  = d.protocolo;
+            document.getElementById("irFormat").value = "hex";
+            document.getElementById("irCode").value   = d.hex;
+            document.getElementById("irBits").value   = d.bits;
+            document.getElementById("irCode").placeholder = "Código hex (ex: 0x20DF10EF)";
 
             li.classList.add("flash");
             setTimeout(() => li.classList.remove("flash"), 400);
@@ -3254,25 +3278,34 @@ function showCfgStatus(msg, color) {
    COMMANDS
 ========================================================= */
       function sendIRManual() {
-        const proto = irProto.value;
-        const code = irCode.value.trim();
-        const bits = parseInt(irBits.value) || 32;
-
+        const proto  = irProto.value;
+        const code   = irCode.value.trim();
+        const bits   = parseInt(irBits.value) || 32;
+        const format = irFormat.value;
         if (!code) return alert("Digite um código IR.");
 
-        wsSend(
-          JSON.stringify({
-            cmd: "sendIR",
-            hex: code,
-            protocolo: proto,
-            bits,
-          }),
-        );
+        let hex;
+        if (format === "dec") {
+          const num = parseInt(code, 10);
+          if (isNaN(num)) return alert("Decimal inválido.");
+          hex = "0x" + num.toString(16).toUpperCase();
+        } else {
+          hex = code;
+        }
+
+        wsSend(JSON.stringify({ cmd: "sendIR", hex, protocolo: proto, bits }));
       }
 
       const toggleLED = () => wsSend("toggleLED");
-      const toggleIRReceptor = () => wsSend("toggleIRReceptor");
       const toggleIREmissor = () => wsSend("toggleIREmissor");
+
+      const modos = ["DESABILITADO", "NEC", "NIKAI", "NEC e NIKAI", "TUDO"];
+      function toggleIRReceptor() {
+        const atual = document.getElementById("irMode").textContent;
+        const idx = modos.indexOf(atual);
+        const proximo = (idx + 1) % modos.length;
+        wsSend(JSON.stringify({ cmd: "setIRReceptor", mode: proximo }));
+      }
 
       function rebootDevice() {
         if (confirm("Reiniciar?")) wsSend(JSON.stringify({ cmd: "reboot" }));
@@ -3297,6 +3330,13 @@ function showCfgStatus(msg, color) {
    INIT
 ========================================================= */
       document.getElementById("uptime").textContent = "0d 00h 00m 00s";
+      document.getElementById("irFormat").addEventListener("change", function() {
+      const input = document.getElementById("irCode");
+      input.placeholder = this.value === "dec"
+        ? "Código decimal (ex: 551489775)"
+        : "Código hex (ex: 0x20DF10EF)";
+      input.value = "";
+    });
       connectWS();
     </script>
   </body>
@@ -3468,106 +3508,6 @@ void setup_WiFiManager() {
   Serial.println("Subnet: " + WiFi.subnetMask().toString());
   Serial.println("RSSI: " + String(WiFi.RSSI()));
 }
-
-// void startWiFiManagerPortal() {
-//   Serial.println("[WiFi] Iniciando portal sob demanda...");
-//   WiFiManager wifiManager;
-//   wifiManager.setDebugOutput(true);
-//   wifiManager.setConfigPortalTimeout(180);
-//   wifiManager.setSaveConfigCallback(saveConfigCallback);
-//   wifiManager.setWebServerCallback([]() {
-//     ArduinoOTA.handle();
-//     handleTelnet();
-//   });
-
-//   // ======= IDENTIFICAÇÃO =======
-//   WiFiManagerParameter h_id("<hr><p><b>Identificação</b></p>");
-//   wifiManager.addParameter(&h_id);
-//   WiFiManagerParameter p_hostname("hostname", "Hostname (mDNS)", hostname_buf, 32);
-//   WiFiManagerParameter p_mqtt_id("mqtt_id", "MQTT ID", mqtt_id_buf, 32);
-//   WiFiManagerParameter p_grupo("grupo", "Grupo / Localização", grupo_buf, 32);
-//   wifiManager.addParameter(&p_hostname);
-//   wifiManager.addParameter(&p_mqtt_id);
-//   wifiManager.addParameter(&p_grupo);
-
-//   // ======= REDE =======
-//   WiFiManagerParameter h_net("<hr><p><b>Rede</b></p>");
-//   wifiManager.addParameter(&h_net);
-//   WiFiManagerParameter p_ip("ip", "IP Fixo", ipStr, 16);
-//   WiFiManagerParameter p_gw("gw", "Gateway", gwStr, 16);
-//   WiFiManagerParameter p_sn("sn", "Subnet Mask", snStr, 16);
-//   wifiManager.addParameter(&p_ip);
-//   wifiManager.addParameter(&p_gw);
-//   wifiManager.addParameter(&p_sn);
-
-//   // ======= MQTT =======
-//   WiFiManagerParameter h_mqtt("<hr><p><b>MQTT</b></p>");
-//   wifiManager.addParameter(&h_mqtt);
-//   WiFiManagerParameter p_mqtt_server("mqtt_server", "Servidor MQTT", mqtt_server, 64);
-//   WiFiManagerParameter p_mqtt_user("mqtt_user", "Usuário MQTT", mqtt_user_buf, 64);
-//   WiFiManagerParameter p_mqtt_password("mqtt_password", "Senha MQTT", mqtt_password_buf, 64, "type='password'");
-
-//   const char* mqttEnabledChecked = strcmp(mqtt_enabled_buf, "yes") == 0
-//                                      ? "selected"
-//                                      : "";
-//   const char* mqttDisabledChecked = strcmp(mqtt_enabled_buf, "no") == 0
-//                                       ? "selected"
-//                                       : "";
-//   char mqttSelectHtml[384];
-//   snprintf(mqttSelectHtml, sizeof(mqttSelectHtml),
-//            "<br><label>MQTT</label><br>"
-//            "<select name='mqtt_enabled' style='width:100%%;padding:6px;border-radius:6px;"
-//            "background:#1f2937;color:#fff;border:1px solid #374151;font-size:12px;'>"
-//            "<option value='yes' %s>Habilitado</option>"
-//            "<option value='no' %s>Desabilitado</option>"
-//            "</select>",
-//            mqttEnabledChecked, mqttDisabledChecked);
-//   WiFiManagerParameter p_mqtt_enabled("mqtt_enabled", "MQTT", mqtt_enabled_buf, 4, mqttSelectHtml);
-
-
-//   wifiManager.addParameter(&p_mqtt_server);
-//   wifiManager.addParameter(&p_mqtt_user);
-//   wifiManager.addParameter(&p_mqtt_password);
-//   wifiManager.addParameter(&p_mqtt_enabled);
-
-//   // ---------- ABRE PORTAL ----------
-//   if (!wifiManager.startConfigPortal(hostname_buf, "12345678")) {
-//     Serial.println("[WiFi] Portal fechado ou timeout");
-//     return;
-//   }
-//   Serial.println("[WiFi] Portal finalizado");
-
-//   atualizaConfig(
-//     p_hostname, p_mqtt_id, p_grupo,
-//     p_ip, p_gw, p_sn,
-//     p_mqtt_server, p_mqtt_user, p_mqtt_password, p_mqtt_enabled);
-
-
-//   // ---------- Reaplica IP fixo ----------
-//   IPAddress ip, gw, sn, dns(8, 8, 8, 8);
-//   if (ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
-//     String ssid = WiFi.SSID();
-//     String pass = WiFi.psk();
-//     Serial.println("[WiFi] Reconfigurando rede...");
-//     Serial.println("[WiFi] SSID: " + ssid);
-//     WiFi.disconnect(true);
-//     delay(200);
-//     WiFi.config(ip, gw, sn, dns);
-//     WiFi.begin(ssid, pass);
-//     unsigned long start = millis();
-//     while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
-//       delay(500);
-//       Serial.print(".");
-//     }
-//     Serial.println();
-//     if (WiFi.status() == WL_CONNECTED) {
-//       Serial.println("[WiFi] Reconectado com sucesso!");
-//       Serial.println("IP: " + WiFi.localIP().toString());
-//     } else {
-//       Serial.println("[WiFi] Falha ao reconectar");
-//     }
-//   }
-// }
 
 void startWiFiManagerPortal() {
 
@@ -3792,31 +3732,64 @@ void atualizaConfig(
 // ==========================
 void wifi_watchdog() {
   if (WiFi.status() == WL_CONNECTED) return;
-  Serial.println("[WiFi] Conexão perdida! Tentando reconectar...");
-  String ssid = WiFi.SSID();
-  String pass = WiFi.psk();
-  WiFi.disconnect();
-  delay(200);
-  if (ssid.length() > 0) {
-    WiFi.begin(ssid, pass);
-  } else {
-    WiFi.begin();
+
+  static unsigned long reconnectStart = 0;
+  static bool reconnecting = false;
+
+  if (!reconnecting) {
+    Serial.println("[WiFi] Conexão perdida! Tentando reconectar...");
+    String ssid = WiFi.SSID();
+    String pass = WiFi.psk();
+    WiFi.disconnect();
+    delay(200);
+    if (ssid.length() > 0) {
+      WiFi.begin(ssid, pass);
+    } else {
+      WiFi.begin();
+    }
+    reconnectStart = millis();
+    reconnecting = true;
+    return;
   }
-  unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println();
+
+  if (millis() - reconnectStart < 15000) return;
+
+  reconnecting = false;
+
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("[WiFi] Reconectado!");
     Serial.println("IP: " + WiFi.localIP().toString());
   } else {
-    Serial.println("[WiFi] Falha ao reconectar. Reiniciando...");
-    delay(1000);
-    // ESP.restart();
+    Serial.println("[WiFi] Falha ao reconectar");
   }
 }
+// void wifi_watchdog() {
+//   if (WiFi.status() == WL_CONNECTED) return;
+//   Serial.println("[WiFi] Conexão perdida! Tentando reconectar...");
+//   String ssid = WiFi.SSID();
+//   String pass = WiFi.psk();
+//   WiFi.disconnect();
+//   delay(200);
+//   if (ssid.length() > 0) {
+//     WiFi.begin(ssid, pass);
+//   } else {
+//     WiFi.begin();
+//   }
+//   unsigned long start = millis();
+//   while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+//     delay(500);
+//     Serial.print(".");
+//   }
+//   Serial.println();
+//   if (WiFi.status() == WL_CONNECTED) {
+//     Serial.println("[WiFi] Reconectado!");
+//     Serial.println("IP: " + WiFi.localIP().toString());
+//   } else {
+//     Serial.println("[WiFi] Falha ao reconectar. Reiniciando...");
+//     delay(1000);
+//     // ESP.restart();
+//   }
+// }
 
 // ==========================
 // CALLBACK SAVE CONFIG

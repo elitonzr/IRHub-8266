@@ -316,10 +316,26 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
           </select>
         </div>
         <div class="item">
-          <input
-            id="irCode"
-            type="text"
-            placeholder="Código hex (ex: 0x20DF10EF)"
+        <select
+        id="irFormat"
+        style="
+          width: 100%;
+          padding: 6px;
+          border-radius: 6px;
+          background: #111827;
+          color: #f9fafb;
+          border: 1px solid #374151;
+          font-size: 12px;
+          margin-bottom: 4px;
+        "
+      >
+        <option value="hex">Hex (ex: 0x20DF10EF)</option>
+        <option value="dec">Decimal (ex: 551489775)</option>
+      </select>
+      <input
+        id="irCode"
+        type="text"
+        placeholder="Código hex (ex: 0x20DF10EF)"
             style="
               width: 100%;
               padding: 6px;
@@ -830,15 +846,27 @@ case "configError":
           };
 
           // duplo clique = enviar
+          // li.ondblclick = () => {
+          //   wsSend(
+          //     JSON.stringify({
+          //       cmd: "sendIR",
+          //       hex: d.hex,
+          //       protocolo: d.protocolo,
+          //       bits: d.bits,
+          //     }),
+          //   );
+
+          //   li.classList.add("flash");
+          //   setTimeout(() => li.classList.remove("flash"), 400);
+          // };
+
+          // duplo clique = carregar no formulário
           li.ondblclick = () => {
-            wsSend(
-              JSON.stringify({
-                cmd: "sendIR",
-                hex: d.hex,
-                protocolo: d.protocolo,
-                bits: d.bits,
-              }),
-            );
+            document.getElementById("irProto").value  = d.protocolo;
+            document.getElementById("irFormat").value = "hex";
+            document.getElementById("irCode").value   = d.hex;
+            document.getElementById("irBits").value   = d.bits;
+            document.getElementById("irCode").placeholder = "Código hex (ex: 0x20DF10EF)";
 
             li.classList.add("flash");
             setTimeout(() => li.classList.remove("flash"), 400);
@@ -894,25 +922,34 @@ function showCfgStatus(msg, color) {
    COMMANDS
 ========================================================= */
       function sendIRManual() {
-        const proto = irProto.value;
-        const code = irCode.value.trim();
-        const bits = parseInt(irBits.value) || 32;
-
+        const proto  = irProto.value;
+        const code   = irCode.value.trim();
+        const bits   = parseInt(irBits.value) || 32;
+        const format = irFormat.value;
         if (!code) return alert("Digite um código IR.");
 
-        wsSend(
-          JSON.stringify({
-            cmd: "sendIR",
-            hex: code,
-            protocolo: proto,
-            bits,
-          }),
-        );
+        let hex;
+        if (format === "dec") {
+          const num = parseInt(code, 10);
+          if (isNaN(num)) return alert("Decimal inválido.");
+          hex = "0x" + num.toString(16).toUpperCase();
+        } else {
+          hex = code;
+        }
+
+        wsSend(JSON.stringify({ cmd: "sendIR", hex, protocolo: proto, bits }));
       }
 
       const toggleLED = () => wsSend("toggleLED");
-      const toggleIRReceptor = () => wsSend("toggleIRReceptor");
       const toggleIREmissor = () => wsSend("toggleIREmissor");
+
+      const modos = ["DESABILITADO", "NEC", "NIKAI", "NEC e NIKAI", "TUDO"];
+      function toggleIRReceptor() {
+        const atual = document.getElementById("irMode").textContent;
+        const idx = modos.indexOf(atual);
+        const proximo = (idx + 1) % modos.length;
+        wsSend(JSON.stringify({ cmd: "setIRReceptor", mode: proximo }));
+      }
 
       function rebootDevice() {
         if (confirm("Reiniciar?")) wsSend(JSON.stringify({ cmd: "reboot" }));
@@ -937,6 +974,13 @@ function showCfgStatus(msg, color) {
    INIT
 ========================================================= */
       document.getElementById("uptime").textContent = "0d 00h 00m 00s";
+      document.getElementById("irFormat").addEventListener("change", function() {
+      const input = document.getElementById("irCode");
+      input.placeholder = this.value === "dec"
+        ? "Código decimal (ex: 551489775)"
+        : "Código hex (ex: 0x20DF10EF)";
+      input.value = "";
+    });
       connectWS();
     </script>
   </body>

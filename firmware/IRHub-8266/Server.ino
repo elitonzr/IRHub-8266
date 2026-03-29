@@ -45,16 +45,33 @@ void handleLED() {
 }
 
 void handleIR_Recepitor() {
-  static int n = 0;
-  n++;
-
-  if (n > 4) {
-    n = 0;
+  if (!server.hasArg("mode")) {
+    server.send(400, "application/json", "{\"error\":\"mode ausente\"}");
+    return;
   }
 
-  IR_RecepitorSET(n);
+  int mode = server.arg("mode").toInt();
+
+  if (mode < 0 || mode > 4) {
+    server.send(400, "application/json", "{\"error\":\"mode invalido\"}");
+    return;
+  }
+
+  IR_RecepitorSET(mode);
   server.send(200, "application/json", "");
 }
+
+// void handleIR_Recepitor() {
+//   static int n = 0;
+//   n++;
+
+//   if (n > 4) {
+//     n = 0;
+//   }
+
+//   IR_RecepitorSET(n);
+//   server.send(200, "application/json", "");
+// }
 
 void handleIR_EmissorTeste() {
   IR_EmissorTeste = !IR_EmissorTeste;
@@ -98,15 +115,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           return;
         }
 
-        if (msg == "toggleIRReceptor") {
+        // if (msg == "toggleIRReceptor") {
 
-          static int n = 0;
-          n++;
-          if (n > 4) n = 0;
+        //   static int n = 0;
+        //   n++;
+        //   if (n > 4) n = 0;
 
-          IR_RecepitorSET(n);
-          return;
-        }
+        //   IR_RecepitorSET(n);
+        //   return;
+        // }
 
         if (msg == "toggleIREmissor") {
           IR_EmissorTeste = !IR_EmissorTeste;
@@ -126,6 +143,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         const char* cmd = doc["cmd"];
 
         if (!cmd) return;
+
+        if (strcmp(cmd, "setIRReceptor") == 0) {
+          int mode = doc["mode"] | -1;
+          if (mode >= 0 && mode <= 4) {
+            IR_RecepitorSET(mode);
+          }
+          return;
+        }
 
         if (strcmp(cmd, "sendIR") == 0) {
 
@@ -232,7 +257,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 }
 
 void wsSendSystem() {
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<640> doc;
 
   doc["type"] = "system";
   doc["name"] = myTopic;
@@ -253,8 +278,12 @@ void wsSendSystem() {
   cfg["mqtt_user"] = mqtt_user_buf;
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
 
-  char buffer[512];
-  size_t len = serializeJson(doc, buffer);
+  char buffer[640];
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+  if (len == 0 || len >= sizeof(buffer)) {
+    debugPrintln("[WS] Erro: JSON system truncado");
+    return;
+  }
   webSocket.broadcastTXT(buffer, len);
 }
 

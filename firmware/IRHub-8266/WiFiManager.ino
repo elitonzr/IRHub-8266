@@ -160,106 +160,6 @@ void setup_WiFiManager() {
   Serial.println("RSSI: " + String(WiFi.RSSI()));
 }
 
-// void startWiFiManagerPortal() {
-//   Serial.println("[WiFi] Iniciando portal sob demanda...");
-//   WiFiManager wifiManager;
-//   wifiManager.setDebugOutput(true);
-//   wifiManager.setConfigPortalTimeout(180);
-//   wifiManager.setSaveConfigCallback(saveConfigCallback);
-//   wifiManager.setWebServerCallback([]() {
-//     ArduinoOTA.handle();
-//     handleTelnet();
-//   });
-
-//   // ======= IDENTIFICAÇÃO =======
-//   WiFiManagerParameter h_id("<hr><p><b>Identificação</b></p>");
-//   wifiManager.addParameter(&h_id);
-//   WiFiManagerParameter p_hostname("hostname", "Hostname (mDNS)", hostname_buf, 32);
-//   WiFiManagerParameter p_mqtt_id("mqtt_id", "MQTT ID", mqtt_id_buf, 32);
-//   WiFiManagerParameter p_grupo("grupo", "Grupo / Localização", grupo_buf, 32);
-//   wifiManager.addParameter(&p_hostname);
-//   wifiManager.addParameter(&p_mqtt_id);
-//   wifiManager.addParameter(&p_grupo);
-
-//   // ======= REDE =======
-//   WiFiManagerParameter h_net("<hr><p><b>Rede</b></p>");
-//   wifiManager.addParameter(&h_net);
-//   WiFiManagerParameter p_ip("ip", "IP Fixo", ipStr, 16);
-//   WiFiManagerParameter p_gw("gw", "Gateway", gwStr, 16);
-//   WiFiManagerParameter p_sn("sn", "Subnet Mask", snStr, 16);
-//   wifiManager.addParameter(&p_ip);
-//   wifiManager.addParameter(&p_gw);
-//   wifiManager.addParameter(&p_sn);
-
-//   // ======= MQTT =======
-//   WiFiManagerParameter h_mqtt("<hr><p><b>MQTT</b></p>");
-//   wifiManager.addParameter(&h_mqtt);
-//   WiFiManagerParameter p_mqtt_server("mqtt_server", "Servidor MQTT", mqtt_server, 64);
-//   WiFiManagerParameter p_mqtt_user("mqtt_user", "Usuário MQTT", mqtt_user_buf, 64);
-//   WiFiManagerParameter p_mqtt_password("mqtt_password", "Senha MQTT", mqtt_password_buf, 64, "type='password'");
-
-//   const char* mqttEnabledChecked = strcmp(mqtt_enabled_buf, "yes") == 0
-//                                      ? "selected"
-//                                      : "";
-//   const char* mqttDisabledChecked = strcmp(mqtt_enabled_buf, "no") == 0
-//                                       ? "selected"
-//                                       : "";
-//   char mqttSelectHtml[384];
-//   snprintf(mqttSelectHtml, sizeof(mqttSelectHtml),
-//            "<br><label>MQTT</label><br>"
-//            "<select name='mqtt_enabled' style='width:100%%;padding:6px;border-radius:6px;"
-//            "background:#1f2937;color:#fff;border:1px solid #374151;font-size:12px;'>"
-//            "<option value='yes' %s>Habilitado</option>"
-//            "<option value='no' %s>Desabilitado</option>"
-//            "</select>",
-//            mqttEnabledChecked, mqttDisabledChecked);
-//   WiFiManagerParameter p_mqtt_enabled("mqtt_enabled", "MQTT", mqtt_enabled_buf, 4, mqttSelectHtml);
-
-
-//   wifiManager.addParameter(&p_mqtt_server);
-//   wifiManager.addParameter(&p_mqtt_user);
-//   wifiManager.addParameter(&p_mqtt_password);
-//   wifiManager.addParameter(&p_mqtt_enabled);
-
-//   // ---------- ABRE PORTAL ----------
-//   if (!wifiManager.startConfigPortal(hostname_buf, "12345678")) {
-//     Serial.println("[WiFi] Portal fechado ou timeout");
-//     return;
-//   }
-//   Serial.println("[WiFi] Portal finalizado");
-
-//   atualizaConfig(
-//     p_hostname, p_mqtt_id, p_grupo,
-//     p_ip, p_gw, p_sn,
-//     p_mqtt_server, p_mqtt_user, p_mqtt_password, p_mqtt_enabled);
-
-
-//   // ---------- Reaplica IP fixo ----------
-//   IPAddress ip, gw, sn, dns(8, 8, 8, 8);
-//   if (ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
-//     String ssid = WiFi.SSID();
-//     String pass = WiFi.psk();
-//     Serial.println("[WiFi] Reconfigurando rede...");
-//     Serial.println("[WiFi] SSID: " + ssid);
-//     WiFi.disconnect(true);
-//     delay(200);
-//     WiFi.config(ip, gw, sn, dns);
-//     WiFi.begin(ssid, pass);
-//     unsigned long start = millis();
-//     while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
-//       delay(500);
-//       Serial.print(".");
-//     }
-//     Serial.println();
-//     if (WiFi.status() == WL_CONNECTED) {
-//       Serial.println("[WiFi] Reconectado com sucesso!");
-//       Serial.println("IP: " + WiFi.localIP().toString());
-//     } else {
-//       Serial.println("[WiFi] Falha ao reconectar");
-//     }
-//   }
-// }
-
 void startWiFiManagerPortal() {
 
   Serial.println("[WiFi] Iniciando portal sob demanda...");
@@ -483,31 +383,64 @@ void atualizaConfig(
 // ==========================
 void wifi_watchdog() {
   if (WiFi.status() == WL_CONNECTED) return;
-  Serial.println("[WiFi] Conexão perdida! Tentando reconectar...");
-  String ssid = WiFi.SSID();
-  String pass = WiFi.psk();
-  WiFi.disconnect();
-  delay(200);
-  if (ssid.length() > 0) {
-    WiFi.begin(ssid, pass);
-  } else {
-    WiFi.begin();
+
+  static unsigned long reconnectStart = 0;
+  static bool reconnecting = false;
+
+  if (!reconnecting) {
+    Serial.println("[WiFi] Conexão perdida! Tentando reconectar...");
+    String ssid = WiFi.SSID();
+    String pass = WiFi.psk();
+    WiFi.disconnect();
+    delay(200);
+    if (ssid.length() > 0) {
+      WiFi.begin(ssid, pass);
+    } else {
+      WiFi.begin();
+    }
+    reconnectStart = millis();
+    reconnecting = true;
+    return;
   }
-  unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println();
+
+  if (millis() - reconnectStart < 15000) return;
+
+  reconnecting = false;
+
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("[WiFi] Reconectado!");
     Serial.println("IP: " + WiFi.localIP().toString());
   } else {
-    Serial.println("[WiFi] Falha ao reconectar. Reiniciando...");
-    delay(1000);
-    // ESP.restart();
+    Serial.println("[WiFi] Falha ao reconectar");
   }
 }
+// void wifi_watchdog() {
+//   if (WiFi.status() == WL_CONNECTED) return;
+//   Serial.println("[WiFi] Conexão perdida! Tentando reconectar...");
+//   String ssid = WiFi.SSID();
+//   String pass = WiFi.psk();
+//   WiFi.disconnect();
+//   delay(200);
+//   if (ssid.length() > 0) {
+//     WiFi.begin(ssid, pass);
+//   } else {
+//     WiFi.begin();
+//   }
+//   unsigned long start = millis();
+//   while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+//     delay(500);
+//     Serial.print(".");
+//   }
+//   Serial.println();
+//   if (WiFi.status() == WL_CONNECTED) {
+//     Serial.println("[WiFi] Reconectado!");
+//     Serial.println("IP: " + WiFi.localIP().toString());
+//   } else {
+//     Serial.println("[WiFi] Falha ao reconectar. Reiniciando...");
+//     delay(1000);
+//     // ESP.restart();
+//   }
+// }
 
 // ==========================
 // CALLBACK SAVE CONFIG
