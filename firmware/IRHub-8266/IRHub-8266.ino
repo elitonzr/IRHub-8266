@@ -37,7 +37,7 @@
 
 /************ ARQUIVOS AUXILIARES ************/
 #include "globals.h"
-#include "webpage.h"
+// #include "webpage.h"
 
 bool shouldSaveConfig = false;
 
@@ -233,7 +233,7 @@ void loop() {
     }
 
     // ==========================
-    // 3s → reset total
+    // 5s → reset total
     // ==========================
     if (pressTime > 5000) {
       debugPrintln("[BTN] Reset total solicitado via botão");
@@ -242,6 +242,7 @@ void loop() {
 
   } else {
     pressStart = 0;
+    portalOpened = false;
   }
 
   ArduinoOTA.handle();

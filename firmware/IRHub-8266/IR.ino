@@ -20,7 +20,6 @@ void myIRdecoder() {
 
   // Se estiver enviando código IR, ignora leitura
   if (enviandoCod) {
-    enviandoCod = false;
     return;
   }
 

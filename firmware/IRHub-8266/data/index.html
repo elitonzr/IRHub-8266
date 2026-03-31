@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IRHub-8266</title>
+    <link href="https://fonts.googleapis.com/css?family=Inter:300,400,600" rel="stylesheet" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+
+  <body>
+    <h1 id="name">IRHub-8266</h1>
+
+    <div id="wsStatus" style="text-align:center;margin-bottom:16px">
+      <span class="status offline">⚡ WebSocket desconectado</span>
+    </div>
+
+    <div class="grid">
+
+      <!-- IR RECEPTOR -->
+      <section class="card">
+        <header>IR Receptor</header>
+        <div class="item">
+          <span id="irDot" class="dot yellow"></span>
+          Protocolo: <span id="irMode" class="value">--</span>
+        </div>
+        <div class="item">
+          <button class="btn-ir-receptor" onclick="toggleIRReceptor()">Alternar Protocolo</button>
+        </div>
+      </section>
+
+      <!-- IR EMISSOR -->
+      <section class="card">
+        <header>IR Emissor</header>
+        <div class="item">Modo Teste: <span id="irEmitter" class="value">--</span></div>
+        <div class="item">
+          <button class="btn-ir-emitter" onclick="toggleIREmissor()">Alternar Teste</button>
+        </div>
+        <hr>
+        <div class="item">
+          <select id="irProto">
+            <option value="NEC">NEC</option>
+            <option value="SAMSUNG">SAMSUNG</option>
+            <option value="SONY">SONY</option>
+            <option value="RC5">RC5</option>
+            <option value="RC6">RC6</option>
+            <option value="NIKAI">NIKAI</option>
+            <option value="LG">LG</option>
+            <option value="JVC">JVC</option>
+            <option value="WHYNTER">WHYNTER</option>
+          </select>
+        </div>
+        <div class="item">
+          <select id="irFormat">
+            <option value="hex">Hex (ex: 0x20DF10EF)</option>
+            <option value="dec">Decimal (ex: 551489775)</option>
+          </select>
+          <input id="irCode" type="text" placeholder="Código hex (ex: 0x20DF10EF)" style="margin-top:4px" />
+        </div>
+        <div class="item">
+          <input id="irBits" type="number" placeholder="Bits (ex: 32)" value="32" min="1" max="64" />
+        </div>
+        <div class="item">
+          <button class="btn-primary" onclick="sendIRManual()">📡 Enviar IR</button>
+        </div>
+      </section>
+
+      <!-- IR HISTORY -->
+      <section class="card ir-history">
+        <header>Últimos IR Recebidos</header>
+        <ul id="irHistory"></ul>
+        <div class="item">
+          <button class="btn-clean" onclick="cleanHistory()">🗑 Limpar</button>
+        </div>
+      </section>
+
+      <!-- LED -->
+      <section class="card">
+        <header>LED</header>
+        <div class="item">
+          <span id="ledDot" class="dot red"></span>
+          <span id="ledState" class="value">--</span>
+        </div>
+        <div class="item">
+          <button class="btn-led" onclick="toggleLED()">Alternar LED</button>
+        </div>
+      </section>
+
+      <!-- AHT10 -->
+      <section class="card">
+        <header>AHT10</header>
+        <div class="item" id="sensorAHT10Data"></div>
+        <div class="item">
+          Status: <span id="sensorAHT10Status" class="status offline">offline</span>
+        </div>
+      </section>
+
+      <!-- NETWORK -->
+      <section class="card">
+        <header>Network</header>
+        <div class="item">mDNS: <span id="mdns" class="value">--</span></div>
+        <div class="item">SSID: <span id="wifi" class="value">--</span></div>
+        <div class="item">IP: <span id="ip" class="value">--</span></div>
+        <div class="item">Gateway: <span id="gateway" class="value">--</span></div>
+        <div class="item">Mask: <span id="mask" class="value">--</span></div>
+        <div class="item">RSSI: <span id="rssi" class="value">--</span></div>
+        <hr>
+        <div class="item">
+          <button class="btn-primary" onclick="openWifiPortal()">📶 Abrir Portal WiFi</button>
+        </div>
+        <div class="item">
+          <button class="btn-clean" onclick="resetWifi()">⚠️ Reset WiFi</button>
+        </div>
+      </section>
+
+      <!-- MQTT -->
+      <section class="card">
+        <header>MQTT</header>
+        <div class="item">Server: <span id="mqttServer" class="value">--</span></div>
+        <div class="item">Client ID: <span id="mqttClient" class="value">--</span></div>
+        <div class="item">Tópico: <span id="topic_main" class="value">--</span></div>
+        <div class="item">Sucessos: <span id="mqttSucessos" class="value">--</span></div>
+        <div class="item">Erros: <span id="mqttErros" class="value">--</span></div>
+        <div class="item">
+          Status: <span id="mqttStatus" class="status offline">offline</span>
+        </div>
+      </section>
+
+      <!-- SYSTEM -->
+      <section class="card">
+        <header>System</header>
+        <div class="item">Build Date: <span id="buildDateTime" class="value">--</span></div>
+        <div class="item">Version: <span id="buildVersion" class="value">--</span></div>
+        <div class="item">Uptime: <span id="uptime" class="value">--</span></div>
+        <div class="item">Heap: <span id="heap" class="value">--</span></div>
+        <hr>
+        <div class="item">
+          <button class="btn-clean" onclick="rebootDevice()">🔄 Reboot</button>
+        </div>
+        <div class="item">
+          <button class="btn-clean" onclick="resetConfig()">⚠️ Reset Total</button>
+        </div>
+      </section>
+
+      <!-- CONFIG -->
+      <section class="card cfg-card">
+        <header>Configuração</header>
+
+        <p class="cfg-note">
+          As configurações são salvas e aplicadas sem reiniciar.<br>
+          Mudanças de Hostname e Grupo só têm efeito completo após reboot.
+        </p>
+
+        <hr>
+        <p class="section-label">Identificação</p>
+        <div class="item">Hostname: <input id="cfg_hostname" type="text" /></div>
+        <div class="item">MQTT ID:  <input id="cfg_mqtt_id"  type="text" /></div>
+        <div class="item">Grupo:    <input id="cfg_grupo"    type="text" /></div>
+
+        <hr>
+        <p class="section-label">Rede</p>
+        <div class="item">IP Fixo:  <input id="cfg_ip" type="text" placeholder="deixe vazio para DHCP" /></div>
+        <div class="item">Gateway:  <input id="cfg_gw" type="text" /></div>
+        <div class="item">Subnet:   <input id="cfg_sn" type="text" /></div>
+
+        <hr>
+        <p class="section-label">MQTT</p>
+        <div class="item">Servidor: <input id="cfg_mqtt_server"   type="text" /></div>
+        <div class="item">Usuário:  <input id="cfg_mqtt_user"     type="text" /></div>
+        <div class="item">
+          Senha: <input id="cfg_mqtt_password" type="password" placeholder="deixe vazio para manter a atual" />
+        </div>
+        <div class="item">
+          MQTT:
+          <select id="cfg_mqtt_enabled">
+            <option value="yes">Habilitado</option>
+            <option value="no">Desabilitado</option>
+          </select>
+        </div>
+
+        <hr>
+        <div class="item">
+          <button class="btn-primary" onclick="saveDeviceConfig()">💾 Salvar Configuração</button>
+        </div>
+        <div id="cfgStatus" style="text-align:center;font-size:11px;margin-top:8px;min-height:16px"></div>
+      </section>
+
+    </div><!-- /grid -->
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -101,7 +101,7 @@ void mqtt_reconnect() {
     clientID.c_str(),
     mqtt_user_buf,
     mqtt_password_buf,
-    topic_status,  // ← will topic
+    topic_status,
     1,
     true,
     willMsg);
@@ -148,6 +148,7 @@ void MQTTsendStatus() {
   char msg[64];
   size_t len = serializeJson(doc, msg, sizeof(msg));
   if (!mqtt_client.connected()) return;
+  // mqtt_client.publish(topic_status, msg, len, true);
   mqtt_client.publish(topic_status, msg, len);
 }
 

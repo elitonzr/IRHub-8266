@@ -20,60 +20,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if (strcmp(topic, topic_command) == 0) {
     processaComando(payload, length);
   }
-
-  // Envia código IR
-  // else if (strcmp(topic, topic_sensor_ir_send_command) == 0) {
-  //   char buffer[MAX_PAYLOAD];
-  //   unsigned int len = (length < (MAX_PAYLOAD - 1)) ? length : (MAX_PAYLOAD - 1);
-  //   memcpy(buffer, payload, len);
-  //   buffer[len] = '\0';
-  //   processaIRJson(buffer);
-  // }
-
-  // Controle do receptor IR
-  // else if (strcmp(topic, topic_sensor_ir_receptor_command) == 0) {
-
-  //   int modo = -1;
-
-  //   if (strcmp(mensagem, "DESABILITADO") == 0) {
-  //     modo = 0;
-  //   } else if (strcmp(mensagem, "NEC") == 0) {
-  //     modo = 1;
-  //   } else if (strcmp(mensagem, "NIKAI") == 0) {
-  //     modo = 2;
-  //   } else if (strcmp(mensagem, "NEC e NIKAI") == 0) {
-  //     modo = 3;
-  //   } else if (strcmp(mensagem, "TUDO") == 0) {
-  //     modo = 4;
-  //   }
-
-  //   if (modo != -1) {
-  //     IR_RecepitorSET(modo);
-  //   } else {
-  //     debugPrintln("[Callback] Modo IR inválido.");
-  //   }
-  // }
-
-  // // Controle de LED
-  // else if (strcmp(topic, topic_switch_led_command) == 0) {
-  //   char cmd[16];
-  //   size_t len = strlen(mensagem);
-  //   if (len >= sizeof(cmd)) len = sizeof(cmd) - 1;
-  //   memcpy(cmd, mensagem, len);
-  //   cmd[len] = '\0';
-  //   for (size_t i = 0; i < len; i++) cmd[i] = tolower(cmd[i]);
-
-  //   if (strcmp(cmd, "toggle") == 0) {
-  //     ledState = !ledState;
-  //   } else if (strcmp(cmd, "on") == 0) {
-  //     ledState = true;
-  //   } else if (strcmp(cmd, "off") == 0) {
-  //     ledState = false;
-  //   } else {
-  //     debugPrint("[Callback] Comando LED inválido: ");
-  //     debugPrintln(cmd);
-  //   }
-  // }
 }
 
 // ======================================================
@@ -217,7 +163,7 @@ void processaComando(byte* payload, unsigned int length) {
 
     debugPrintln("[processaComando] Reset WiFi solicitado");
 
-    WiFi.disconnect(true);  // limpa credenciais
+    WiFi.disconnect(true);
     delay(500);
 
     ESP.restart();
@@ -254,10 +200,6 @@ void processaComando(byte* payload, unsigned int length) {
       debugPrintln("[processaComando] Hostname atualizado");
     }
 
-    // Aqui você pode expandir:
-    // - mqtt server
-    // - porta
-    // - intervalo sensores
   }
 
   // =========================
@@ -293,12 +235,6 @@ void processaIRJson(char* payload) {
   const char* protoStr = doc["protocol"];
   uint8_t bits = doc["bits"] | 0;
 
-  // if (!protoStr || bits == 0 || bits > 64 || doc["code"].isNull()) {
-  //   debugPrintln("JSON incompleto");
-  //   sendIRFeedback(0, UNKNOWN, 0, "JSON incompleto", "mqtt");
-  //   return;
-  // }
-
   if (!protoStr || bits > 64 || doc["code"].isNull()) {
     debugPrintln("JSON incompleto");
     sendIRFeedback(0, UNKNOWN, 0, "JSON incompleto", "mqtt");
@@ -318,6 +254,7 @@ void processaIRJson(char* payload) {
   else if (strcasecmp(protoStr, "NIKAI") == 0) proto = NIKAI;
   else if (strcasecmp(protoStr, "LG") == 0) proto = LG;
   else if (strcasecmp(protoStr, "JVC") == 0) proto = JVC;
+  else if (strcasecmp(protoStr, "WHYNTER") == 0) proto = WHYNTER;
   else {
     debugPrint("protocol desconhecido: ");
     debugPrintln(protoStr);
