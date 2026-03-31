@@ -25,7 +25,7 @@ String clientID = "";
 
 // -------- Informações de compilação --------
 const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
-const String buildVersion = "0.4.41";
+const String buildVersion = "0.4.5";
 const String buildFile = "";
 
   File uploadFile;

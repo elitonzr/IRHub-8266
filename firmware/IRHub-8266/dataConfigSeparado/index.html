@@ -17,18 +17,60 @@
 
     <div class="grid">
 
-      <!-- IR — link para página dedicada -->
+      <!-- IR RECEPTOR -->
       <section class="card">
-        <header>IR</header>
+        <header>IR Receptor</header>
         <div class="item">
           <span id="irDot" class="dot yellow"></span>
           Protocolo: <span id="irMode" class="value">--</span>
         </div>
+        <div class="item">
+          <button class="btn-ir-receptor" onclick="toggleIRReceptor()">Alternar Protocolo</button>
+        </div>
+      </section>
+
+      <!-- IR EMISSOR -->
+      <section class="card">
+        <header>IR Emissor</header>
         <div class="item">Modo Teste: <span id="irEmitter" class="value">--</span></div>
         <div class="item">
-          <a href="/ir" style="display:block;text-decoration:none;margin-top:8px">
-            <button class="btn-ir-receptor" style="pointer-events:none">📡 Abrir IR</button>
-          </a>
+          <button class="btn-ir-emitter" onclick="toggleIREmissor()">Alternar Teste</button>
+        </div>
+        <hr>
+        <div class="item">
+          <select id="irProto">
+            <option value="NEC">NEC</option>
+            <option value="SAMSUNG">SAMSUNG</option>
+            <option value="SONY">SONY</option>
+            <option value="RC5">RC5</option>
+            <option value="RC6">RC6</option>
+            <option value="NIKAI">NIKAI</option>
+            <option value="LG">LG</option>
+            <option value="JVC">JVC</option>
+            <option value="WHYNTER">WHYNTER</option>
+          </select>
+        </div>
+        <div class="item">
+          <select id="irFormat">
+            <option value="hex">Hex (ex: 0x20DF10EF)</option>
+            <option value="dec">Decimal (ex: 551489775)</option>
+          </select>
+          <input id="irCode" type="text" placeholder="Código hex (ex: 0x20DF10EF)" style="margin-top:4px" />
+        </div>
+        <div class="item">
+          <input id="irBits" type="number" placeholder="Bits (ex: 32)" value="32" min="1" max="64" />
+        </div>
+        <div class="item">
+          <button class="btn-primary" onclick="sendIRManual()">📡 Enviar IR</button>
+        </div>
+      </section>
+
+      <!-- IR HISTORY -->
+      <section class="card ir-history">
+        <header>Últimos IR Recebidos</header>
+        <ul id="irHistory"></ul>
+        <div class="item">
+          <button class="btn-clean" onclick="cleanHistory()">🗑 Limpar</button>
         </div>
       </section>
 

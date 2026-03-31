@@ -410,6 +410,21 @@ void resetConfig() {
   // SPIFFS.format();
   LittleFS.format();
 
+  // if (LittleFS.exists("/config.json")) {
+  //   if (LittleFS.remove("/config.json")) {
+  //     Serial.println("Arquivo removido com sucesso!");
+  //   } else {
+  //     Serial.println("Erro ao remover o arquivo.");
+  //   }
+  // } else {
+  //   Serial.println("Arquivo não existe.");
+  // }
+
+  Dir dir = LittleFS.openDir("/");
+  while (dir.next()) {
+    debugPrintln(dir.fileName());
+  }
+
   delay(1000);
   ESP.restart();
 }
