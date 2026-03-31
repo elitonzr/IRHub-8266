@@ -88,78 +88,6 @@ void setup_server() {
   });
 
   // --- Diagnóstico: lista arquivos do LittleFS ---
-  server.on("/fs", HTTP_GET, []() {
-    String out = "LittleFS files:\n";
-    Dir dir = LittleFS.openDir("/");
-    while (dir.next()) {
-      out += "  [" + String(dir.fileSize()) + "b] /" + dir.fileName() + "\n";
-    }
-    FSInfo fs_info;
-    LittleFS.info(fs_info);
-    out += "\nUsed: " + String(fs_info.usedBytes) + " / " + String(fs_info.totalBytes) + " bytes";
-    server.send(200, "text/plain", out);
-  });
-
-  // --- Gerenciamento de Arquivos (Upload) ---
-  server.on("/upload_antigo", HTTP_GET, []() {
-    if (!server.authenticate("admin", "1234")) return server.requestAuthentication();
-    server.send(200, "text/html", "<h2>Upload</h2><form method='POST' action='/upload' enctype='multipart/form-data'><input type='file' name='data'><input type='submit' value='Upload'></form>");
-  });
-
-  server.on(
-    "/upload_antigo", HTTP_POST, []() {
-      server.send(200, "text/plain", "OK");
-      delay(500);
-      // ESP.restart();
-    },
-    []() {
-      HTTPUpload& upload = server.upload();
-      if (upload.status == UPLOAD_FILE_START) {
-        String filename = upload.filename;
-        if (!filename.startsWith("/")) filename = "/" + filename;
-        Serial.printf("Upload Start: %s\n", filename.c_str());
-        uploadFile = LittleFS.open(filename, "w");
-      } else if (upload.status == UPLOAD_FILE_WRITE) {
-        if (uploadFile) uploadFile.write(upload.buf, upload.currentSize);
-      } else if (upload.status == UPLOAD_FILE_END) {
-        if (uploadFile) {
-          uploadFile.close();
-          Serial.printf("Upload End: %u bytes\n", upload.totalSize);
-        }
-      }
-    });
-
-  // --- Gerenciamento de Arquivos (download) --- ex.: http://IP_DO_ESP/download?file=/config.json
-  server.on("/download_antigo", []() {
-    if (!server.hasArg("file")) {
-      server.send(400, "text/plain", "Arquivo não especificado");
-      return;
-    }
-
-    String path = server.arg("file");
-
-    debugPrint("path: ");
-    debugPrintln(path);
-
-    // if (path != "/config.json") {
-    //   server.send(403, "text/plain", "Acesso negado");
-    //   return;
-    // }
-
-    if (!LittleFS.exists(path)) {
-      server.send(404, "text/plain", "Arquivo não encontrado");
-      return;
-    }
-
-    File file = LittleFS.open(path, "r");
-
-    server.sendHeader("Content-Type", "application/octet-stream");
-    server.sendHeader("Content-Disposition", "attachment; filename=" + path.substring(1));
-
-    server.streamFile(file, "application/octet-stream");
-    file.close();
-  });
-
   server.on("/files", HTTP_GET, []() {
     if (!server.authenticate("admin", "1234")) return server.requestAuthentication();
     String html = "<!DOCTYPE html><html><head>";
@@ -174,15 +102,46 @@ void setup_server() {
     html += "</style></head><body>";
 
     html += "<h2>📁 LittleFS File Manager</h2>";
-    html += "<table>";
-    html += "<tr><th>Arquivo</th><th>Tamanho</th><th>Ações</th></tr>";
 
+    // UPLOAD
     html += "<h3>📤 Upload de arquivo</h3>";
 
     html += "<input type='file' id='file'>";
-    html += "<button onclick='upload()'>Enviar</button>";
+    html += "<button onclick='upload()'>📤 Enviar</button>";
     html += "<br><br>";
     html += "<progress id='prog' value='0' max='100' style='width:100%'></progress>";
+
+    html += "<script>";
+    html += "function upload(){";
+    html += "  const file = document.getElementById('file').files[0];";
+    html += "  if(!file){ alert('Selecione um arquivo'); return; }";
+
+    html += "  const xhr = new XMLHttpRequest();";
+
+    html += "  xhr.upload.onprogress = function(e){";
+    html += "    if(e.lengthComputable){";
+    html += "      document.getElementById('prog').value = (e.loaded/e.total)*100;";
+    html += "    }";
+    html += "  };";
+
+    html += "  xhr.onload = function(){";
+    html += "    alert('Upload concluído');";
+    html += "    window.location.reload();";
+    html += "  };";
+
+    html += "  const formData = new FormData();";
+    html += "  formData.append('upload', file);";
+
+    html += "  xhr.open('POST','/upload',true);";
+    html += "  xhr.send(formData);";
+    html += "}";
+    html += "</script>";
+
+    html += "<hr>";
+
+    // TABELA
+    html += "<table>";
+    html += "<tr><th>📄 Arquivo</th><th>📦 Tamanho</th><th>⚙️ Ações</th></tr>";
 
     html += "<script>";
     html += "function upload(){";
@@ -244,6 +203,7 @@ void setup_server() {
     server.send(200, "text/html", html);
   });
 
+  // --- Gerenciamento de Arquivos (download) --- ex.: http://IP_DO_ESP/download?file=/config.json
   server.on("/download", HTTP_GET, []() {
     if (!server.hasArg("file")) {
       server.send(400, "text/plain", "Arquivo não especificado");
@@ -258,6 +218,11 @@ void setup_server() {
     }
 
     File file = LittleFS.open(path, "r");
+
+    // if (path != "/config.json") {
+    //   server.send(403, "text/plain", "Acesso negado");
+    //   return;
+    // }
 
     server.sendHeader("Content-Disposition", "attachment; filename=" + path.substring(1));
     server.streamFile(file, "application/octet-stream");
@@ -286,6 +251,7 @@ void setup_server() {
     }
   });
 
+  // --- Gerenciamento de Arquivos (Upload) ---
   server.on(
     "/upload", HTTP_POST, []() {
       if (!server.authenticate("admin", "1234")) return server.requestAuthentication();
