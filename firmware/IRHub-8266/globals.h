@@ -11,7 +11,7 @@ char gwStr[16] = "";
 char snStr[16] = "";
 
 // -------- OTA - Senha --------
-char otaPassword[16]= "";
+char otaPassword[16] = "";
 
 // -------- MQTT — valores padrão (substituídos pelo portal) --------
 char mqtt_server[64] = "mqtt.local";
@@ -28,4 +28,4 @@ const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
 const String buildVersion = "0.4.5";
 const String buildFile = "";
 
-  File uploadFile;
+// File uploadFile;

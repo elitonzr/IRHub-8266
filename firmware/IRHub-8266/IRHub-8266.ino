@@ -76,9 +76,9 @@ char topic_sensor_ir_sent[128];
 
 // -- TOPICS MQTT SUBSCRIPTIONS --
 char topic_command[64];
-char topic_switch_led_command[128];
-char topic_sensor_ir_send_command[128];
-char topic_sensor_ir_receptor_command[128];
+// char topic_switch_led_command[128];
+// char topic_sensor_ir_send_command[128];
+// char topic_sensor_ir_receptor_command[128];
 
 // BUFFERS
 #define MAX_PAYLOAD 250

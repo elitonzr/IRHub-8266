@@ -266,7 +266,11 @@ void atualizaConfig(
   // ==========================
   strlcpy(mqtt_server, p_mqtt_server.getValue(), sizeof(mqtt_server));
   strlcpy(mqtt_user_buf, p_mqtt_user.getValue(), sizeof(mqtt_user_buf));
-  strlcpy(mqtt_password_buf, p_mqtt_password.getValue(), sizeof(mqtt_password_buf));
+
+  if (strcmp(p_mqtt_password.getValue(), "") != 0) {
+    strlcpy(mqtt_password_buf, p_mqtt_password.getValue(), sizeof(mqtt_password_buf));
+  }
+
   strlcpy(mqtt_enabled_buf, p_mqtt_enabled.getValue(), sizeof(mqtt_enabled_buf));
 
   // ==========================

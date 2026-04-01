@@ -53,10 +53,10 @@ void setup_server() {
     }
   });
 
-  // Rota Config
-  server.on("/config", HTTP_GET, []() {
-    if (LittleFS.exists("/config.html")) {
-      File f = LittleFS.open("/config.html", "r");
+  // Rota settings
+  server.on("/settings", HTTP_GET, []() {
+    if (LittleFS.exists("/settings.html")) {
+      File f = LittleFS.open("/settings.html", "r");
       server.streamFile(f, "text/html");
       f.close();
     } else {
@@ -87,7 +87,7 @@ void setup_server() {
     f.close();
   });
 
-  // --- Diagnóstico: lista arquivos do LittleFS ---
+  // --- Diagnóstico: lista arquivos do LittleFS --- ex.: http://IP_DO_ESP/files
   server.on("/files", HTTP_GET, []() {
     if (!server.authenticate("admin", "1234")) return server.requestAuthentication();
     String html = "<!DOCTYPE html><html><head>";
@@ -142,33 +142,6 @@ void setup_server() {
     // TABELA
     html += "<table>";
     html += "<tr><th>📄 Arquivo</th><th>📦 Tamanho</th><th>⚙️ Ações</th></tr>";
-
-    html += "<script>";
-    html += "function upload(){";
-    html += "  const file = document.getElementById('file').files[0];";
-    html += "  if(!file){ alert('Selecione um arquivo'); return; }";
-
-    html += "  const xhr = new XMLHttpRequest();";
-
-    html += "  xhr.upload.onprogress = function(e){";
-    html += "    if(e.lengthComputable){";
-    html += "      document.getElementById('prog').value = (e.loaded/e.total)*100;";
-    html += "    }";
-    html += "  };";
-
-    html += "  xhr.onload = function(){";
-    html += "    alert('Upload concluído');";
-    html += "    window.location.reload();";
-    html += "  };";
-
-    html += "  const formData = new FormData();";
-    html += "  formData.append('upload', file);";
-
-    html += "  xhr.open('POST','/upload',true);";
-    html += "  xhr.send(formData);";
-    html += "}";
-    html += "</script>";
-
     html += "<hr>";
 
     Dir dir = LittleFS.openDir("/");
@@ -205,6 +178,7 @@ void setup_server() {
 
   // --- Gerenciamento de Arquivos (download) --- ex.: http://IP_DO_ESP/download?file=/config.json
   server.on("/download", HTTP_GET, []() {
+    if (!server.authenticate("admin", "1234")) return server.requestAuthentication();
     if (!server.hasArg("file")) {
       server.send(400, "text/plain", "Arquivo não especificado");
       return;
@@ -230,7 +204,10 @@ void setup_server() {
     file.close();
   });
 
+  // --- Gerenciamento de Arquivos (delete) --- ex.: http://IP_DO_ESP/delete?file=/config.json
   server.on("/delete", HTTP_GET, []() {
+    if (!server.authenticate("admin", "1234")) return server.requestAuthentication();
+
     if (!server.hasArg("file")) {
       server.send(400, "text/plain", "Arquivo não especificado");
       return;
@@ -360,36 +337,6 @@ void handleUpload() {
       }
   }
 }
-// void handleUpload() {
-
-//   HTTPUpload& upload = server.upload();
-//   static File fsUploadFile;
-
-//   if (upload.status == UPLOAD_FILE_START) {
-
-//     String filename = upload.filename;
-//     if (!filename.startsWith("/")) filename = "/" + filename;
-
-//     Serial.print("Upload iniciado: ");
-//     Serial.println(filename);
-
-//     fsUploadFile = LittleFS.open(filename, "w");
-
-//   } else if (upload.status == UPLOAD_FILE_WRITE) {
-
-//     if (fsUploadFile) {
-//       fsUploadFile.write(upload.buf, upload.currentSize);
-//     }
-
-//   } else if (upload.status == UPLOAD_FILE_END) {
-
-//     if (fsUploadFile) {
-//       fsUploadFile.close();
-//       Serial.print("Upload finalizado: ");
-//       Serial.println(upload.totalSize);
-//     }
-//   }
-// }
 
 // Controle do LED
 void handleLED() {
@@ -510,21 +457,21 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           }
         }
 
-        if (strcmp(cmd, "reboot") == 0) {
-          debugPrintln("[WS] Reboot solicitado via WebSocket");
-          webSocket.broadcastTXT("{\"type\":\"reboot\"}");
-          delay(500);
-          ESP.restart();
-        }
-
-        if (strcmp(cmd, "wifiPortal") == 0) {
+        else if (strcmp(cmd, "wifiPortal") == 0) {
           debugPrintln("[WS] Abrindo portal WiFi via WebSocket");
           webSocket.broadcastTXT("{\"type\":\"wifiPortal\"}");
           delay(500);
           startWiFiManagerPortal();
         }
 
-        if (strcmp(cmd, "saveConfig") == 0) {
+        else if (strcmp(cmd, "wifiReset") == 0) {
+          debugPrintln("[WS] Reset Wifi solicitado via WebSocket");
+          webSocket.broadcastTXT("{\"type\":\"wifiReset\"}");
+          delay(500);
+          resetWifi();
+        }
+
+        else if (strcmp(cmd, "saveConfig") == 0) {
           debugPrintln("[WS] saveConfig recebido");
 
           const char* v_hostname = doc["hostname"] | hostname_buf;
@@ -546,9 +493,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           strlcpy(snStr, v_sn, sizeof(snStr));
           strlcpy(mqtt_server, v_mqtt_server, sizeof(mqtt_server));
           strlcpy(mqtt_user_buf, v_mqtt_user, sizeof(mqtt_user_buf));
+
           if (strcmp(v_mqtt_password, "__keep__") != 0) {
             strlcpy(mqtt_password_buf, v_mqtt_password, sizeof(mqtt_password_buf));
           }
+
           strlcpy(mqtt_enabled_buf, v_mqtt_enabled, sizeof(mqtt_enabled_buf));
 
           recalcularTopicos();
@@ -566,18 +515,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           webSocket.broadcastTXT("{\"type\":\"configSaved\"}");
         }
 
-        if (strcmp(cmd, "wifiReset") == 0) {
-          debugPrintln("[WS] Reset Wifi solicitado via WebSocket");
-          webSocket.broadcastTXT("{\"type\":\"wifiReset\"}");
-          delay(500);
-          resetWifi();
-        }
-
-        if (strcmp(cmd, "configReset") == 0) {
+        else if (strcmp(cmd, "configReset") == 0) {
           debugPrintln("[WS] Reset total solicitado via WebSocket");
           webSocket.broadcastTXT("{\"type\":\"configReset\"}");
           delay(500);
           resetConfig();
+        }
+
+        else if (strcmp(cmd, "reboot") == 0) {
+          debugPrintln("[WS] Reboot solicitado via WebSocket");
+          webSocket.broadcastTXT("{\"type\":\"reboot\"}");
+          delay(500);
+          ESP.restart();
         }
 
         break;
@@ -586,7 +535,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 }
 
 void wsSendSystem() {
-  StaticJsonDocument<640> doc;
+  StaticJsonDocument<800> doc;
 
   doc["type"] = "system";
   doc["name"] = myTopic;
@@ -607,7 +556,7 @@ void wsSendSystem() {
   cfg["mqtt_user"] = mqtt_user_buf;
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
 
-  char buffer[640];
+  char buffer[800];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
     debugPrintln("[WS] Erro: JSON system truncado");

@@ -1,84 +1,132 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IRHub-8266 — IR</title>
-    <link href="https://fonts.googleapis.com/css?family=Inter:300,400,600" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Inter:300,400,600"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/style.css" />
   </head>
 
   <body>
-    <h1 id="name">IRHub-8266</h1>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <button class="navbar-burger" onclick="drawerOpen()" aria-label="Menu">
+        &#9776;
+      </button>
+      <span class="navbar-brand" id="name">IRHub-8266</span>
+      <div class="navbar-links">
+        <a href="/">Dashboard</a>
+        <a href="/ir" class="active">IR</a>
+        <a href="/settings">Config</a>
+        <a href="/files">File Manager</a>
+      </div>
+      <span class="navbar-ws" id="wsStatus">
+        <span class="status offline">⚡ Desconectado</span>
+      </span>
+    </nav>
 
-    <div id="wsStatus" style="text-align:center;margin-bottom:16px">
-      <span class="status offline">⚡ WebSocket desconectado</span>
+    <!-- DRAWER (mobile) -->
+    <div
+      class="drawer-overlay"
+      id="drawerOverlay"
+      onclick="drawerClose()"
+    ></div>
+    <div class="drawer" id="drawer">
+      <div class="drawer-title">IRHub-8266</div>
+      <a href="/">🏠 Dashboard</a>
+      <a href="/ir" class="active">📡 IR</a>
+      <a href="/config">⚙️ Config</a>
     </div>
 
-    <div style="text-align:center;margin-bottom:20px">
-      <a href="/" style="color:#60a5fa;font-size:13px;text-decoration:none">← Voltar ao Dashboard</a>
+    <!-- CONTEÚDO -->
+    <div class="page-content">
+      <div class="grid">
+        <!-- IR RECEPTOR -->
+        <section class="card">
+          <header>IR Receptor</header>
+          <div class="item">
+            <span id="irDot" class="dot yellow"></span>
+            Protocolo: <span id="irMode" class="value">--</span>
+          </div>
+          <div class="item">
+            <button class="btn-ir-receptor" onclick="toggleIRReceptor()">
+              Alternar Protocolo
+            </button>
+          </div>
+        </section>
+
+        <!-- IR EMISSOR -->
+        <section class="card">
+          <header>IR Emissor</header>
+          <div class="item">
+            Modo Teste: <span id="irEmitter" class="value">--</span>
+          </div>
+          <div class="item">
+            <button class="btn-ir-emitter" onclick="toggleIREmissor()">
+              Alternar Teste
+            </button>
+          </div>
+          <hr />
+          <div class="item">
+            <select id="irProto">
+              <option value="NEC">NEC</option>
+              <option value="SAMSUNG">SAMSUNG</option>
+              <option value="SONY">SONY</option>
+              <option value="RC5">RC5</option>
+              <option value="RC6">RC6</option>
+              <option value="NIKAI">NIKAI</option>
+              <option value="LG">LG</option>
+              <option value="JVC">JVC</option>
+              <option value="WHYNTER">WHYNTER</option>
+            </select>
+          </div>
+          <div class="item">
+            <select id="irFormat">
+              <option value="hex">Hex (ex: 0x20DF10EF)</option>
+              <option value="dec">Decimal (ex: 551489775)</option>
+            </select>
+            <input
+              id="irCode"
+              type="text"
+              placeholder="Código hex (ex: 0x20DF10EF)"
+              style="margin-top: 4px"
+            />
+          </div>
+          <div class="item">
+            <input
+              id="irBits"
+              type="number"
+              placeholder="Bits (ex: 32)"
+              value="32"
+              min="1"
+              max="64"
+            />
+          </div>
+          <div class="item">
+            <button class="btn-primary" onclick="sendIRManual()">
+              📡 Enviar IR
+            </button>
+          </div>
+        </section>
+
+        <!-- IR HISTORY -->
+        <section class="card ir-history">
+          <header>Últimos IR Recebidos</header>
+          <ul id="irHistory"></ul>
+          <div class="item">
+            <button class="btn-clean" onclick="cleanHistory()">
+              🗑 Limpar
+            </button>
+          </div>
+        </section>
+      </div>
+      <!-- /grid -->
     </div>
-
-    <div class="grid">
-
-      <!-- IR RECEPTOR -->
-      <section class="card">
-        <header>IR Receptor</header>
-        <div class="item">
-          <span id="irDot" class="dot yellow"></span>
-          Protocolo: <span id="irMode" class="value">--</span>
-        </div>
-        <div class="item">
-          <button class="btn-ir-receptor" onclick="toggleIRReceptor()">Alternar Protocolo</button>
-        </div>
-      </section>
-
-      <!-- IR EMISSOR -->
-      <section class="card">
-        <header>IR Emissor</header>
-        <div class="item">Modo Teste: <span id="irEmitter" class="value">--</span></div>
-        <div class="item">
-          <button class="btn-ir-emitter" onclick="toggleIREmissor()">Alternar Teste</button>
-        </div>
-        <hr>
-        <div class="item">
-          <select id="irProto">
-            <option value="NEC">NEC</option>
-            <option value="SAMSUNG">SAMSUNG</option>
-            <option value="SONY">SONY</option>
-            <option value="RC5">RC5</option>
-            <option value="RC6">RC6</option>
-            <option value="NIKAI">NIKAI</option>
-            <option value="LG">LG</option>
-            <option value="JVC">JVC</option>
-            <option value="WHYNTER">WHYNTER</option>
-          </select>
-        </div>
-        <div class="item">
-          <select id="irFormat">
-            <option value="hex">Hex (ex: 0x20DF10EF)</option>
-            <option value="dec">Decimal (ex: 551489775)</option>
-          </select>
-          <input id="irCode" type="text" placeholder="Código hex (ex: 0x20DF10EF)" style="margin-top:4px" />
-        </div>
-        <div class="item">
-          <input id="irBits" type="number" placeholder="Bits (ex: 32)" value="32" min="1" max="64" />
-        </div>
-        <div class="item">
-          <button class="btn-primary" onclick="sendIRManual()">📡 Enviar IR</button>
-        </div>
-      </section>
-
-      <!-- IR HISTORY -->
-      <section class="card ir-history">
-        <header>Últimos IR Recebidos</header>
-        <ul id="irHistory"></ul>
-        <div class="item">
-          <button class="btn-clean" onclick="cleanHistory()">🗑 Limpar</button>
-        </div>
-      </section>
-
-    </div><!-- /grid -->
+    <!-- /page-content -->
 
     <script src="/app.js"></script>
   </body>

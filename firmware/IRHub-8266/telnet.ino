@@ -297,11 +297,11 @@ void debugMQTT() {
   debugPrint("    ");
   debugPrintln(topic_command);
   debugPrint("    ");
-  debugPrintln(topic_switch_led_command);
-  debugPrint("    ");
-  debugPrintln(topic_sensor_ir_send_command);
-  debugPrint("    ");
-  debugPrintln(topic_sensor_ir_receptor_command);
+  // debugPrintln(topic_switch_led_command);
+  // debugPrint("    ");
+  // debugPrintln(topic_sensor_ir_send_command);
+  // debugPrint("    ");
+  // debugPrintln(topic_sensor_ir_receptor_command);
 
   debugPrintln("  Publishers:");
   debugPrint("    ");
