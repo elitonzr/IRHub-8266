@@ -39,104 +39,76 @@
       <div class="drawer-title">IRHub-8266</div>
       <a href="/">🏠 Dashboard</a>
       <a href="/ir" class="active">📡 IR</a>
-      <a href="/settings">⚙️ Config</a>
-      <a href="/files">File Manager</a>
+      <a href="/config">⚙️ Config</a>
     </div>
 
     <!-- CONTEÚDO -->
     <div class="page-content">
       <div class="grid">
-        <!-- IR EMISSOR -->
+        <!-- IR RECEPTOR -->
         <section class="card">
-          <header>📡 Emissor</header>
-
-          <p class="section-label">Enviar Código IR</p>
-
+          <header>IR Receptor</header>
           <div class="item">
-            Protocolo:
-            <select id="irProto">
-              <option value="NEC">NEC</option>
-              <option value="SAMSUNG">Samsung</option>
-              <option value="SONY">Sony</option>
-              <option value="RC5">RC5</option>
-              <option value="RC6">RC6</option>
-              <option value="NIKAI">Nikai</option>
-              <option value="LG">LG</option>
-              <option value="JVC">JVC</option>
-              <option value="WHYNTER">Whynter</option>
-            </select>
+            <span id="irDot" class="dot yellow"></span>
+            Protocolo: <span id="irMode" class="value">--</span>
           </div>
-
           <div class="item">
-            Formato:
-            <select id="irFormat">
-              <option value="hex">Hexadecimal (ex: 0x20DF10EF)</option>
-              <option value="dec">Decimal (ex: 551489775)</option>
-            </select>
-          </div>
-
-          <div class="item">
-            Código:
-            <input id="irCode" type="text" placeholder="Ex: 0x20DF10EF" />
-          </div>
-
-          <div class="item">
-            Bits:
-            <input
-              id="irBits"
-              type="number"
-              value="32"
-              min="1"
-              max="64"
-              placeholder="Ex: 32"
-            />
-          </div>
-
-          <div class="item">
-            <button class="btn-primary" onclick="sendIRManual()">
-              📡 Enviar Código
-            </button>
-          </div>
-
-          <hr />
-
-          <p class="section-label">Modo de Teste</p>
-
-          <div class="item">
-            Status: <span id="irEmitter" class="value">--</span>
-          </div>
-
-          <div class="item">
-            <button class="btn-ir-emitter" onclick="toggleIREmissor()">
-              🔁 Alternar Modo Teste
+            <button class="btn-ir-receptor" onclick="toggleIRReceptor()">
+              Alternar Protocolo
             </button>
           </div>
         </section>
 
-        <!-- IR RECEPTOR -->
+        <!-- IR EMISSOR -->
         <section class="card">
-          <header>📡 Receptor IR</header>
-
-          <p class="section-label">Status do Receptor</p>
-
+          <header>IR Emissor</header>
           <div class="item">
-            Sinal:
-            <span id="irDot" class="dot yellow"></span>
-            <span style="font-size: 11px; opacity: 0.7">(atividade)</span>
+            Modo Teste: <span id="irEmitter" class="value">--</span>
           </div>
-
           <div class="item">
-            Protocolo ativo:
-            <span id="irMode" class="value">--</span>
+            <button class="btn-ir-emitter" onclick="toggleIREmissor()">
+              Alternar Teste
+            </button>
           </div>
-
           <hr />
-
-          <p class="section-label">Configuração</p>
-
           <div class="item">
-            <button class="btn-ir-receptor" onclick="toggleIRReceptor()">
-              🔁 Alternar Protocolo
+            <select id="irProto">
+              <option value="NEC">NEC</option>
+              <option value="SAMSUNG">SAMSUNG</option>
+              <option value="SONY">SONY</option>
+              <option value="RC5">RC5</option>
+              <option value="RC6">RC6</option>
+              <option value="NIKAI">NIKAI</option>
+              <option value="LG">LG</option>
+              <option value="JVC">JVC</option>
+              <option value="WHYNTER">WHYNTER</option>
+            </select>
+          </div>
+          <div class="item">
+            <select id="irFormat">
+              <option value="hex">Hex (ex: 0x20DF10EF)</option>
+              <option value="dec">Decimal (ex: 551489775)</option>
+            </select>
+            <input
+              id="irCode"
+              type="text"
+              placeholder="Código hex (ex: 0x20DF10EF)"
+              style="margin-top: 4px"
+            />
+          </div>
+          <div class="item">
+            <input
+              id="irBits"
+              type="number"
+              placeholder="Bits (ex: 32)"
+              value="32"
+              min="1"
+              max="64"
+            />
+          </div>
+          <div class="item">
+            <button class="btn-primary" onclick="sendIRManual()">
+              📡 Enviar IR
             </button>
           </div>
         </section>
@@ -150,18 +122,6 @@
               🗑 Limpar
             </button>
           </div>
-        </section>
-
-        <!-- IR CONTROLE -->
-        <section class="card">
-          <header>Controle IR</header>
-
-          <div class="item">
-            <label>Modelo:</label>
-            <select id="remoteSelect"></select>
-          </div>
-
-          <div id="buttonsContainer" class="grid-buttons"></div>
         </section>
       </div>
       <!-- /grid -->

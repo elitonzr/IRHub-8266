@@ -1,0 +1,438 @@
+{
+  "LG": {
+    "buttons": [
+      { "name": "ON/OFF", "protocol": "NEC", "hex": "0x20DF10EF", "bits": 32 },
+      { "name": "TV", "protocol": "NEC", "hex": "0x20DF0FF0", "bits": 32 },
+      { "name": "Ratio", "protocol": "NEC", "hex": "0x20DF9E61", "bits": 32 },
+      { "name": "Input", "protocol": "NEC", "hex": "0x20DFD02F", "bits": 32 },
+      { "name": "Energy", "protocol": "NEC", "hex": "0x20DFA956", "bits": 32 },
+
+      { "name": "Key 1", "protocol": "NEC", "hex": "0x20DF8877", "bits": 32 },
+      { "name": "Key 2", "protocol": "NEC", "hex": "0x20DF48B7", "bits": 32 },
+      { "name": "Key 3", "protocol": "NEC", "hex": "0x20DFC837", "bits": 32 },
+      { "name": "Key 4", "protocol": "NEC", "hex": "0x20DF28D7", "bits": 32 },
+      { "name": "Key 5", "protocol": "NEC", "hex": "0x20DFA857", "bits": 32 },
+      { "name": "Key 6", "protocol": "NEC", "hex": "0x20DF6897", "bits": 32 },
+      { "name": "Key 7", "protocol": "NEC", "hex": "0x20DFE817", "bits": 32 },
+      { "name": "Key 8", "protocol": "NEC", "hex": "0x20DF18E7", "bits": 32 },
+      { "name": "Key 9", "protocol": "NEC", "hex": "0x20DF9867", "bits": 32 },
+      { "name": "Key 0", "protocol": "NEC", "hex": "0x20DF08F7", "bits": 32 },
+
+      { "name": "List", "protocol": "NEC", "hex": "0x20DFCA35", "bits": 32 },
+      { "name": "Q.View", "protocol": "NEC", "hex": "0x20DF58A7", "bits": 32 },
+
+      { "name": "Vol+", "protocol": "NEC", "hex": "0x20DF40BF", "bits": 32 },
+      { "name": "Vol-", "protocol": "NEC", "hex": "0x20DFC03F", "bits": 32 },
+      { "name": "Vol-", "protocol": "NEC", "hex": "0x20DFCE31", "bits": 32 },
+
+      { "name": "Mute", "protocol": "NEC", "hex": "0x20DF906F", "bits": 32 },
+
+      { "name": "P+", "protocol": "NEC", "hex": "0x20DF00FF", "bits": 32 },
+      { "name": "P-", "protocol": "NEC", "hex": "0x20DF807F", "bits": 32 },
+
+      {
+        "name": "Settings",
+        "protocol": "NEC",
+        "hex": "0x20DFC23D",
+        "bits": 32
+      },
+      { "name": "Info", "protocol": "NEC", "hex": "0x20DF55AA", "bits": 32 },
+      { "name": "Q.Menu", "protocol": "NEC", "hex": "0x20DFA25D", "bits": 32 },
+
+      { "name": "Left", "protocol": "NEC", "hex": "0x20DFE01F", "bits": 32 },
+      { "name": "Right", "protocol": "NEC", "hex": "0x20DF609F", "bits": 32 },
+      { "name": "Up", "protocol": "NEC", "hex": "0x20DF02FD", "bits": 32 },
+      { "name": "Down", "protocol": "NEC", "hex": "0x20DF827D", "bits": 32 },
+      { "name": "OK", "protocol": "NEC", "hex": "0x20DF22DD", "bits": 32 },
+
+      { "name": "Back", "protocol": "NEC", "hex": "0x20DF14EB", "bits": 32 },
+      { "name": "Exit", "protocol": "NEC", "hex": "0x20DFDA25", "bits": 32 },
+
+      { "name": "Play", "protocol": "NEC", "hex": "0x20DF0DF2", "bits": 32 },
+      { "name": "Pause", "protocol": "NEC", "hex": "0x20DF5DA2", "bits": 32 },
+      { "name": "Stop", "protocol": "NEC", "hex": "0x20DF8D72", "bits": 32 },
+
+      {
+        "name": "Forward",
+        "protocol": "NEC",
+        "hex": "0x20DF718E",
+        "bits": 32
+      },
+      {
+        "name": "Backward",
+        "protocol": "NEC",
+        "hex": "0x20DFF10E",
+        "bits": 32
+      },
+
+      {
+        "name": "Live TV",
+        "protocol": "NEC",
+        "hex": "0x20DF3EC1",
+        "bits": 32
+      },
+      {
+        "name": "Live TV",
+        "protocol": "NEC",
+        "hex": "0x20DF42BD",
+        "bits": 32
+      },
+
+      { "name": "HDMI 1", "protocol": "NEC", "hex": "0x20DF738C", "bits": 32 },
+      { "name": "HDMI 2", "protocol": "NEC", "hex": "0x20DF33CC", "bits": 32 },
+      { "name": "HDMI 3", "protocol": "NEC", "hex": "0x20DF9768", "bits": 32 },
+
+      {
+        "name": "Power on",
+        "protocol": "NEC",
+        "hex": "0x20DF23DC",
+        "bits": 32
+      },
+      { "name": "Standby", "protocol": "NEC", "hex": "0x20DFD728", "bits": 32 }
+    ]
+  },
+
+  "TCL": {
+    "buttons": [
+      {
+        "name": "TOGGLE ON/OFF",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xD5F2A",
+        "dataLSB": "0xB0FA54",
+        "repeat": 0
+      },
+      {
+        "name": "MUTE",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xC0F3F",
+        "dataLSB": "0x30F0FC",
+        "repeat": 0
+      },
+
+      {
+        "name": "1",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xCEF31",
+        "dataLSB": "0x30F78C",
+        "repeat": 0
+      },
+      {
+        "name": "2",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xCDF32",
+        "dataLSB": "0x30FB4C",
+        "repeat": 0
+      },
+      {
+        "name": "3",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xCCF33",
+        "dataLSB": "0x30F3CC",
+        "repeat": 0
+      },
+      {
+        "name": "4",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xCBF34",
+        "dataLSB": "0x30FD2C",
+        "repeat": 0
+      },
+      {
+        "name": "5",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xCAF35",
+        "dataLSB": "0x30F5AC",
+        "repeat": 0
+      },
+      {
+        "name": "6",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xC9F36",
+        "dataLSB": "0x30F96C",
+        "repeat": 0
+      },
+      {
+        "name": "7",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xC8F37",
+        "dataLSB": "0x30F1EC",
+        "repeat": 0
+      },
+      {
+        "name": "8",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xC7F38",
+        "dataLSB": "0x30FE1C",
+        "repeat": 0
+      },
+      {
+        "name": "9",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xC6F39",
+        "dataLSB": "0x30F69C",
+        "repeat": 0
+      },
+      {
+        "name": "0",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xCFF30",
+        "dataLSB": "0x30FF0C",
+        "repeat": 0
+      },
+
+      {
+        "name": "SOURCE",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x5CFA3",
+        "dataLSB": "0xA0F3C5",
+        "repeat": 0
+      },
+      {
+        "name": "MENU",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x13FEC",
+        "dataLSB": "0x80FC37",
+        "repeat": 0
+      },
+
+      {
+        "name": "RED",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xFFF00",
+        "dataLSB": "0xF0FF00",
+        "repeat": 0
+      },
+      {
+        "name": "GREEN",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x17FE8",
+        "dataLSB": "0x80FE17",
+        "repeat": 0
+      },
+      {
+        "name": "YELLOW",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x1BFE4",
+        "dataLSB": "0x80FD27",
+        "repeat": 0
+      },
+      {
+        "name": "BLUE",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x27FD8",
+        "dataLSB": "0x40FE1B",
+        "repeat": 0
+      },
+
+      {
+        "name": "ACCOUNT",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x7CF83",
+        "dataLSB": "0xE0F3C1",
+        "repeat": 0
+      },
+      {
+        "name": "GOOGLE MIC",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xA3F5C",
+        "dataLSB": "0x50FC3A",
+        "repeat": 0
+      },
+      {
+        "name": "SETTINGS",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x30FCF",
+        "dataLSB": "0xC0F0F3",
+        "repeat": 0
+      },
+
+      {
+        "name": "UP",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xA6F59",
+        "dataLSB": "0x50F69A",
+        "repeat": 0
+      },
+      {
+        "name": "DOWN",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xA7F58",
+        "dataLSB": "0x50FE1A",
+        "repeat": 0
+      },
+      {
+        "name": "LEFT",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xA9F56",
+        "dataLSB": "0x50F96A",
+        "repeat": 0
+      },
+      {
+        "name": "RIGHT",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xA8F57",
+        "dataLSB": "0x50F1EA",
+        "repeat": 0
+      },
+      {
+        "name": "OK",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xBFF4",
+        "dataLSB": "0xFD2F",
+        "repeat": 0
+      },
+
+      {
+        "name": "BACK",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xD8F27",
+        "dataLSB": "0xB0F1E4",
+        "repeat": 0
+      },
+      {
+        "name": "HOME",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xF7F08",
+        "dataLSB": "0xF0FE10",
+        "repeat": 0
+      },
+      {
+        "name": "TV",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xE5F1A",
+        "dataLSB": "0x70FA58",
+        "repeat": 0
+      },
+
+      {
+        "name": "VOL+",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xD0F2F",
+        "dataLSB": "0xB0F0F4",
+        "repeat": 0
+      },
+      {
+        "name": "VOL-",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xD1F2E",
+        "dataLSB": "0xB0F874",
+        "repeat": 0
+      },
+
+      {
+        "name": "CH +",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xD2F2D",
+        "dataLSB": "0xB0F4B4",
+        "repeat": 0
+      },
+      {
+        "name": "CH -",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xD3F2C",
+        "dataLSB": "0xB0FC34",
+        "repeat": 0
+      },
+
+      {
+        "name": "LIST",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x9EF61",
+        "dataLSB": "0x90F786",
+        "repeat": 0
+      },
+      {
+        "name": "INFO",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0xC3F3C",
+        "dataLSB": "0x30FC3C",
+        "repeat": 0
+      },
+
+      {
+        "name": "NETFLIX",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x10FEF",
+        "dataLSB": "0x80F0F7",
+        "repeat": 0
+      },
+      {
+        "name": "PRIME VIDEO",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x3EFC1",
+        "dataLSB": "0xC0F783",
+        "repeat": 0
+      },
+      {
+        "name": "YOUTUBE",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x1DFE2",
+        "dataLSB": "0x80FB47",
+        "repeat": 0
+      },
+
+      {
+        "name": "TCL CHANNEL",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x1CFE3",
+        "dataLSB": "0x80F3C7",
+        "repeat": 0
+      },
+      {
+        "name": "TCL HOME",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x80F7F",
+        "dataLSB": "0x10F0FE",
+        "repeat": 0
+      },
+      {
+        "name": "WEB",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "hex": "0x9CF63",
+        "dataLSB": "0x90F3C6",
+        "repeat": 0
+      }
+    ]
+  }
+}

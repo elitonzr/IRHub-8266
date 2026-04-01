@@ -146,7 +146,7 @@ void debugPrintf(const char* format, ...) {
 
   va_end(args);
 
-  debugPrintln(buffer);
+  debugPrint(buffer);
 }
 
 void debugBuild() {
@@ -158,12 +158,15 @@ void debugBuild() {
   debugPrint("  Versão        : ");
   debugPrintln(buildVersion);
 
-  debugPrint("  OTA Password  : ");
-  debugPrintln(otaPassword);
-
+  debugPrintln(" ");
+  printHttpCredentials();
+  debugPrintln(" ");
+  printOTACredentials();
+  
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
+
 }
 
 void debugHelp() {
@@ -296,12 +299,6 @@ void debugMQTT() {
   debugPrintln("  Subscriptions:");
   debugPrint("    ");
   debugPrintln(topic_command);
-  debugPrint("    ");
-  // debugPrintln(topic_switch_led_command);
-  // debugPrint("    ");
-  // debugPrintln(topic_sensor_ir_send_command);
-  // debugPrint("    ");
-  // debugPrintln(topic_sensor_ir_receptor_command);
 
   debugPrintln("  Publishers:");
   debugPrint("    ");

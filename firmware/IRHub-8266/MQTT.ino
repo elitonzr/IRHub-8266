@@ -1,9 +1,6 @@
 /************************************************************
   Subscriptions:
     IRHub-8266-Sala/command
-    IRHub-8266-Sala/switch/led/command
-    IRHub-8266-Sala/sensor/ir/send/command
-    IRHub-8266-Sala/sensor/ir/receptor/command
   Publishers:
     IRHub-8266-Sala/status
     IRHub-8266-Sala/info/device
@@ -54,9 +51,6 @@ void setup_mqtt() {
 
   // -------- Subscriptions --------
   snprintf(topic_command, sizeof(topic_command), "%s/command", myTopic.c_str());
-  // snprintf(topic_switch_led_command, sizeof(topic_switch_led_command), "%s/switch/led/command", myTopic.c_str());
-  // snprintf(topic_sensor_ir_send_command, sizeof(topic_sensor_ir_send_command), "%s/sensor/ir/send/command", myTopic.c_str());
-  // snprintf(topic_sensor_ir_receptor_command, sizeof(topic_sensor_ir_receptor_command), "%s/sensor/ir/receptor/command", myTopic.c_str());
 
   if (mqttEnabled()) {
     mqtt_client.setServer(mqtt_server, 1883);
@@ -113,9 +107,6 @@ void mqtt_reconnect() {
 
     // Subscriptions
     mqtt_client.subscribe(topic_command);
-    // mqtt_client.subscribe(topic_switch_led_command);
-    // mqtt_client.subscribe(topic_sensor_ir_send_command);
-    // mqtt_client.subscribe(topic_sensor_ir_receptor_command);
 
     debugPrintln("    Publicando feedbacks iniciais...");
     MQTTsendStatus();

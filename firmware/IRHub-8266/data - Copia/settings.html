@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>IRHub-8266</title>
+    <title>IRHub-8266 — Config</title>
     <link
       href="https://fonts.googleapis.com/css?family=Inter:300,400,600"
       rel="stylesheet"
@@ -19,9 +19,9 @@
       </button>
       <span class="navbar-brand" id="name">IRHub-8266</span>
       <div class="navbar-links">
-        <a href="/" class="active">Dashboard</a>
+        <a href="/">Dashboard</a>
         <a href="/ir">IR</a>
-        <a href="/settings">Config</a>
+        <a href="/settings" class="active">Config</a>
         <a href="/files">File Manager</a>
       </div>
       <span class="navbar-ws" id="wsStatus">
@@ -37,9 +37,9 @@
     ></div>
     <div class="drawer" id="drawer">
       <div class="drawer-title">IRHub-8266</div>
-      <a href="/" class="active">🏠 Dashboard</a>
+      <a href="/">🏠 Dashboard</a>
       <a href="/ir">📡 IR</a>
-      <a href="/settings">⚙️ Config</a>
+      <a href="/settings" class="active">⚙️ Config</a>
       <a href="/files">File Manager</a>
     </div>
 
@@ -65,14 +65,11 @@
               🔄 Reboot
             </button>
           </div>
-          <!-- <div class="item">
-            <button
-              class="btn-primary"
-              onclick="window.location.href = '/settings'"
-            >
-              ⚙️ Configurações
+          <div class="item">
+            <button class="btn-clean" onclick="resetConfig()">
+              ⚠️ Reset Total
             </button>
-          </div> -->
+          </div>
         </section>
 
         <!-- NETWORK -->
@@ -86,6 +83,17 @@
           </div>
           <div class="item">Mask: <span id="mask" class="value">--</span></div>
           <div class="item">RSSI: <span id="rssi" class="value">--</span></div>
+          <hr />
+          <div class="item">
+            <button class="btn-primary" onclick="openWifiPortal()">
+              📶 Abrir Portal WiFi
+            </button>
+          </div>
+          <div class="item">
+            <button class="btn-clean" onclick="resetWifi()">
+              ⚠️ Reset WiFi
+            </button>
+          </div>
         </section>
 
         <!-- MQTT -->
@@ -111,37 +119,87 @@
           </div>
         </section>
 
-        <!-- IR -->
-        <section class="card">
-          <header>IR</header>
-          <div class="item">
-            <span id="irDot" class="dot yellow"></span>
-            Protocolo: <span id="irMode" class="value">--</span>
-          </div>
-          <div class="item">
-          </div>
-        </section>
+        <!-- CONFIG -->
+        <section class="card cfg-card">
+          <header>Configuração</header>
 
-        <!-- LED -->
-        <section class="card">
-          <header>LED</header>
-          <div class="item">
-            <span id="ledDot" class="dot red"></span>
-            <span id="ledState" class="value">--</span>
-          </div>
-          <div class="item">
-            <button class="btn-led" onclick="toggleLED()">Alternar LED</button>
-          </div>
-        </section>
+          <p class="cfg-note">
+            As configurações são salvas e aplicadas sem reiniciar.<br />
+            Mudanças de Hostname e Grupo só têm efeito completo após reboot.
+          </p>
 
-        <!-- AHT10 -->
-        <section class="card">
-          <header>AHT10</header>
-          <div class="item" id="sensorAHT10Data"></div>
+          <hr />
+          <p class="section-label">Identificação</p>
           <div class="item">
-            Status:
-            <span id="sensorAHT10Status" class="status offline">offline</span>
+            Hostname: <input id="cfg_hostname" type="text" />
           </div>
+          <div class="item">
+            MQTT ID: <input id="cfg_mqtt_id" type="text" />
+          </div>
+          <div class="item">Grupo: <input id="cfg_grupo" type="text" /></div>
+
+          <hr />
+          <p class="section-label">Rede</p>
+          <div class="item">
+            IP Fixo:
+            <input
+              id="cfg_ip"
+              type="text"
+              placeholder="deixe vazio para DHCP"
+            />
+          </div>
+          <div class="item">Gateway: <input id="cfg_gw" type="text" /></div>
+          <div class="item">Subnet: <input id="cfg_sn" type="text" /></div>
+
+          <hr />
+          <p class="section-label">MQTT</p>
+          <div class="item">
+            Servidor: <input id="cfg_mqtt_server" type="text" />
+          </div>
+          <div class="item">
+            Usuário: <input id="cfg_mqtt_user" type="text" />
+          </div>
+          <div class="item">
+            Senha:
+            <input
+              id="cfg_mqtt_password"
+              type="password"
+              placeholder="deixe vazio para manter a atual"
+            />
+          </div>
+          <div class="item">
+            MQTT:
+            <select id="cfg_mqtt_enabled">
+              <option value="yes">Habilitado</option>
+              <option value="no">Desabilitado</option>
+            </select>
+          </div>
+
+          <hr />
+          <div class="item">
+            <button class="btn-primary" onclick="saveDeviceConfig()">
+              💾 Salvar Configuração
+            </button>
+          </div>
+          <div class="item">
+            <a
+              href="/download?file=/config.json"
+              style="color: #60a5fa; font-size: 12px"
+            >
+              <button class="btn-primary" style="pointer-events: none">
+                📥 Baixar Configuração
+              </button>
+            </a>
+          </div>
+          <div
+            id="cfgStatus"
+            style="
+              text-align: center;
+              font-size: 11px;
+              margin-top: 8px;
+              min-height: 16px;
+            "
+          ></div>
         </section>
       </div>
       <!-- /grid -->

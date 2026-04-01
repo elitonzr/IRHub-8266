@@ -65,11 +65,6 @@
               🔄 Reboot
             </button>
           </div>
-          <div class="item">
-            <button class="btn-clean" onclick="resetConfig()">
-              ⚠️ Reset Total
-            </button>
-          </div>
         </section>
 
         <!-- NETWORK -->
@@ -84,16 +79,6 @@
           <div class="item">Mask: <span id="mask" class="value">--</span></div>
           <div class="item">RSSI: <span id="rssi" class="value">--</span></div>
           <hr />
-          <div class="item">
-            <button class="btn-primary" onclick="openWifiPortal()">
-              📶 Abrir Portal WiFi
-            </button>
-          </div>
-          <div class="item">
-            <button class="btn-clean" onclick="resetWifi()">
-              ⚠️ Reset WiFi
-            </button>
-          </div>
         </section>
 
         <!-- MQTT -->
@@ -127,7 +112,6 @@
             As configurações são salvas e aplicadas sem reiniciar.<br />
             Mudanças de Hostname e Grupo só têm efeito completo após reboot.
           </p>
-
           <hr />
           <p class="section-label">Identificação</p>
           <div class="item">
@@ -137,7 +121,25 @@
             MQTT ID: <input id="cfg_mqtt_id" type="text" />
           </div>
           <div class="item">Grupo: <input id="cfg_grupo" type="text" /></div>
+          <hr />
+          <p class="section-label">WiFi</p>
 
+          <div class="item">
+            SSID atual:
+            <input id="cfg_wifi_ssid" type="text" disabled />
+          </div>
+
+          <div class="item">
+            <button class="btn-primary" onclick="openWifiPortal()">
+              📶 Configurar WiFi
+            </button>
+          </div>
+
+          <div class="item">
+            <button class="btn-clean" onclick="resetWifi()">
+              ⚠️ Reset WiFi
+            </button>
+          </div>
           <hr />
           <p class="section-label">Rede</p>
           <div class="item">
@@ -164,6 +166,10 @@
             <input
               id="cfg_mqtt_password"
               type="password"
+              autocomplete="new-password"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
               placeholder="deixe vazio para manter a atual"
             />
           </div>
@@ -174,7 +180,15 @@
               <option value="no">Desabilitado</option>
             </select>
           </div>
-
+          <div
+            id="cfgStatus"
+            style="
+              text-align: center;
+              font-size: 11px;
+              margin-top: 8px;
+              min-height: 16px;
+            "
+          ></div>
           <hr />
           <div class="item">
             <button class="btn-primary" onclick="saveDeviceConfig()">
@@ -191,15 +205,11 @@
               </button>
             </a>
           </div>
-          <div
-            id="cfgStatus"
-            style="
-              text-align: center;
-              font-size: 11px;
-              margin-top: 8px;
-              min-height: 16px;
-            "
-          ></div>
+          <div class="item">
+            <button class="btn-clean" onclick="resetConfig()">
+              ⚠️ Reset Total
+            </button>
+          </div>
         </section>
       </div>
       <!-- /grid -->

@@ -39,8 +39,7 @@
       <div class="drawer-title">IRHub-8266</div>
       <a href="/" class="active">🏠 Dashboard</a>
       <a href="/ir">📡 IR</a>
-      <a href="/settings">⚙️ Config</a>
-      <a href="/files">File Manager</a>
+      <a href="/config">⚙️ Config</a>
     </div>
 
     <!-- CONTEÚDO -->
@@ -65,14 +64,16 @@
               🔄 Reboot
             </button>
           </div>
-          <!-- <div class="item">
-            <button
-              class="btn-primary"
-              onclick="window.location.href = '/settings'"
+          <div class="item">
+            <a
+              href="/settings"
+              style="display: block; text-decoration: none; margin-top: 8px"
             >
-              ⚙️ Configurações
-            </button>
-          </div> -->
+              <button class="btn-primary" style="pointer-events: none">
+                ⚙️ Configurações
+              </button>
+            </a>
+          </div>
         </section>
 
         <!-- NETWORK -->
@@ -86,6 +87,17 @@
           </div>
           <div class="item">Mask: <span id="mask" class="value">--</span></div>
           <div class="item">RSSI: <span id="rssi" class="value">--</span></div>
+          <hr />
+          <div class="item">
+            <button class="btn-primary" onclick="openWifiPortal()">
+              📶 Abrir Portal WiFi
+            </button>
+          </div>
+          <div class="item">
+            <button class="btn-clean" onclick="resetWifi()">
+              ⚠️ Reset WiFi
+            </button>
+          </div>
         </section>
 
         <!-- MQTT -->
@@ -119,6 +131,14 @@
             Protocolo: <span id="irMode" class="value">--</span>
           </div>
           <div class="item">
+            <a
+              href="/ir"
+              style="display: block; text-decoration: none; margin-top: 8px"
+            >
+              <button class="btn-ir-receptor" style="pointer-events: none">
+                📡 Abrir IR
+              </button>
+            </a>
           </div>
         </section>
 

@@ -1,3 +1,34 @@
+void getHttpCredentials(char* user, size_t userSize, char* pass, size_t passSize) {
+  strlcpy(user, "admin", userSize);
+  snprintf(pass, passSize, "admin-%08X", ESP.getChipId());
+}
+
+bool checkAuth() {
+  char user[16];
+  char pass[32];
+
+  getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
+
+  if (!server.authenticate(user, pass)) {
+    server.requestAuthentication();
+    return false;
+  }
+  return true;
+}
+
+void printHttpCredentials() {
+  char user[16];
+  char pass[32];
+
+  getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
+
+  debugPrintln("========================================");
+  debugPrintln("  HTTP AUTH");
+  debugPrintf("  Usuario: %s\n", user);
+  debugPrintf("  Senha  : %s\n", pass);
+  debugPrintln("========================================");
+}
+
 // ==============================
 // PAGE_MAIN — fallback sem LittleFS
 // ==============================
@@ -36,7 +67,6 @@ void setup_server() {
       f.close();
     } else {
       server.send_P(200, "text/html", PAGE_MAIN);
-      // server.send(404, "text/plain", "404: Not Found");
     }
   });
 
@@ -47,9 +77,13 @@ void setup_server() {
       server.streamFile(f, "text/html");
       f.close();
     } else {
-      File f = LittleFS.open("/index.html", "r");
-      server.streamFile(f, "text/html");
-      f.close();
+      if (LittleFS.exists("/index.html")) {
+        File f = LittleFS.open("/index.html", "r");
+        server.streamFile(f, "text/html");
+        f.close();
+      } else {
+        server.send_P(200, "text/html", PAGE_MAIN);
+      }
     }
   });
 
@@ -60,9 +94,13 @@ void setup_server() {
       server.streamFile(f, "text/html");
       f.close();
     } else {
-      File f = LittleFS.open("/index.html", "r");
-      server.streamFile(f, "text/html");
-      f.close();
+      if (LittleFS.exists("/index.html")) {
+        File f = LittleFS.open("/index.html", "r");
+        server.streamFile(f, "text/html");
+        f.close();
+      } else {
+        server.send_P(200, "text/html", PAGE_MAIN);
+      }
     }
   });
 
@@ -87,9 +125,20 @@ void setup_server() {
     f.close();
   });
 
+  server.on("/remotes.json", HTTP_GET, []() {
+    File file = LittleFS.open("/remotes.json", "r");
+    if (!file) {
+      server.send(404, "application/json", "{\"error\":\"file not found\"}");
+      return;
+    }
+
+    server.streamFile(file, "application/json");
+    file.close();
+  });
+
   // --- Diagnóstico: lista arquivos do LittleFS --- ex.: http://IP_DO_ESP/files
   server.on("/files", HTTP_GET, []() {
-    if (!server.authenticate("admin", "1234")) return server.requestAuthentication();
+    if (!checkAuth()) return;
     String html = "<!DOCTYPE html><html><head>";
     html += "<meta charset='utf-8'>";
     html += "<title>LittleFS Manager</title>";
@@ -178,7 +227,7 @@ void setup_server() {
 
   // --- Gerenciamento de Arquivos (download) --- ex.: http://IP_DO_ESP/download?file=/config.json
   server.on("/download", HTTP_GET, []() {
-    if (!server.authenticate("admin", "1234")) return server.requestAuthentication();
+    if (!checkAuth()) return;
     if (!server.hasArg("file")) {
       server.send(400, "text/plain", "Arquivo não especificado");
       return;
@@ -193,11 +242,6 @@ void setup_server() {
 
     File file = LittleFS.open(path, "r");
 
-    // if (path != "/config.json") {
-    //   server.send(403, "text/plain", "Acesso negado");
-    //   return;
-    // }
-
     server.sendHeader("Content-Disposition", "attachment; filename=" + path.substring(1));
     server.streamFile(file, "application/octet-stream");
 
@@ -206,7 +250,7 @@ void setup_server() {
 
   // --- Gerenciamento de Arquivos (delete) --- ex.: http://IP_DO_ESP/delete?file=/config.json
   server.on("/delete", HTTP_GET, []() {
-    if (!server.authenticate("admin", "1234")) return server.requestAuthentication();
+    if (!checkAuth()) return;
 
     if (!server.hasArg("file")) {
       server.send(400, "text/plain", "Arquivo não especificado");
@@ -231,13 +275,13 @@ void setup_server() {
   // --- Gerenciamento de Arquivos (Upload) ---
   server.on(
     "/upload", HTTP_POST, []() {
-      if (!server.authenticate("admin", "1234")) return server.requestAuthentication();
+      if (!checkAuth()) return;
 
       server.sendHeader("Location", "/files");
       server.send(303);
     },
     []() {
-      if (!server.authenticate("admin", "1234")) return;
+      if (!checkAuth()) return;
 
       handleUpload();
     });
@@ -275,11 +319,6 @@ void setup_server() {
     server.send(404, "text/plain", "404: Not Found - " + path);
   });
 
-  // --- Endpoints de API ---
-  server.on("/led/toggle", handleLED);
-  server.on("/IR_ReceptorSET", handleIR_Recepitor);
-  server.on("/IR_EmissorTeste", handleIR_EmissorTeste);
-
   server.begin();
   Serial.println("Servidor HTTP inicializado");
 
@@ -291,7 +330,6 @@ void setup_server() {
 void handleUpload() {
 
   HTTPUpload& upload = server.upload();
-  static File fsUploadFile;
 
   switch (upload.status) {
 
@@ -338,37 +376,6 @@ void handleUpload() {
   }
 }
 
-// Controle do LED
-void handleLED() {
-  ledState = !ledState;
-  server.send(200, "application/json",
-              String("{\"state\":") + (ledState ? "true" : "false") + "}");
-}
-
-void handleIR_Recepitor() {
-  if (!server.hasArg("mode")) {
-    server.send(400, "application/json", "{\"error\":\"mode ausente\"}");
-    return;
-  }
-
-  int mode = server.arg("mode").toInt();
-
-  if (mode < 0 || mode > 4) {
-    server.send(400, "application/json", "{\"error\":\"mode invalido\"}");
-    return;
-  }
-
-  IR_RecepitorSET(mode);
-  server.send(200, "application/json", "");
-}
-
-void handleIR_EmissorTeste() {
-  IR_EmissorTeste = !IR_EmissorTeste;
-  MQTTsendIRConfig();
-  debugsendInfoIR();
-  wsSendInfoIR();
-  server.send(200, "application/json", "");
-}
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
 
@@ -396,22 +403,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         String msg = String((char*)payload).substring(0, length);
         debugPrintln(msg);
 
-        /* ---------- COMANDOS SIMPLES ---------- */
-
-        if (msg == "toggleLED") {
-          ledState = !ledState;
-          wsSendOutputs();
-          return;
-        }
-
-        if (msg == "toggleIREmissor") {
-          IR_EmissorTeste = !IR_EmissorTeste;
-          MQTTsendIRConfig();
-          debugsendInfoIR();
-          wsSendInfoIR();
-          return;
-        }
-
         /* ---------- COMANDOS JSON ---------- */
 
         StaticJsonDocument<512> doc;
@@ -422,6 +413,33 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         const char* cmd = doc["cmd"];
 
         if (!cmd) return;
+
+        if (strcmp(cmd, "toggleLED") == 0) {
+          ledState = !ledState;
+          wsSendOutputs();
+          return;
+        }
+
+        if (strcmp(cmd, "toggleIREmissor") == 0) {
+          IR_EmissorTeste = !IR_EmissorTeste;
+          MQTTsendIRConfig();
+          debugsendInfoIR();
+          wsSendInfoIR();
+
+          webSocket.sendTXT(num, "{\"type\":\"ack\",\"cmd\":\"toggleIREmissor\"}");
+          return;
+        }
+
+        if (strcmp(cmd, "setIREmissor") == 0) {
+          bool state = doc["state"] | false;
+
+          IR_EmissorTeste = state;
+          MQTTsendIRConfig();
+          debugsendInfoIR();
+          wsSendInfoIR();
+
+          return;
+        }
 
         if (strcmp(cmd, "setIRReceptor") == 0) {
           int mode = doc["mode"] | -1;
@@ -434,7 +452,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         if (strcmp(cmd, "sendIR") == 0) {
 
           const char* hex = doc["hex"];
-          const char* protoStr = doc["protocolo"] | "NEC";
+          const char* protoStr = doc["protocol"] | "NEC";
           uint8_t bits = doc["bits"] | 32;
 
           if (hex) {
@@ -546,6 +564,7 @@ void wsSendSystem() {
   doc["heap"] = ESP.getFreeHeap();
 
   JsonObject cfg = doc.createNestedObject("config");
+  cfg["wifi_ssid"] = WiFi.SSID();
   cfg["hostname"] = hostname_buf;
   cfg["mqtt_id"] = mqtt_id_buf;
   cfg["grupo"] = grupo_buf;
@@ -620,7 +639,7 @@ void wsSendMQTT() {
 void wsSendInfoIR() {
   StaticJsonDocument<128> doc;
   doc["type"] = "ir";
-  doc["receptor_protocolo"] = EstadoIRReceptor();
+  doc["receptor_protocol"] = EstadoIRReceptor();
   doc["emissor_teste"] = IR_EmissorTeste;
   char buffer[128];
   size_t len = serializeJson(doc, buffer);
@@ -632,7 +651,7 @@ void wsSendInfoIR_Receptor() {
   StaticJsonDocument<256> doc;
   doc["type"] = "ir_receptor";
   doc["timestamp"] = lastIR.timestamp;
-  doc["protocolo"] = lastIR.protocolo;
+  doc["protocol"] = lastIR.protocolo;
   doc["bits"] = lastIR.bits;
   doc["dec"] = lastIR.dec;
   doc["hex"] = lastIR.hexStr;

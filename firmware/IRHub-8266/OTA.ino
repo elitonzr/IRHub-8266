@@ -35,3 +35,10 @@ void setup_ota() {
   ArduinoOTA.begin();
   Serial.println("   OTA Configurado");
 }
+
+void printOTACredentials() {
+  debugPrintln("========================================");
+  debugPrintln(" OTA AUTH");
+  debugPrintf(" Senha: %s\n", otaPassword);
+  debugPrintln("========================================");
+}
