@@ -10,6 +10,7 @@ const state =
     uptimeSeconds: 0,
     irHistory: [],
     configPopulated: false,
+    irModeIndex: 0,
   });
 
 /* =========================================================
@@ -125,6 +126,10 @@ function handleWSMessage(event) {
     case "configReset":
       alert("Configurações resetadas!");
       break;
+
+	case "authError":
+	  alert("❌ Senha incorreta!");
+	  break;
   }
 }
 
@@ -147,15 +152,14 @@ function getText(id) {
 ========================================================= */
 function updateWSStatus(connected) {
   const el = document.getElementById("wsStatus");
-
   if (el) {
     el.innerHTML = connected
       ? '<span class="status online">⚡ Online</span>'
       : '<span class="status offline">⚡ Offline</span>';
   }
-
-  const name = getText("name");
-  document.title = connected ? `✅ ${name}` : `❌ ${name}`;
+  if (!connected) {
+    document.title = `❌ ${getText("name") || "IRHub-8266"}`;
+  }
 }
 
 /* =========================================================
@@ -180,6 +184,8 @@ function updateSystemWS(data) {
   setText("buildVersion", data.buildVersion);
   setText("heap", data.heap);
 
+  document.title = `✅ ${data.name}`;
+
   if (data.uptime_seconds !== undefined) {
     state.uptimeSeconds = data.uptime_seconds;
   }
@@ -197,14 +203,26 @@ function updateOutputsWS(data) {
   if (dot) dot.className = "dot " + (data.led ? "green" : "red");
 }
 
+const irModeMap = {
+  "DESABILITADO": 0,
+  "NEC": 1,
+  "NIKAI": 2,
+  "NEC e NIKAI": 3,
+  "TUDO": 4,
+};
+
 function updateIRWS(data) {
   setText("irEmitter", data.emissor_teste ? "Ativo" : "Desligado");
   setText("irMode", data.receptor_protocol || "--");
 
+  if (data.receptor_protocol && irModeMap[data.receptor_protocol] !== undefined) {
+    state.irModeIndex = irModeMap[data.receptor_protocol];
+  }
   const dot = document.getElementById("irDot");
   if (dot) {
     dot.className = "dot " + (data.receptor_protocol ? "green" : "yellow");
   }
+
 }
 
 function updateSensorWS(data) {
@@ -418,20 +436,36 @@ function toggleLED() {
   wsSend({ cmd: "toggleLED" });
 }
 
-let irModeIndex = 0;
+//let irModeIndex = 0;
 
 function toggleIRReceptor() {
-  irModeIndex = (irModeIndex + 1) % 5;
+  state.irModeIndex = (state.irModeIndex + 1) % 5;
+  wsSend({ cmd: "setIRReceptor", mode: state.irModeIndex });
+}
 
-  wsSend({
-    cmd: "setIRReceptor",
-    mode: irModeIndex,
-  });
+function openWifiPortal() {
+  if (!confirm("Abrir portal de configuração WiFi?")) return;
+  const pass = prompt("Digite a senha para confirmar:");
+  if (!pass) return;
+  wsSend({ cmd: "wifiPortal", password: pass  });
+}
+
+function resetWifi() {
+  if (!confirm("Resetar configurações WiFi?")) return;
+  const pass = prompt("Digite a senha para confirmar:");
+  if (!pass) return;
+  wsSend({ cmd: "resetWifi", password: pass  });
+}
+
+function resetConfig() {
+  if (!confirm("Reset total? Isso apagará todas as configurações!")) return;
+  const pass = prompt("Digite a senha para confirmar:");
+  if (!pass) return;
+  wsSend({ cmd: "resetConfig", password: pass });
 }
 
 function rebootDevice() {
   if (!confirm("Reiniciar o dispositivo?")) return;
-
   wsSend({ cmd: "reboot" });
 }
 /* =========================================================
@@ -448,6 +482,7 @@ function populateConfig(data) {
     cfg_mqtt_server: data.mqtt_server,
     cfg_mqtt_user: data.mqtt_user,
     cfg_mqtt_enabled: data.mqtt_enabled,
+    cfg_wifi_ssid: data.wifi_ssid,
     // cfg_mqtt_password intencionalmente omitido — servidor não envia a senha
   };
   Object.entries(fields).forEach(([id, val]) => {
@@ -516,6 +551,8 @@ function sendIRManual() {
 ========================================================= */
 document.addEventListener("DOMContentLoaded", () => {
   setText("uptime", "0d 00h 00m 00s");
+
+  renderIRHistory();
 
   const irFormat = document.getElementById("irFormat");
 

@@ -136,7 +136,16 @@ struct IRLastData {
 };
 
 IRLastData lastIR = {
-  "", 0, 0, 0, false
+  "",    // protocolo
+  0,     // dec
+  "",    // hexStr
+  0,     // bits
+  0,     // decode_type
+  0,     // rawlen
+  0,     // timestamp
+  "",    // resultToHumanReadableBasic
+  "",    // resultToSourceCode
+  false  // valido
 };
 
 

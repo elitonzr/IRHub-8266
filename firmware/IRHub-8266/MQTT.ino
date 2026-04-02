@@ -139,8 +139,8 @@ void MQTTsendStatus() {
   char msg[64];
   size_t len = serializeJson(doc, msg, sizeof(msg));
   if (!mqtt_client.connected()) return;
-  // mqtt_client.publish(topic_status, msg, len, true);
-  mqtt_client.publish(topic_status, msg, len);
+  // mqtt_client.publish(topic_status, msg, len);
+  mqtt_client.publish(topic_status, (const uint8_t*)msg, len, true);
 }
 
 /************************************************************

@@ -120,7 +120,8 @@ void lastIR_Receptor() {
   lastIR.rawlen = results.rawlen;
   lastIR.timestamp = now;
 
-  snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "%lX", lastIR.dec);
+  // snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "%lX", lastIR.dec);
+  snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "0x%lX", lastIR.dec);
 
   strncpy(
     lastIR.resultToHumanReadableBasic,
@@ -195,7 +196,7 @@ bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits) {
   if (bits == 0) bits = 32;
 
   debugPrintf(
-    "IR SEND -> Protocol:%s Bits:%d Code:0x%lX",
+    "IR SEND -> Protocol:%s Bits:%d Code:0x%lX\n",
     getIRProtocol(protocol),
     bits,
     code);

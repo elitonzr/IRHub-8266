@@ -105,7 +105,9 @@ void startWiFiManagerPortal() {
   // ---------- REAPLICA IP FIXO ----------
   IPAddress ip, gw, sn, dns(8, 8, 8, 8);
 
-  if (ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
+  bool dhcp = (strlen(ipStr) == 0);
+
+  if (!dhcp && ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
 
     String ssid = WiFi.SSID();
     String pass = WiFi.psk();

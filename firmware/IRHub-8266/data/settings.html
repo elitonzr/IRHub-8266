@@ -195,16 +195,11 @@
               💾 Salvar Configuração
             </button>
           </div>
-          <div class="item">
-            <a
-              href="/download?file=/config.json"
-              style="color: #60a5fa; font-size: 12px"
-            >
-              <button class="btn-primary" style="pointer-events: none">
-                📥 Baixar Configuração
-              </button>
-            </a>
-          </div>
+	<div class="item">
+	  <button class="btn-primary" onclick="window.location.href='/download?file=/config.json'">
+	    📥 Baixar Configuração
+	  </button>
+	</div>
           <div class="item">
             <button class="btn-clean" onclick="resetConfig()">
               ⚠️ Reset Total
