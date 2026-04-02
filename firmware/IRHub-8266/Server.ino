@@ -1,6 +1,8 @@
+#include "globals.h"  // garantir que está incluído
+
 void getHttpCredentials(char* user, size_t userSize, char* pass, size_t passSize) {
   strlcpy(user, "admin", userSize);
-  snprintf(pass, passSize, "admin-%08X", ESP.getChipId());
+  strlcpy(pass, Password, passSize);
 }
 
 bool checkAuth() {
@@ -22,8 +24,8 @@ void printHttpCredentials() {
 
   getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
 
-  debugPrintln("========================================");
-  debugPrintln("  HTTP AUTH");
+  debugPrintln("==============  HTTP AUTH ==============");
+  debugPrintln(" ");
   debugPrintf("  Usuario: %s\n", user);
   debugPrintf("  Senha  : %s\n", pass);
   debugPrintln("========================================");
@@ -57,7 +59,7 @@ void setup_server() {
   Serial.println("    Configurando Servidor HTTP    ");
   Serial.println("=================================");
 
-  // --- Rotas de Navegação ---
+  printHttpCredentials();
 
   // Rota Principal
   server.on("/", HTTP_GET, []() {
@@ -447,31 +449,19 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           }
           return;
         }
-
         if (strcmp(cmd, "sendIR") == 0) {
 
-          const char* hex = doc["hex"];
+          const char* codeStr = doc["code"];
           const char* protoStr = doc["protocol"] | "NEC";
           uint8_t bits = doc["bits"] | 32;
 
-          if (hex) {
-            uint32_t value = strtoul(hex, NULL, 16);
-
-            decode_type_t proto = NEC;
-            if (strcasecmp(protoStr, "SAMSUNG") == 0) proto = SAMSUNG;
-            else if (strcasecmp(protoStr, "SONY") == 0) proto = SONY;
-            else if (strcasecmp(protoStr, "RC5") == 0) proto = RC5;
-            else if (strcasecmp(protoStr, "RC6") == 0) proto = RC6;
-            else if (strcasecmp(protoStr, "NIKAI") == 0) proto = NIKAI;
-            else if (strcasecmp(protoStr, "LG") == 0) proto = LG;
-            else if (strcasecmp(protoStr, "JVC") == 0) proto = JVC;
-            else if (strcasecmp(protoStr, "WHYNTER") == 0) proto = WHYNTER;
-
-            debugPrintf("[WS] sendIR proto:%s bits:%d hex:%s", protoStr, bits, hex);
-
-            bool ok = sendIRCode(value, proto, bits);
-            sendIRFeedback(value, proto, bits, ok ? "ok" : "fail", "ws");
+          if (!codeStr || strlen(codeStr) == 0) {
+            debugPrintln("[WS] code vazio");
+            sendIRFeedback(0, UNKNOWN, 0, "code vazio", "[WS]");
+            return;
           }
+
+          handleIRCommand(codeStr, protoStr, bits, "[WS]");
         }
 
         else if (strcmp(cmd, "wifiPortal") == 0) {

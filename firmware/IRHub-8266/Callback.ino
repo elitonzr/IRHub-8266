@@ -228,77 +228,24 @@ void processaIRJson(char* payload) {
   if (error) {
     debugPrint("JSON inválido: ");
     debugPrintln(error.c_str());
-    sendIRFeedback(0, UNKNOWN, 0, "JSON inválido", "mqtt");
+    sendIRFeedback(0, UNKNOWN, 0, "JSON inválido", "[MQTT]");
     return;
   }
 
-  const char* protoStr = doc["protocol"];
-  uint8_t bits = doc["bits"] | 0;
-  if (bits == 0) bits = 32;
+  const char* protoStr = doc["protocol"] | "NEC";
+  const char* codeStr = doc["code"];
+  uint8_t bits = doc["bits"] | 32;
 
-  if (!protoStr || bits > 64 || doc["code"].isNull()) {
-    debugPrintln("JSON incompleto");
-    sendIRFeedback(0, UNKNOWN, 0, "JSON incompleto", "mqtt");
+  if (!doc.containsKey("code")) {
+    sendIRFeedback(0, UNKNOWN, 0, "code ausente", "[MQTT]");
     return;
   }
 
-
-  // ---------- protocol ----------
-  decode_type_t proto;
-
-  if (strcasecmp(protoStr, "NEC") == 0) proto = NEC;
-  else if (strcasecmp(protoStr, "SONY") == 0) proto = SONY;
-  else if (strcasecmp(protoStr, "RC5") == 0) proto = RC5;
-  else if (strcasecmp(protoStr, "RC6") == 0) proto = RC6;
-  else if (strcasecmp(protoStr, "SAMSUNG") == 0) proto = SAMSUNG;
-  else if (strcasecmp(protoStr, "NIKAI") == 0) proto = NIKAI;
-  else if (strcasecmp(protoStr, "LG") == 0) proto = LG;
-  else if (strcasecmp(protoStr, "JVC") == 0) proto = JVC;
-  else if (strcasecmp(protoStr, "WHYNTER") == 0) proto = WHYNTER;
-  else {
-    debugPrint("protocol desconhecido: ");
-    debugPrintln(protoStr);
-    sendIRFeedback(0, UNKNOWN, 0, "protocol desconhecido", "mqtt");
+  if (!codeStr || strlen(codeStr) == 0 || bits > 64) {
+    debugPrintln("[MQTT] JSON incompleto ou inválido");
+    sendIRFeedback(0, UNKNOWN, 0, "JSON inválido", "[MQTT]");
     return;
   }
 
-  // ---------- código ----------
-  uint32_t code = 0;
-
-  if (doc["code"].is<const char*>()) {
-
-    const char* codeStr = doc["code"];
-    char* endptr;
-
-    if (strncmp(codeStr, "0x", 2) == 0 || strncmp(codeStr, "0X", 2) == 0)
-      code = strtoul(codeStr, &endptr, 16);
-    else
-      code = strtoul(codeStr, &endptr, 10);
-
-    if (endptr == codeStr) {
-      debugPrintln("Código IR inválido");
-      sendIRFeedback(0, UNKNOWN, 0, "Code inválido", "mqtt");
-      return;
-    }
-
-  } else if (doc["code"].is<uint32_t>()) {
-
-    code = doc["code"];
-
-  } else {
-
-    debugPrintln("Tipo de code inválido");
-    sendIRFeedback(0, UNKNOWN, 0, "Tipo code inválido", "mqtt");
-    return;
-  }
-
-  // ---------- envio ----------
-  const char* success = sendIRCode(code, proto, bits) ? "ok" : "fail";
-
-  sendIRFeedback(code, proto, bits, success, "mqtt");
-}
-
-void sendIRFeedback(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
-  wsSendIR_Emissor(code, proto, bits, status, origem);
-  MQTTsendIR_Sent(code, proto, bits, status, origem);
+  handleIRCommand(codeStr, protoStr, bits, "[MQTT]");
 }

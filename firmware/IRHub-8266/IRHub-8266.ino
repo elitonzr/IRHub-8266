@@ -30,16 +30,13 @@
 /************ SISTEMA ************/
 #include <LittleFS.h>
 #include <ArduinoJson.h>
+File fsUploadFile;
 
 /************ UTIL ************/
 #include <stdarg.h>
-// #include <ESP.h>
 
 /************ ARQUIVOS AUXILIARES ************/
 #include "globals.h"
-// #include "webpage.h"
-// File uploadFile;
-File fsUploadFile;
 
 bool shouldSaveConfig = false;
 
@@ -168,12 +165,9 @@ boolean IR_EmissorTeste = false;  // executa teste do emissor
 
 /************ SETUP ************/
 void setup() {
-
-  //clean FS, for testing
-  //SPIFFS.format();
-
   Serial.begin(115200);
   delay(1500);
+  telnetServer.begin();
 
   Serial.println("=================================");
   Serial.println("    Informações de compilação   ");
@@ -182,6 +176,8 @@ void setup() {
   Serial.println("    Versão do compilador  : " + buildVersion);
   Serial.println();
   Serial.println("======= Iniciando Setup =======");
+
+  initPassword();
 
   if (!LittleFS.begin()) {
     Serial.println("[FS] Erro ao montar LittleFS");

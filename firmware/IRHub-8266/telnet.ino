@@ -67,6 +67,12 @@ void processTelnetCommand(char* cmd) {
 
   }
 
+  else if ((strcmp(cmd, "senha") == 0) || (strcmp(cmd, "password") == 0)) {
+    debugPrintln("");
+    debugPassword();
+    debugPrintln("");
+  }
+
   else if (strcmp(cmd, "info") == 0) {
     debugPrintln("");
     debugBuild();
@@ -149,24 +155,28 @@ void debugPrintf(const char* format, ...) {
   debugPrint(buffer);
 }
 
-void debugBuild() {
-  debugPrintln("================= BUILD INFO =================");
-  debugPrintln(" ");
-  debugPrint("  Data e hora   : ");
-  debugPrintln(buildDateTime);
-
-  debugPrint("  Versão        : ");
-  debugPrintln(buildVersion);
-
+void debugPassword() {
+  debugPrintln("=============== PASSWORD ===============");
   debugPrintln(" ");
   printHttpCredentials();
   debugPrintln(" ");
   printOTACredentials();
-  
+  debugPrintln("");
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
+}
 
+void debugBuild() {
+  debugPrintln("============== BUILD INFO ==============");
+  debugPrintln(" ");
+  debugPrint("  Data e hora   : ");
+  debugPrintln(buildDateTime);
+  debugPrint("  Versão        : ");
+  debugPrintln(buildVersion);
+  debugPrintln("========================================");
+  debugPrintln("");
+  debugPrintln("");
 }
 
 void debugHelp() {

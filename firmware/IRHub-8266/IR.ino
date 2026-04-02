@@ -100,7 +100,7 @@ const char* EstadoIRReceptor() {
       return "TUDO";
 
     default:
-      return "unknown";
+      return "DESCONHECIDO";
   }
 }
 
@@ -120,8 +120,8 @@ void lastIR_Receptor() {
   lastIR.rawlen = results.rawlen;
   lastIR.timestamp = now;
 
-  // snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "%lX", lastIR.dec);
-  snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "0x%lX", lastIR.dec);
+  // snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "0x%lX", lastIR.dec);
+  snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "0x%08X", (unsigned int)lastIR.dec);
 
   strncpy(
     lastIR.resultToHumanReadableBasic,
@@ -143,28 +143,6 @@ void lastIR_Receptor() {
   MQTTsendIR_Received();
   wsSendInfoIR_Receptor();
 }
-
-
-/************ Tradução de protocolo ************/
-// const char* getIRProtocol(decode_type_t type) {
-
-//   switch (type) {
-
-//     case NEC: return "NEC";
-//     case SONY: return "SONY";
-//     case RC5: return "RC5";
-//     case RC6: return "RC6";
-//     case PANASONIC: return "PANASONIC";
-//     case LG: return "LG";
-//     case SAMSUNG: return "SAMSUNG";
-//     case JVC: return "JVC";
-//     case WHYNTER: return "WHYNTER";
-//     case NIKAI: return "NIKAI";
-
-//     default:
-//       return typeToString(type).c_str();
-//   }
-// }
 
 const char* getIRProtocol(decode_type_t type) {
   switch (type) {
@@ -188,20 +166,54 @@ const char* getIRProtocol(decode_type_t type) {
   }
 }
 
+bool parseIRCode(const char* str, uint32_t& outCode) {
+  if (!str || strlen(str) == 0) return false;
 
-bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits) {
+  // HEX com 0x
+  if (strstr(str, "0x") == str || strstr(str, "0X") == str) {
+    outCode = strtoul(str, NULL, 16);
+    return true;
+  }
 
+  // Detecta HEX sem 0x (A-F)
+  size_t len = strlen(str);
+  for (size_t i = 0; i < len; i++) {
+    if ((str[i] >= 'A' && str[i] <= 'F') || (str[i] >= 'a' && str[i] <= 'f')) {
+      outCode = strtoul(str, NULL, 16);
+      return true;
+    }
+  }
+
+  // Decimal
+  outCode = strtoul(str, NULL, 10);
+  return true;
+}
+
+// sendIRCodeStr("0x20DF10EF", NEC, 32);
+// sendIRCodeStr("551489775", NEC, 32);
+bool sendIRCodeStr(const char* codeStr, decode_type_t protocol, uint8_t bits, const char* origem) {
+
+  uint32_t code = 0;
+
+  if (!parseIRCode(codeStr, code) || code == 0) {
+    debugPrintf("Código IR inválido: %s\n", codeStr);
+    return false;
+  }
+
+  return sendIRCode(code, protocol, bits, origem);
+}
+
+bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits, const char* origem) {
+
+  enviandoCod = true;
   bool success = true;
 
   if (bits == 0) bits = 32;
 
-  debugPrintf(
-    "IR SEND -> Protocol:%s Bits:%d Code:0x%lX\n",
-    getIRProtocol(protocol),
-    bits,
-    code);
 
-  enviandoCod = true;
+
+  // debugPrintf("IR SEND -> %s Protocol:%s Bits:%d Code:0x%lX\n", origem, getIRProtocol(protocol), bits, code);
+
 
   switch (protocol) {
 
@@ -246,13 +258,27 @@ bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits) {
 
     default:
       debugPrintf("Protocolo IR não suportado (%d), usando NEC fallback", protocol);
-      success = false;
+      enviandoCod = false;
+      return false;
       break;
   }
 
-  delay(5);  // pequena proteção contra auto-leitura
+  yield();
+
+  debugPrintf("[IR][%s] Protocol:%s | Bits:%d | Code:0x%08X (%u)\n",
+              origem,
+              getIRProtocol(protocol),
+              bits,
+              (unsigned int)code,
+              (unsigned int)code);
+
   enviandoCod = false;
   return success;
+}
+
+void sendIRFeedback(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
+  wsSendIR_Emissor(code, proto, bits, status, origem);
+  MQTTsendIR_Sent(code, proto, bits, status, origem);
 }
 
 // ======================================================
@@ -267,7 +293,7 @@ size_t buildIRJson(
   const char* status,
   const char* origem) {
 
-  StaticJsonDocument<192> doc;
+  StaticJsonDocument<256> doc;
 
   doc["type"] = "ir_emissor";
   doc["emissor_teste"] = IR_EmissorTeste;
@@ -282,7 +308,7 @@ size_t buildIRJson(
   if (code != 0) {
 
     char hexStr[12];
-    snprintf(hexStr, sizeof(hexStr), "0x%lX", code);
+    snprintf(hexStr, sizeof(hexStr), "0x%08X", (unsigned int)code);
 
     doc["dec"] = code;
     doc["hex"] = hexStr;
@@ -291,6 +317,44 @@ size_t buildIRJson(
   doc["millis"] = millis();
 
   return serializeJson(doc, buffer, size);
+}
+
+decode_type_t parseProtocol(const char* protoStr) {
+
+  if (!protoStr) return UNKNOWN;
+
+  if (strcasecmp(protoStr, "NEC") == 0) return NEC;
+  if (strcasecmp(protoStr, "SONY") == 0) return SONY;
+  if (strcasecmp(protoStr, "RC5") == 0) return RC5;
+  if (strcasecmp(protoStr, "RC6") == 0) return RC6;
+  if (strcasecmp(protoStr, "SAMSUNG") == 0) return SAMSUNG;
+  if (strcasecmp(protoStr, "NIKAI") == 0) return NIKAI;
+  if (strcasecmp(protoStr, "LG") == 0) return LG;
+  if (strcasecmp(protoStr, "JVC") == 0) return JVC;
+  if (strcasecmp(protoStr, "WHYNTER") == 0) return WHYNTER;
+
+  return UNKNOWN;
+}
+
+void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, const char* origem) {
+
+  if (!codeStr || strlen(codeStr) == 0 || bits > 64) {
+    sendIRFeedback(0, UNKNOWN, 0, "JSON inválido", origem);
+    return;
+  }
+
+  decode_type_t proto = parseProtocol(protoStr);
+
+  if (proto == UNKNOWN) {
+    sendIRFeedback(0, UNKNOWN, 0, "protocol desconhecido", origem);
+    return;
+  }
+
+  bool ok = sendIRCodeStr(codeStr, proto, bits, origem);
+
+  uint32_t code = 0;
+  parseIRCode(codeStr, code);
+  sendIRFeedback(code, proto, bits, ok ? "ok" : "fail", origem);
 }
 
 void desligamentoUniversal() {
@@ -306,14 +370,14 @@ void desligamentoUniversal() {
 
         // ===== NEC (LG / Samsung / genéricos) =====
         debugPrintln("    Enviando: NEC LG...");
-        sendIRCode(0x20DF10EF, NEC, 32);  // LG Power comum
+        sendIRCode(0x20DF10EF, NEC, 32, "[Teste]");  // LG Power comum
         testN++;
         break;
       }
     case 1:
       {
         debugPrintln("    Enviando: NEC Samsung...");
-        sendIRCode(0xE0E040BF, NEC, 32);  // Samsung Power comum
+        sendIRCode(0xE0E040BF, NEC, 32, "[Teste]");  // Samsung Power comum
 
         testN++;
         break;
@@ -321,7 +385,7 @@ void desligamentoUniversal() {
     case 2:
       {
         debugPrintln("    Enviando: NEC Genérico...");
-        sendIRCode(0x00FF02FD, NEC, 32);  // Código NEC genérico
+        sendIRCode(0x00FF02FD, NEC, 32, "[Teste]");  // Código NEC genérico
         testN++;
         break;
       }
@@ -329,7 +393,7 @@ void desligamentoUniversal() {
       {
         // ===== NIKAY TCL =====
         debugPrintln("    Enviando: NIKAY TCL...");
-        sendIRCode(0xD5F2A, NIKAI, 24);  // Código NEC genérico
+        sendIRCode(0xD5F2A, NIKAI, 24, "[Teste]");  // Código NEC genérico
 
         testN++;
         break;
@@ -338,7 +402,7 @@ void desligamentoUniversal() {
       {
         // ===== Sony SIRC =====
         debugPrintln("    Enviando: Sony SIRC...");
-        sendIRCode(0xA90, SONY, 12);  // Sony Power comum (12 bits)
+        sendIRCode(0xA90, SONY, 12, "[Teste]");  // Sony Power comum (12 bits)
 
         testN++;
         break;
@@ -348,21 +412,11 @@ void desligamentoUniversal() {
 
         // ===== RC5 (Philips e similares) =====
         debugPrintln("    Enviando: RC5...");
-        sendIRCode(0x0C, RC5, 12);  // RC5 Power comum
+        sendIRCode(0x0C, RC5, 12, "[Teste]");  // RC5 Power comum
         testN++;
         break;
       }
     case 6:
-      {
-        debugPrintln("    Enviando: Panasonic...");
-        enviandoCod = true;
-        irsend.sendPanasonic(0x4004, 0x100BCBD);
-        delay(5);
-        enviandoCod = false;
-        testN++;
-        break;
-      }
-    case 7:
       {
         debugPrintln(" ");
         debugPrintln("Teste universal finalizado.");
