@@ -11,7 +11,19 @@ const state =
     irHistory: [],
     configPopulated: false,
     irModeIndex: 0,
+    irDotTimer: null,
   });
+// const state =
+//   window.appState ||
+//   (window.appState = {
+//     ws: null,
+//     reconnectTimer: null,
+//     wsQueue: [],
+//     uptimeSeconds: 0,
+//     irHistory: [],
+//     configPopulated: false,
+//     irModeIndex: 0,
+//   });
 
 /* =========================================================
    WEBSOCKET
@@ -21,9 +33,19 @@ function connectWS() {
 
   state.ws = new WebSocket(`ws://${location.hostname}:81`);
 
+  // state.ws.onopen = () => {
+  //   updateWSStatus(true);
+  //   flushQueue();
+  //   if (state.reconnectTimer) {
+  //     clearTimeout(state.reconnectTimer);
+  //     state.reconnectTimer = null;
+  //   }
+  // };
+
   state.ws.onopen = () => {
     updateWSStatus(true);
     flushQueue();
+    state.configPopulated = false;
     if (state.reconnectTimer) {
       clearTimeout(state.reconnectTimer);
       state.reconnectTimer = null;
@@ -198,6 +220,22 @@ const irModeMap = {
   TUDO: 4,
 };
 
+// function updateIRWS(data) {
+//   setText("irEmitter", data.emissor_teste ? "Ativo" : "Desligado");
+//   setText("irMode", data.receptor_protocol || "--");
+
+//   if (
+//     data.receptor_protocol &&
+//     irModeMap[data.receptor_protocol] !== undefined
+//   ) {
+//     state.irModeIndex = irModeMap[data.receptor_protocol];
+//   }
+
+//   const dot = document.getElementById("irDot");
+//   if (dot)
+//     dot.className = "dot " + (data.receptor_protocol ? "green" : "yellow");
+// }
+
 function updateIRWS(data) {
   setText("irEmitter", data.emissor_teste ? "Ativo" : "Desligado");
   setText("irMode", data.receptor_protocol || "--");
@@ -209,9 +247,11 @@ function updateIRWS(data) {
     state.irModeIndex = irModeMap[data.receptor_protocol];
   }
 
-  const dot = document.getElementById("irDot");
-  if (dot)
-    dot.className = "dot " + (data.receptor_protocol ? "green" : "yellow");
+  if (!state.irDotTimer) {
+    const dot = document.getElementById("irDot");
+    if (dot)
+      dot.className = "dot " + (data.receptor_protocol ? "green" : "yellow");
+  }
 }
 
 function updateSensorWS(data) {
@@ -231,13 +271,34 @@ function updateSensorWS(data) {
   status.textContent = "online";
 }
 
+// function updateIRReceptorWS(data) {
+//   const dot = document.getElementById("irDot");
+//   if (dot) {
+//     dot.className = "dot green";
+//     setTimeout(() => (dot.className = "dot yellow"), 300);
+//   }
+//   const entry = { ...data, timestamp: new Date().toLocaleTimeString() };
+//   saveIRToHistory(entry);
+// }
+
 function updateIRReceptorWS(data) {
+  flashIRDot();
+  const entry = { ...data, timestamp: new Date().toLocaleTimeString() };
+  saveIRToHistory(entry);
+}
+
+function flashIRDot() {
   const dot = document.getElementById("irDot");
-  if (dot) {
-    dot.className = "dot green";
-    setTimeout(() => (dot.className = "dot yellow"), 300);
+  if (!dot) return;
+  if (state.irDotTimer) {
+    clearTimeout(state.irDotTimer);
+    state.irDotTimer = null;
   }
-  saveIRToHistory({ timestamp: new Date().toLocaleTimeString(), ...data });
+  dot.className = "dot green";
+  state.irDotTimer = setTimeout(() => {
+    dot.className = "dot yellow";
+    state.irDotTimer = null;
+  }, 300);
 }
 
 function updateNetworkWS(data) {
@@ -287,7 +348,11 @@ setInterval(() => {
 /* =========================================================
    IR HISTORY
 ========================================================= */
+// function saveIRToHistory(payload) {
+//   if (state.irHistory[0]?.dec === payload.dec) return;
+
 function saveIRToHistory(payload) {
+  if (payload.dec === 0) return;
   if (state.irHistory[0]?.dec === payload.dec) return;
   state.irHistory.unshift(payload);
   if (state.irHistory.length > 10) state.irHistory.pop();
@@ -313,7 +378,7 @@ function renderIRHistory() {
 
     li.ondblclick = () => {
       const proto = document.getElementById("irProto");
-      const format = document.getElementById("irFormat");
+      // const format = document.getElementById("irFormat");
       const code = document.getElementById("irCode");
       const bits = document.getElementById("irBits");
 
@@ -520,18 +585,18 @@ document.addEventListener("DOMContentLoaded", () => {
   setText("uptime", "0d 00h 00m 00s");
   renderIRHistory();
 
-  const irFormat = document.getElementById("irFormat");
-  if (irFormat) {
-    irFormat.addEventListener("change", function () {
-      const input = document.getElementById("irCode");
-      if (!input) return;
-      input.placeholder =
-        this.value === "dec"
-          ? "Código decimal (ex: 551489775)"
-          : "Código hex (ex: 0x20DF10EF)";
-      input.value = "";
-    });
-  }
+  // const irFormat = document.getElementById("irFormat");
+  // if (irFormat) {
+  //   irFormat.addEventListener("change", function () {
+  //     const input = document.getElementById("irCode");
+  //     if (!input) return;
+  //     input.placeholder =
+  //       this.value === "dec"
+  //         ? "Código decimal (ex: 551489775)"
+  //         : "Código hex (ex: 0x20DF10EF)";
+  //     input.value = "";
+  //   });
+  // }
 
   const select = document.getElementById("remoteSelect");
   if (select) {

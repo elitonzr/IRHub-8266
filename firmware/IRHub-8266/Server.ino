@@ -635,9 +635,13 @@ void wsSendNetwork() {
   doc["gateway"] = WiFi.gatewayIP().toString();
   doc["mask"] = WiFi.subnetMask().toString();
   doc["rssi"] = WiFi.RSSI();
+
   char buffer[256];
-  size_t len = serializeJson(doc, buffer);
-  webSocket.broadcastTXT(buffer, len);
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+  if (len == 0 || len >= sizeof(buffer)) {
+    debugPrintln("[WS] Erro: JSON network truncado");
+    return;
+  }
 }
 
 void wsSendMQTT() {
@@ -650,9 +654,13 @@ void wsSendMQTT() {
   doc["status"] = mqtt_client.connected();
   doc["sucesso"] = mqttOK;
   doc["erro"] = mqttErro;
+
   char buffer[384];
-  size_t len = serializeJson(doc, buffer);
-  webSocket.broadcastTXT(buffer, len);
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+  if (len == 0 || len >= sizeof(buffer)) {
+    debugPrintln("[WS] Erro: JSON mqtt truncado");
+    return;
+  }
 }
 
 void wsSendInfoIR() {

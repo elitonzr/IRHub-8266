@@ -78,7 +78,6 @@
           </div>
           <div class="item">Mask: <span id="mask" class="value">--</span></div>
           <div class="item">RSSI: <span id="rssi" class="value">--</span></div>
-          <hr />
         </section>
 
         <!-- MQTT -->
@@ -195,11 +194,14 @@
               💾 Salvar Configuração
             </button>
           </div>
-	<div class="item">
-	  <button class="btn-primary" onclick="window.location.href='/download?file=/config.json'">
-	    📥 Baixar Configuração
-	  </button>
-	</div>
+          <div class="item">
+            <button
+              class="btn-primary"
+              onclick="window.location.href = '/download?file=/config.json'"
+            >
+              📥 Baixar Configuração
+            </button>
+          </div>
           <div class="item">
             <button class="btn-clean" onclick="resetConfig()">
               ⚠️ Reset Total
