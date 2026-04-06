@@ -13,6 +13,7 @@ const state =
     irModeIndex: 0,
     irDotTimer: null,
     uptimeInterval: null,
+    selectedRemote: null,
   });
 
 /* =========================================================
@@ -22,15 +23,6 @@ function connectWS() {
   if (state.ws && state.ws.readyState === WebSocket.OPEN) return;
 
   state.ws = new WebSocket(`ws://${location.hostname}:81`);
-
-  // state.ws.onopen = () => {
-  //   updateWSStatus(true);
-  //   flushQueue();
-  //   if (state.reconnectTimer) {
-  //     clearTimeout(state.reconnectTimer);
-  //     state.reconnectTimer = null;
-  //   }
-  // };
 
   state.ws.onopen = () => {
     updateWSStatus(true);
@@ -210,22 +202,6 @@ const irModeMap = {
   TUDO: 4,
 };
 
-// function updateIRWS(data) {
-//   setText("irEmitter", data.emissor_teste ? "Ativo" : "Desligado");
-//   setText("irMode", data.receptor_protocol || "--");
-
-//   if (
-//     data.receptor_protocol &&
-//     irModeMap[data.receptor_protocol] !== undefined
-//   ) {
-//     state.irModeIndex = irModeMap[data.receptor_protocol];
-//   }
-
-//   const dot = document.getElementById("irDot");
-//   if (dot)
-//     dot.className = "dot " + (data.receptor_protocol ? "green" : "yellow");
-// }
-
 function updateIRWS(data) {
   setText("irEmitter", data.emissor_teste ? "Ativo" : "Desligado");
   setText("irMode", data.receptor_protocol || "--");
@@ -260,16 +236,6 @@ function updateSensorWS(data) {
   status.className = "status online";
   status.textContent = "online";
 }
-
-// function updateIRReceptorWS(data) {
-//   const dot = document.getElementById("irDot");
-//   if (dot) {
-//     dot.className = "dot green";
-//     setTimeout(() => (dot.className = "dot yellow"), 300);
-//   }
-//   const entry = { ...data, timestamp: new Date().toLocaleTimeString() };
-//   saveIRToHistory(entry);
-// }
 
 function updateIRReceptorWS(data) {
   flashIRDot();
@@ -340,8 +306,6 @@ if (!state.uptimeInterval) {
 /* =========================================================
    IR HISTORY
 ========================================================= */
-// function saveIRToHistory(payload) {
-//   if (state.irHistory[0]?.dec === payload.dec) return;
 
 function saveIRToHistory(payload) {
   if (payload.dec === 0) return;
@@ -366,11 +330,25 @@ function renderIRHistory() {
     const li = document.createElement("li");
     li.textContent = `${d.timestamp} | ${d.protocol} | ${d.bits}b | ${d.dec} | ${d.hex} 📋`;
 
-    li.onclick = () => navigator.clipboard.writeText(d.hex).catch(() => {});
+    li.onclick = () => {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(d.hex).catch(() => {});
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = d.hex;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+    };
 
     li.ondblclick = () => {
       const proto = document.getElementById("irProto");
-      // const format = document.getElementById("irFormat");
+      const format = document.getElementById("irFormat");
       const code = document.getElementById("irCode");
       const bits = document.getElementById("irBits");
 
@@ -398,11 +376,9 @@ let remotes = {};
 async function loadRemotes() {
   const select = document.getElementById("remoteSelect");
   if (!select) return;
-
   try {
     const res = await fetch("/remotes.json");
     remotes = await res.json();
-
     select.innerHTML = "";
     Object.keys(remotes).forEach((model) => {
       const opt = document.createElement("option");
@@ -410,7 +386,13 @@ async function loadRemotes() {
       opt.textContent = model;
       select.appendChild(opt);
     });
-
+    // Restaura modelo salvo, ou usa o primeiro disponível
+    const saved =
+      localStorage.getItem("selectedRemote") || state.selectedRemote;
+    if (saved && remotes[saved]) {
+      select.value = saved;
+      state.selectedRemote = saved;
+    }
     loadButtons(select.value);
   } catch (e) {
     console.error("Erro ao carregar remotes:", e);
@@ -425,15 +407,24 @@ function loadButtons(model) {
 
   remotes[model].buttons.forEach((btn) => {
     const button = document.createElement("button");
-    button.className = "btn-remote";
-    button.textContent = btn.name;
-    button.onclick = () => {
-      sendIR(btn);
-      button.classList.add("active");
-      setTimeout(() => button.classList.remove("active"), 150);
-    };
+    if (btn.type === "space") {
+      button.className = "btn-remote";
+      button.style.visibility = "hidden";
+      button.disabled = true;
+    } else {
+      button.className = "btn-remote";
+      button.textContent = btn.name;
+      if (btn.background) button.style.background = `#${btn.background}`;
+      if (btn.color) button.style.color = `#${btn.color}`;
+      button.onclick = () => {
+        sendIR(btn);
+        button.classList.add("active");
+        setTimeout(() => button.classList.remove("active"), 150);
+      };
+    }
     container.appendChild(button);
   });
+  console.debug(`Modelo Carregado: ${model}`);
 }
 
 /* =========================================================
@@ -573,28 +564,38 @@ function showCfgStatus(msg, color) {
 /* =========================================================
    INIT
 ========================================================= */
+
 document.addEventListener("DOMContentLoaded", () => {
   setText("uptime", "0d 00h 00m 00s");
   renderIRHistory();
 
-  // const irFormat = document.getElementById("irFormat");
-  // if (irFormat) {
-  //   irFormat.addEventListener("change", function () {
-  //     const input = document.getElementById("irCode");
-  //     if (!input) return;
-  //     input.placeholder =
-  //       this.value === "dec"
-  //         ? "Código decimal (ex: 551489775)"
-  //         : "Código hex (ex: 0x20DF10EF)";
-  //     input.value = "";
-  //   });
-  // }
+  const irFormat = document.getElementById("irFormat");
+  if (irFormat) {
+    irFormat.addEventListener("change", function () {
+      const input = document.getElementById("irCode");
+      if (!input) return;
+      input.placeholder =
+        this.value === "dec"
+          ? "Código decimal (ex: 551489775)"
+          : "Código hex (ex: 0x20DF10EF)";
+      input.value = "";
+    });
+  }
 
   const select = document.getElementById("remoteSelect");
   if (select) {
-    select.addEventListener("change", (e) => loadButtons(e.target.value));
+    select.addEventListener("change", (e) => {
+      state.selectedRemote = e.target.value;
+      localStorage.setItem("selectedRemote", e.target.value);
+      loadButtons(e.target.value);
+    });
   }
 
   loadRemotes();
   connectWS();
+
+  // Se WS já estava aberto ao navegar, atualiza badge e título imediatamente
+  if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+    updateWSStatus(true);
+  }
 });

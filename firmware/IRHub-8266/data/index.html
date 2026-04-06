@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>IRHub-8266</title>
+    <title>IRHub-8266 — IR</title>
     <link
       href="https://fonts.googleapis.com/css?family=Inter:300,400,600"
       rel="stylesheet"
@@ -19,10 +19,8 @@
       </button>
       <span class="navbar-brand" id="name">IRHub-8266</span>
       <div class="navbar-links">
-        <a href="/" class="active">Dashboard</a>
-        <a href="/ir">IR</a>
-        <a href="/settings">Config</a>
-        <a href="/files" onclick="return confirm('O File Manager requer autenticação.\nUsuário: admin\nSenha: exibida no Serial/Telnet')">File Manager</a>
+        <a href="/" class="active">Home</a>
+        <a href="/system">System</a>
       </div>
       <span class="navbar-ws" id="wsStatus">
         <span class="status offline">⚡ Desconectado</span>
@@ -37,108 +35,134 @@
     ></div>
     <div class="drawer" id="drawer">
       <div class="drawer-title">IRHub-8266</div>
-      <a href="/" class="active">🏠 Dashboard</a>
-      <a href="/ir">📡 IR</a>
-      <a href="/settings">⚙️ Config</a>
-      <<a href="/files" onclick="return confirm('O File Manager requer autenticação.\nUsuário: admin\nSenha: exibida no Serial/Telnet')">File Manager</a>
+      <a href="/" class="active">🏠 Home</a>
+      <a
+        href="/settings"
+        onclick="
+          return confirm(
+            'Settings requer autenticação.\nUsuário: admin\nSenha: exibida no Serial/Telnet',
+          );
+        "
+        >🤖 System</a
+      >
     </div>
 
     <!-- CONTEÚDO -->
+    <div class="control">
+      <!-- IR CONTROLE -->
+      <section class="card">
+        <header>Controle IR</header>
+
+        <div class="item">
+          <label>Modelo:</label>
+          <select id="remoteSelect"></select>
+        </div>
+
+        <div id="buttonsContainer" class="grid-buttons"></div>
+      </section>
+    </div>
+
+    <div class="history">
+      <!-- IR HISTORY -->
+      <section class="card ir-history">
+        <header>Últimos IR Recebidos</header>
+        <ul id="irHistory"></ul>
+        <div class="item">
+          <button class="btn-clean" onclick="cleanHistory()">🗑 Limpar</button>
+        </div>
+      </section>
+    </div>
+
     <div class="page-content">
       <div class="grid">
-        <!-- SYSTEM -->
+        <!-- IR EMISSOR -->
         <section class="card">
-          <header>System</header>
+          <header>📡 Emissor</header>
+
+          <p class="section-label">Enviar Código IR</p>
+
           <div class="item">
-            Build Date: <span id="buildDateTime" class="value">--</span>
+            Protocolo:
+            <select id="irProto">
+              <option value="NEC">NEC</option>
+              <option value="SAMSUNG">Samsung</option>
+              <option value="SONY">Sony</option>
+              <option value="RC5">RC5</option>
+              <option value="RC6">RC6</option>
+              <option value="NIKAI">Nikai</option>
+              <option value="LG">LG</option>
+              <option value="JVC">JVC</option>
+              <option value="WHYNTER">Whynter</option>
+            </select>
           </div>
+
           <div class="item">
-            Version: <span id="buildVersion" class="value">--</span>
+            Código IR:
+            <input
+              id="irCode"
+              type="text"
+              placeholder="Hex (0x20DF10EF) ou Decimal (551489775)"
+            />
           </div>
+
           <div class="item">
-            Uptime: <span id="uptime" class="value">--</span>
+            Bits:
+            <input
+              id="irBits"
+              type="number"
+              value="32"
+              min="1"
+              max="64"
+              placeholder="Ex: 32"
+            />
           </div>
-          <div class="item">Heap: <span id="heap" class="value">--</span></div>
+
+          <div class="item">
+            <button class="btn-primary" onclick="sendIRManual()">
+              📡 Enviar Código
+            </button>
+          </div>
+
           <hr />
+
+          <p class="section-label">Modo de Teste</p>
+
           <div class="item">
-            <button class="btn-clean" onclick="rebootDevice()">
-              🔄 Reboot
+            Status: <span id="irEmitter" class="value">--</span>
+          </div>
+
+          <div class="item">
+            <button class="btn-ir-emitter" onclick="toggleIREmissor()">
+              🔁 Alternar Modo Teste
             </button>
           </div>
-          <!-- <div class="item">
-            <button
-              class="btn-primary"
-              onclick="window.location.href = '/settings'"
-            >
-              ⚙️ Configurações
-            </button>
-          </div> -->
         </section>
 
-        <!-- NETWORK -->
+        <!-- IR RECEPTOR -->
         <section class="card">
-          <header>Network</header>
-          <div class="item">mDNS: <span id="mdns" class="value">--</span></div>
-          <div class="item">SSID: <span id="wifi" class="value">--</span></div>
-          <div class="item">IP: <span id="ip" class="value">--</span></div>
-          <div class="item">
-            Gateway: <span id="gateway" class="value">--</span>
-          </div>
-          <div class="item">Mask: <span id="mask" class="value">--</span></div>
-          <div class="item">RSSI: <span id="rssi" class="value">--</span></div>
-        </section>
+          <header>📡 Receptor IR</header>
 
-        <!-- MQTT -->
-        <section class="card">
-          <header>MQTT</header>
-          <div class="item">
-            Server: <span id="mqttServer" class="value">--</span>
-          </div>
-          <div class="item">
-            Client ID: <span id="mqttClient" class="value">--</span>
-          </div>
-          <div class="item">
-            Tópico: <span id="topic_main" class="value">--</span>
-          </div>
-          <div class="item">
-            Sucessos: <span id="mqttSucessos" class="value">--</span>
-          </div>
-          <div class="item">
-            Erros: <span id="mqttErros" class="value">--</span>
-          </div>
-          <div class="item">
-            Status: <span id="mqttStatus" class="status offline">offline</span>
-          </div>
-        </section>
+          <p class="section-label">Status do Receptor</p>
 
-        <!-- IR -->
-        <section class="card">
-          <header>IR</header>
           <div class="item">
+            Sinal:
             <span id="irDot" class="dot yellow"></span>
-            Protocolo: <span id="irMode" class="value">--</span>
+            <span style="font-size: 11px; opacity: 0.7">(atividade)</span>
           </div>
-        </section>
 
-        <!-- LED -->
-        <section class="card">
-          <header>LED</header>
           <div class="item">
-            <span id="ledDot" class="dot red"></span>
-            <span id="ledState" class="value">--</span>
+            Protocolo ativo:
+            <span id="irMode" class="value">--</span>
           </div>
-          <div class="item">
-            <button class="btn-led" onclick="toggleLED()">Alternar LED</button>
-          </div>
-        </section>
 
-        <!-- AHT10 -->
-        <section class="card">
-          <header>AHT10</header>
-          <div class="item" id="sensorAHT10Data"></div>
+          <hr />
+
+          <p class="section-label">Configuração</p>
+
           <div class="item">
-            Status:
-            <span id="sensorAHT10Status" class="status offline">offline</span>
+            <button class="btn-ir-receptor" onclick="toggleIRReceptor()">
+              🔁 Alternar Protocolo
+            </button>
           </div>
         </section>
       </div>

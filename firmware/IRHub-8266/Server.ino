@@ -72,10 +72,10 @@ void setup_server() {
     }
   });
 
-  // Rota IR
-  server.on("/ir", HTTP_GET, []() {
-    if (LittleFS.exists("/ir.html")) {
-      File f = LittleFS.open("/ir.html", "r");
+  // Rota System
+  server.on("/system", HTTP_GET, []() {
+    if (LittleFS.exists("/system.html")) {
+      File f = LittleFS.open("/system.html", "r");
       server.streamFile(f, "text/html");
       f.close();
     } else {
@@ -609,6 +609,8 @@ void wsSendOutputs() {
 }
 
 void wsSendAHT10() {
+  lerSensorAHT10();
+  
   StaticJsonDocument<128> doc;
   doc["type"] = "sensor";
   if (estadoAHT10 != AHT10_ONLINE) {
