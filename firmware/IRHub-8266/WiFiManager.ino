@@ -355,8 +355,28 @@ void loadConfig() {
     recalcularTopicos();
     return;
   }
+  // StaticJsonDocument<512> doc;
+  // if (!deserializeJson(doc, file)) {
+  //   strlcpy(hostname_buf, doc["hostname"] | hostname_buf, sizeof(hostname_buf));
+  //   strlcpy(mqtt_id_buf, doc["mqtt_id"] | mqtt_id_buf, sizeof(mqtt_id_buf));
+  //   strlcpy(grupo_buf, doc["grupo"] | grupo_buf, sizeof(grupo_buf));
+  //   strlcpy(ipStr, doc["ip"] | ipStr, sizeof(ipStr));
+  //   strlcpy(gwStr, doc["gw"] | gwStr, sizeof(gwStr));
+  //   strlcpy(snStr, doc["sn"] | snStr, sizeof(snStr));
+  //   strlcpy(mqtt_server, doc["mqtt_server"] | mqtt_server, sizeof(mqtt_server));
+  //   strlcpy(mqtt_user_buf, doc["mqtt_user"] | mqtt_user_buf, sizeof(mqtt_user_buf));
+  //   strlcpy(mqtt_password_buf, doc["mqtt_password"] | mqtt_password_buf, sizeof(mqtt_password_buf));
+  //   strlcpy(mqtt_enabled_buf, doc["mqtt_enabled"] | mqtt_enabled_buf, sizeof(mqtt_enabled_buf));
+  //   debugPrintln("[FS] Config carregada");
+  // }
+  // file.close();
+  // recalcularTopicos();
   StaticJsonDocument<512> doc;
-  if (!deserializeJson(doc, file)) {
+  DeserializationError err = deserializeJson(doc, file);
+  if (err) {
+    debugPrint("[FS] Erro ao parsear config.json: ");
+    debugPrintln(err.c_str());
+  } else {
     strlcpy(hostname_buf, doc["hostname"] | hostname_buf, sizeof(hostname_buf));
     strlcpy(mqtt_id_buf, doc["mqtt_id"] | mqtt_id_buf, sizeof(mqtt_id_buf));
     strlcpy(grupo_buf, doc["grupo"] | grupo_buf, sizeof(grupo_buf));
@@ -413,7 +433,6 @@ void resetConfig() {
   wifiManager.resetSettings();
 
   //clean FS
-  // SPIFFS.format();
   LittleFS.format();
 
   // if (LittleFS.exists("/config.json")) {

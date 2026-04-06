@@ -12,18 +12,8 @@ const state =
     configPopulated: false,
     irModeIndex: 0,
     irDotTimer: null,
+    uptimeInterval: null,
   });
-// const state =
-//   window.appState ||
-//   (window.appState = {
-//     ws: null,
-//     reconnectTimer: null,
-//     wsQueue: [],
-//     uptimeSeconds: 0,
-//     irHistory: [],
-//     configPopulated: false,
-//     irModeIndex: 0,
-//   });
 
 /* =========================================================
    WEBSOCKET
@@ -340,10 +330,12 @@ function formatUptime(s) {
   return `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(sec).padStart(2, "0")}s`;
 }
 
-setInterval(() => {
-  state.uptimeSeconds++;
-  setText("uptime", formatUptime(state.uptimeSeconds));
-}, 1000);
+if (!state.uptimeInterval) {
+  state.uptimeInterval = setInterval(() => {
+    state.uptimeSeconds++;
+    setText("uptime", formatUptime(state.uptimeSeconds));
+  }, 1000);
+}
 
 /* =========================================================
    IR HISTORY

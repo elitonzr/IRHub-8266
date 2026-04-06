@@ -174,17 +174,30 @@ void processaComando(byte* payload, unsigned int length) {
   // =========================
   else if (strcmp(cmd, "ir_send") == 0) {
 
-    char buffer[MAX_PAYLOAD];
+    const char* codeStr = doc["code"];
+    const char* protoStr = doc["protocol"] | "NEC";
+    uint8_t bits = doc["bits"] | 32;
 
-    size_t len = serializeJson(doc, buffer, sizeof(buffer));
-
-    if (len == 0) {
-      debugPrintln("[processaComando] Erro ao serializar JSON IR");
+    if (!codeStr || strlen(codeStr) == 0) {
+      sendIRFeedback(0, UNKNOWN, 0, "code ausente", "[MQTT]");
       return;
     }
 
-    processaIRJson(buffer);
+    handleIRCommand(codeStr, protoStr, bits, "[MQTT]");
   }
+  // else if (strcmp(cmd, "ir_send") == 0) {
+
+  //   char buffer[MAX_PAYLOAD];
+
+  //   size_t len = serializeJson(doc, buffer, sizeof(buffer));
+
+  //   if (len == 0) {
+  //     debugPrintln("[processaComando] Erro ao serializar JSON IR");
+  //     return;
+  //   }
+
+  //   processaIRJson(buffer);
+  // }
 
   // =========================
   // ⚙️ CONFIGURAÇÕES

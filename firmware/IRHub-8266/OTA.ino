@@ -5,6 +5,10 @@ void setup_ota() {
   Serial.println("      Configurando OTA device     ");
   Serial.println("=================================");
 
+  if (clientID.length() == 0) {
+    Serial.println("[OTA] AVISO: clientID vazio, recalculando topicos...");
+    recalcularTopicos();
+  }
 
   ArduinoOTA.setHostname(clientID.c_str());
 

@@ -183,6 +183,7 @@ void setup_server() {
     html += "  const formData = new FormData();";
     html += "  formData.append('upload', file);";
 
+    html += "  xhr.withCredentials = true;";
     html += "  xhr.open('POST','/upload',true);";
     html += "  xhr.send(formData);";
     html += "}";
@@ -585,7 +586,7 @@ void wsSendSystem() {
   cfg["mqtt_user"] = mqtt_user_buf;
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
 
-  char buffer[1024];
+  char buffer[1152];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
     debugPrintln("[WS] Erro: JSON system truncado");
@@ -642,6 +643,7 @@ void wsSendNetwork() {
     debugPrintln("[WS] Erro: JSON network truncado");
     return;
   }
+  webSocket.broadcastTXT(buffer, len);
 }
 
 void wsSendMQTT() {
@@ -661,6 +663,7 @@ void wsSendMQTT() {
     debugPrintln("[WS] Erro: JSON mqtt truncado");
     return;
   }
+  webSocket.broadcastTXT(buffer, len);
 }
 
 void wsSendInfoIR() {

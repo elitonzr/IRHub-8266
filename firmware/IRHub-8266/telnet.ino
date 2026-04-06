@@ -184,7 +184,7 @@ void debugHelp() {
   debugPrintln("========= COMANDOS DISPONIVEIS =========");
   debugPrintln("");
   debugPrintln("  status   -> Mostra estado geral");
-  debugPrintln("  LED      -> Inverte estado do LED A");
+  debugPrintln("  led      -> Inverte estado do LED A");
   debugPrintln("  IR       -> Sensores IR");
   debugPrintln("  AHT10    -> Sensor AHT10");
   debugPrintln("  info     -> Informacoes de compilacao");
