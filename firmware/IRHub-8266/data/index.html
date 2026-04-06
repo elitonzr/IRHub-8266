@@ -36,15 +36,7 @@
     <div class="drawer" id="drawer">
       <div class="drawer-title">IRHub-8266</div>
       <a href="/" class="active">🏠 Home</a>
-      <a
-        href="/settings"
-        onclick="
-          return confirm(
-            'Settings requer autenticação.\nUsuário: admin\nSenha: exibida no Serial/Telnet',
-          );
-        "
-        >🤖 System</a
-      >
+      <a href="/system">🤖 System</a>
     </div>
 
     <!-- CONTEÚDO -->
@@ -68,7 +60,9 @@
         <header>Últimos IR Recebidos</header>
         <ul id="irHistory"></ul>
         <div class="item">
-          <button class="btn-clean" onclick="cleanHistory()">🗑 Limpar</button>
+          <button class="btn-clean btn-block" onclick="cleanHistory()">
+            🗑 Limpar
+          </button>
         </div>
       </section>
     </div>

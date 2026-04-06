@@ -225,7 +225,7 @@ function updateSensorWS(data) {
   const text = document.getElementById("sensorAHT10Data");
   if (!status || !text) return;
 
-  if (data.status && data.status !== "ONLINE") {
+  if (data.status) {
     status.className = "status offline";
     status.textContent = data.status;
     text.textContent = "";

@@ -246,9 +246,13 @@ void debugsendInfoIR() {
   debugPrintln("============= IR Info ==============");
   debugPrintln("");
 
+  Serial.print("    Receptor  : GPIO ");
+  Serial.println(kRecvPin);
   debugPrint("IR_Receptor : ");
   debugPrintln(EstadoIRReceptor());
 
+  Serial.print("    Emissor   : GPIO ");
+  Serial.println(kIrLed);
   debugPrint("IR_Emissor : ");
   debugPrintln(IR_EmissorTeste);
 }

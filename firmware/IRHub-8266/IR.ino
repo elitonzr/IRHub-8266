@@ -189,8 +189,6 @@ bool parseIRCode(const char* str, uint32_t& outCode) {
   return true;
 }
 
-// sendIRCodeStr("0x20DF10EF", NEC, 32);
-// sendIRCodeStr("551489775", NEC, 32);
 bool sendIRCodeStr(const char* codeStr, decode_type_t protocol, uint8_t bits, const char* origem) {
 
   uint32_t code = 0;
@@ -298,7 +296,6 @@ size_t buildIRJson(
   doc["type"] = "ir_emissor";
   doc["emissor_teste"] = IR_EmissorTeste;
   doc["status"] = status;
-  // doc["erro"] = status;
   doc["origem"] = origem;
 
   doc["protocol"] = getIRProtocol(proto);

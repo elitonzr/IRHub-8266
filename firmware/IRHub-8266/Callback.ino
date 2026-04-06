@@ -185,19 +185,6 @@ void processaComando(byte* payload, unsigned int length) {
 
     handleIRCommand(codeStr, protoStr, bits, "[MQTT]");
   }
-  // else if (strcmp(cmd, "ir_send") == 0) {
-
-  //   char buffer[MAX_PAYLOAD];
-
-  //   size_t len = serializeJson(doc, buffer, sizeof(buffer));
-
-  //   if (len == 0) {
-  //     debugPrintln("[processaComando] Erro ao serializar JSON IR");
-  //     return;
-  //   }
-
-  //   processaIRJson(buffer);
-  // }
 
   // =========================
   // ⚙️ CONFIGURAÇÕES
@@ -232,33 +219,33 @@ void processaComando(byte* payload, unsigned int length) {
 // "bits":32
 // }
 // ======================================================
-void processaIRJson(char* payload) {
+// void processaIRJson(char* payload) {
 
-  StaticJsonDocument<200> doc;
+//   StaticJsonDocument<200> doc;
 
-  DeserializationError error = deserializeJson(doc, payload);
+//   DeserializationError error = deserializeJson(doc, payload);
 
-  if (error) {
-    debugPrint("JSON inválido: ");
-    debugPrintln(error.c_str());
-    sendIRFeedback(0, UNKNOWN, 0, "JSON inválido", "[MQTT]");
-    return;
-  }
+//   if (error) {
+//     debugPrint("JSON inválido: ");
+//     debugPrintln(error.c_str());
+//     sendIRFeedback(0, UNKNOWN, 0, "JSON inválido", "[MQTT]");
+//     return;
+//   }
 
-  const char* protoStr = doc["protocol"] | "NEC";
-  const char* codeStr = doc["code"];
-  uint8_t bits = doc["bits"] | 32;
+//   const char* protoStr = doc["protocol"] | "NEC";
+//   const char* codeStr = doc["code"];
+//   uint8_t bits = doc["bits"] | 32;
 
-  if (!doc.containsKey("code")) {
-    sendIRFeedback(0, UNKNOWN, 0, "code ausente", "[MQTT]");
-    return;
-  }
+//   if (!doc.containsKey("code")) {
+//     sendIRFeedback(0, UNKNOWN, 0, "code ausente", "[MQTT]");
+//     return;
+//   }
 
-  if (!codeStr || strlen(codeStr) == 0 || bits > 64) {
-    debugPrintln("[MQTT] JSON incompleto ou inválido");
-    sendIRFeedback(0, UNKNOWN, 0, "JSON inválido", "[MQTT]");
-    return;
-  }
+//   if (!codeStr || strlen(codeStr) == 0 || bits > 64) {
+//     debugPrintln("[MQTT] JSON incompleto ou inválido");
+//     sendIRFeedback(0, UNKNOWN, 0, "JSON inválido", "[MQTT]");
+//     return;
+//   }
 
-  handleIRCommand(codeStr, protoStr, bits, "[MQTT]");
-}
+//   handleIRCommand(codeStr, protoStr, bits, "[MQTT]");
+// }

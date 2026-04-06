@@ -42,83 +42,6 @@
     <!-- CONTEÚDO -->
     <div class="page-content">
       <div class="grid">
-        <!-- MENU -->
-        <section class="card">
-          <header>Menu</header>
-          <div class="item">
-            <button
-              class="btn-primary"
-              onclick="window.location.href = '/settings'"
-            >
-              ⚙️ Settings
-            </button>
-          </div>
-          <div class="item">
-            <button
-              class="btn-primary"
-              onclick="window.location.href = '/files'"
-            >
-              📁 File Manager
-            </button>
-          </div>
-        </section>
-
-        <!-- SYSTEM -->
-        <section class="card">
-          <header>System</header>
-          <div class="item">
-            Build Date: <span id="buildDateTime" class="value">--</span>
-          </div>
-          <div class="item">
-            Version: <span id="buildVersion" class="value">--</span>
-          </div>
-          <div class="item">
-            Uptime: <span id="uptime" class="value">--</span>
-          </div>
-          <div class="item">Heap: <span id="heap" class="value">--</span></div>
-          <hr />
-          <div class="item">
-            <button class="btn-clean" onclick="rebootDevice()">
-              🔄 Reboot
-            </button>
-          </div>
-        </section>
-
-        <!-- NETWORK -->
-        <section class="card">
-          <header>Network</header>
-          <div class="item">mDNS: <span id="mdns" class="value">--</span></div>
-          <div class="item">SSID: <span id="wifi" class="value">--</span></div>
-          <div class="item">IP: <span id="ip" class="value">--</span></div>
-          <div class="item">
-            Gateway: <span id="gateway" class="value">--</span>
-          </div>
-          <div class="item">Mask: <span id="mask" class="value">--</span></div>
-          <div class="item">RSSI: <span id="rssi" class="value">--</span></div>
-        </section>
-
-        <!-- MQTT -->
-        <section class="card">
-          <header>MQTT</header>
-          <div class="item">
-            Server: <span id="mqttServer" class="value">--</span>
-          </div>
-          <div class="item">
-            Client ID: <span id="mqttClient" class="value">--</span>
-          </div>
-          <div class="item">
-            Tópico: <span id="topic_main" class="value">--</span>
-          </div>
-          <div class="item">
-            Sucessos: <span id="mqttSucessos" class="value">--</span>
-          </div>
-          <div class="item">
-            Erros: <span id="mqttErros" class="value">--</span>
-          </div>
-          <div class="item">
-            Status: <span id="mqttStatus" class="status offline">offline</span>
-          </div>
-        </section>
 
         <!-- CONFIG -->
         <section class="card cfg-card">
@@ -146,13 +69,13 @@
           </div>
 
           <div class="item">
-            <button class="btn-primary" onclick="openWifiPortal()">
+            <button class="btn-primary btn-block" onclick="openWifiPortal()">
               📶 Configurar WiFi
             </button>
           </div>
 
           <div class="item">
-            <button class="btn-clean" onclick="resetWifi()">
+            <button class="btn-clean btn-block" onclick="resetWifi()">
               ⚠️ Reset WiFi
             </button>
           </div>
@@ -207,20 +130,20 @@
           ></div>
           <hr />
           <div class="item">
-            <button class="btn-primary" onclick="saveDeviceConfig()">
+            <button class="btn-primary btn-block" onclick="saveDeviceConfig()">
               💾 Salvar Configuração
             </button>
           </div>
           <div class="item">
             <button
-              class="btn-primary"
+              class="btn-primary btn-block"
               onclick="window.location.href = '/download?file=/config.json'"
             >
               📥 Baixar Configuração
             </button>
           </div>
           <div class="item">
-            <button class="btn-clean" onclick="resetConfig()">
+            <button class="btn-clean btn-block" onclick="resetConfig()">
               ⚠️ Reset Total
             </button>
           </div>

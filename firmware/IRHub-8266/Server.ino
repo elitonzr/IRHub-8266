@@ -51,6 +51,94 @@ const char PAGE_MAIN[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
+// ==============================
+// FILES_PAGE — upload
+// ==============================
+const char FILES_PAGE[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>LittleFS Manager</title>
+
+<link rel="stylesheet" href="/style.css" />
+
+</head>
+<body>
+
+<nav class="navbar">
+  <button class="navbar-burger" onclick="drawerOpen()" aria-label="Menu">
+    &#9776;
+  </button>
+  <span class="navbar-brand" id="name">IRHub-8266</span>
+  <div class="navbar-links">
+    <a href="/" class="active">Home</a>
+    <a href="/system">System</a>
+  </div>
+</nav>
+
+<div class="page-content">
+
+
+  <h2>📁 LittleFS File Manager</h2>
+
+<div class="card">
+  <h3>📤 Upload de arquivo</h3>
+
+  <div class="upload-row">
+    <input type="file" id="file">
+    <button class="btn-send" onclick="upload()">📤 Enviar</button>
+  </div>
+
+  <progress id="prog" value="0" max="100"></progress>
+</div>
+
+  <div class="card">
+    <table>
+      <tr>
+        <th>📄 Arquivo</th>
+        <th>📦 Tamanho</th>
+        <th>⚙️ Ações</th>
+      </tr>
+      %FILES%
+    </table>
+  </div>
+
+  <p><b>Uso:</b> %USAGE%</p>
+
+</div>
+
+<script>
+function upload(){
+  const file=document.getElementById('file').files[0];
+  if(!file){alert('Selecione um arquivo');return;}
+
+  const xhr=new XMLHttpRequest();
+
+  xhr.upload.onprogress=function(e){
+    if(e.lengthComputable){
+      document.getElementById('prog').value=(e.loaded/e.total)*100;
+    }
+  };
+
+  xhr.onload=function(){
+    alert('Upload concluído');
+    window.location.reload();
+  };
+
+  const formData=new FormData();
+  formData.append('upload',file);
+
+  xhr.withCredentials=true;
+  xhr.open('POST','/upload',true);
+  xhr.send(formData);
+}
+</script>
+
+</body>
+</html>
+)rawliteral";
+
 /************ SERVER ************/
 void setup_server() {
 
@@ -141,93 +229,39 @@ void setup_server() {
   // --- Diagnóstico: lista arquivos do LittleFS --- ex.: http://IP_DO_ESP/files
   server.on("/files", HTTP_GET, []() {
     if (!checkAuth()) return;
-    String html = "<!DOCTYPE html><html><head>";
-    html += "<meta charset='utf-8'>";
-    html += "<title>LittleFS Manager</title>";
-    html += "<style>";
-    html += "body{font-family:Arial;background:#111;color:#eee}";
-    html += "table{border-collapse:collapse;width:100%}";
-    html += "td,th{padding:8px;border-bottom:1px solid #333}";
-    html += "a{color:#4da3ff;text-decoration:none}";
-    html += "button{padding:5px 10px;cursor:pointer}";
-    html += "</style></head><body>";
 
-    html += "<h2>📁 LittleFS File Manager</h2>";
-
-    // UPLOAD
-    html += "<h3>📤 Upload de arquivo</h3>";
-
-    html += "<input type='file' id='file'>";
-    html += "<button onclick='upload()'>📤 Enviar</button>";
-    html += "<br><br>";
-    html += "<progress id='prog' value='0' max='100' style='width:100%'></progress>";
-
-    html += "<script>";
-    html += "function upload(){";
-    html += "  const file = document.getElementById('file').files[0];";
-    html += "  if(!file){ alert('Selecione um arquivo'); return; }";
-
-    html += "  const xhr = new XMLHttpRequest();";
-
-    html += "  xhr.upload.onprogress = function(e){";
-    html += "    if(e.lengthComputable){";
-    html += "      document.getElementById('prog').value = (e.loaded/e.total)*100;";
-    html += "    }";
-    html += "  };";
-
-    html += "  xhr.onload = function(){";
-    html += "    alert('Upload concluído');";
-    html += "    window.location.reload();";
-    html += "  };";
-
-    html += "  const formData = new FormData();";
-    html += "  formData.append('upload', file);";
-
-    html += "  xhr.withCredentials = true;";
-    html += "  xhr.open('POST','/upload',true);";
-    html += "  xhr.send(formData);";
-    html += "}";
-    html += "</script>";
-
-    html += "<hr>";
-
-    // TABELA
-    html += "<table>";
-    html += "<tr><th>📄 Arquivo</th><th>📦 Tamanho</th><th>⚙️ Ações</th></tr>";
-    html += "<hr>";
+    String fileRows;
 
     Dir dir = LittleFS.openDir("/");
     while (dir.next()) {
       String name = "/" + dir.fileName();
       size_t size = dir.fileSize();
 
-      html += "<tr>";
-      html += "<td>" + name + "</td>";
-      html += "<td>" + String(size) + " bytes</td>";
-
-      // Download
-      html += "<td>";
-      html += "<a href='/download?file=" + name + "'>📥</a> ";
-
-      // Delete
-      html += "<a href='/delete?file=" + name + "' onclick=\"return confirm('Excluir?')\">❌</a>";
-      html += "</td>";
-
-      html += "</tr>";
+      fileRows += "<tr>";
+      fileRows += "<td>" + name + "</td>";
+      fileRows += "<td>" + String(size) + " bytes</td>";
+      fileRows += "<td>";
+      fileRows += "<a href='/download?file=" + name + "'>📥 Baixar</a> ";
+      fileRows += "<a href='/delete?file=" + name + "' onclick=\"return confirm('Excluir?')\">❌Excluir</a>";
+      fileRows += "</td>";
+      fileRows += "</tr>";
     }
-
-    html += "</table>";
 
     FSInfo fs_info;
     LittleFS.info(fs_info);
 
-    html += "<p><b>Uso:</b> " + String(fs_info.usedBytes) + " / " + String(fs_info.totalBytes) + " bytes</p>";
+    String usage = String(fs_info.usedBytes) + " / " + String(fs_info.totalBytes) + " bytes";
 
-    html += "</body></html>";
+    // Copia HTML do PROGMEM
+    String html = FPSTR(FILES_PAGE);
+
+    // Substituições
+    html.replace("%FILES%", fileRows);
+    html.replace("%USAGE%", usage);
 
     server.send(200, "text/html", html);
   });
-
+  
   // --- Gerenciamento de Arquivos (download) --- ex.: http://IP_DO_ESP/download?file=/config.json
   server.on("/download", HTTP_GET, []() {
     if (!checkAuth()) return;
@@ -564,7 +598,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 }
 
 void wsSendSystem() {
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<1536> doc;
 
   doc["type"] = "system";
   doc["name"] = mqtt_id_buf;
@@ -586,7 +620,7 @@ void wsSendSystem() {
   cfg["mqtt_user"] = mqtt_user_buf;
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
 
-  char buffer[1152];
+  char buffer[1600];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
     debugPrintln("[WS] Erro: JSON system truncado");
@@ -610,7 +644,7 @@ void wsSendOutputs() {
 
 void wsSendAHT10() {
   lerSensorAHT10();
-  
+
   StaticJsonDocument<128> doc;
   doc["type"] = "sensor";
   if (estadoAHT10 != AHT10_ONLINE) {

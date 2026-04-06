@@ -1,30 +1,44 @@
+/* ---------------- ROOT / VARS ---------------- */
 :root {
   --button-text: #fff;
+
   --btn-primary-bg: linear-gradient(135deg, #2563eb, #1d4ed8);
   --btn-primary-hv: linear-gradient(135deg, #3b82f6, #1e40af);
+
   --btn-led-bg: linear-gradient(135deg, #06b6d4, #0ea5e9);
   --btn-led-hv: linear-gradient(135deg, #22d3ee, #0284c7);
+
   --btn-ir-emitter-bg: linear-gradient(135deg, #8b5cf6, #7c3aed);
   --btn-ir-emitter-hv: linear-gradient(135deg, #a78bfa, #6d28d9);
+
   --btn-ir-receptor-bg: linear-gradient(135deg, #facc15, #f59e0b);
   --btn-ir-receptor-hv: linear-gradient(135deg, #fde047, #d97706);
+
   --btn-clean-bg: linear-gradient(135deg, #f87171, #ef4444);
   --btn-clean-hv: linear-gradient(135deg, #fca5a5, #dc2626);
+
+  --btn-send-bg: linear-gradient(135deg, #3b82f6, #2563eb);
+  --btn-send-hv: linear-gradient(135deg, #60a5fa, #1d4ed8);
+
   --dot-red: #ef4444;
   --dot-green: #22c55e;
   --dot-yellow: #facc15;
+
   --li-color: #5b22c5;
   --li-color-child: #4a54de;
+
   --nav-h: 56px;
   --nav-bg: #0f172a;
   --nav-border: #1e293b;
   --drawer-w: 220px;
 }
 
+/* ---------------- RESET ---------------- */
 * {
   box-sizing: border-box;
 }
 
+/* ---------------- BASE ---------------- */
 body {
   font-family: "Inter", sans-serif;
   background: linear-gradient(135deg, #111827, #1f2937);
@@ -32,6 +46,66 @@ body {
   margin: 0;
   padding: 0;
   padding-top: var(--nav-h);
+}
+
+h1 {
+  display: none;
+}
+
+/* ---------------- TABLE ---------------- */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  background: #111827;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+tr:hover {
+  background: #1e293b;
+}
+
+td a {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: 0.15s;
+}
+
+td a:hover {
+  background: #1e293b;
+}
+
+/* ---------------- FORM / INPUTS ---------------- */
+input,
+select {
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  background: #111827;
+  color: #f9fafb;
+  border: 1px solid #374151;
+  font-size: 12px;
+  box-sizing: border-box;
+  margin-bottom: 2px;
+}
+
+#file {
+  margin-bottom: 8px;
+}
+
+progress {
+  width: 100%;
+  height: 6px;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 /* ---------------- NAVBAR ---------------- */
@@ -180,19 +254,11 @@ body {
   font-weight: 600;
 }
 
-/* ---------------- CONTEÚDO ---------------- */
+/* ---------------- CONTENT ---------------- */
 .page-content {
   padding: 24px 20px;
   max-width: 1200px;
   margin: 0 auto;
-}
-
-h1 {
-  display: none;
-}
-
-#wsStatus {
-  display: inline-block;
 }
 
 .control,
@@ -204,8 +270,26 @@ h1 {
 
 .control .card,
 .history .card {
-  /* width: 100%; */
   max-width: 400px;
+}
+
+/* ---------------- UPLOAD ---------------- */
+.upload-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.upload-row input[type="file"] {
+  flex: 1;
+  max-width: 300px;
+  margin-bottom: 0;
+}
+
+.upload-row button {
+  width: auto;
+  margin-top: 0;
+  white-space: nowrap;
 }
 
 /* ---------------- GRID ---------------- */
@@ -231,6 +315,7 @@ section.card header {
   margin-bottom: 14px;
 }
 
+/* ---------------- TEXT ---------------- */
 .item {
   margin-bottom: 8px;
   font-size: 12px;
@@ -290,7 +375,6 @@ section.card header {
 
 /* ---------------- BUTTONS ---------------- */
 button {
-  width: 100%;
   margin-top: 8px;
   padding: 8px 12px;
   font-size: 13px;
@@ -308,6 +392,10 @@ button:hover {
 
 button:active {
   transform: scale(0.97);
+}
+
+.btn-block {
+  width: 100%;
 }
 
 .btn-primary {
@@ -342,6 +430,16 @@ button:active {
   background: var(--btn-ir-receptor-hv);
 }
 
+.btn-send {
+  background: var(--btn-send-bg);
+  padding: 5px 100px;
+  cursor: pointer;
+}
+
+.btn-send:hover {
+  background: var(--btn-send-hv);
+}
+
 .btn-clean {
   background: var(--btn-clean-bg);
 }
@@ -369,20 +467,7 @@ button:active {
   background: #444;
 }
 
-/* ---------------- FORM ELEMENTS ---------------- */
-input,
-select {
-  width: 100%;
-  padding: 6px;
-  border-radius: 6px;
-  background: #111827;
-  color: #f9fafb;
-  border: 1px solid #374151;
-  font-size: 12px;
-  box-sizing: border-box;
-  margin-bottom: 2px;
-}
-
+/* ---------------- MISC ---------------- */
 hr {
   border-color: #374151;
   margin: 10px 0;
@@ -399,6 +484,10 @@ p.cfg-note {
   opacity: 0.5;
   text-align: center;
   margin-bottom: 12px;
+}
+
+#wsStatus {
+  display: inline-block;
 }
 
 /* ---------------- IR HISTORY ---------------- */
