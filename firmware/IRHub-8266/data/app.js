@@ -239,9 +239,15 @@ function updateSensorWS(data) {
 
 function updateIRReceptorWS(data) {
   flashIRDot();
-  const entry = { ...data, timestamp: new Date().toLocaleTimeString() };
+  const entry = { ...data, timestamp: new Date().toLocaleTimeString("pt-BR") };
   saveIRToHistory(entry);
 }
+
+// function updateIRReceptorWS(data) {
+//   flashIRDot();
+//   const entry = { ...data, timestamp: new Date().toLocaleTimeString() };
+//   saveIRToHistory(entry);
+// }
 
 function flashIRDot() {
   const dot = document.getElementById("irDot");
@@ -252,7 +258,8 @@ function flashIRDot() {
   }
   dot.className = "dot green";
   state.irDotTimer = setTimeout(() => {
-    dot.className = "dot yellow";
+    const d = document.getElementById("irDot"); // re-busca
+    if (d) d.className = "dot yellow";
     state.irDotTimer = null;
   }, 300);
 }
@@ -386,18 +393,48 @@ async function loadRemotes() {
       opt.textContent = model;
       select.appendChild(opt);
     });
-    // Restaura modelo salvo, ou usa o primeiro disponível
-    const saved =
-      localStorage.getItem("selectedRemote") || state.selectedRemote;
+
+    let saved = state.selectedRemote;
+    try {
+      saved = localStorage.getItem("selectedRemote") || saved;
+    } catch (_) {}
+
     if (saved && remotes[saved]) {
       select.value = saved;
       state.selectedRemote = saved;
     }
-    loadButtons(select.value);
+
+    loadButtons(select.value); // sempre chama, independente do saved
   } catch (e) {
     console.error("Erro ao carregar remotes:", e);
   }
 }
+
+// async function loadRemotes() {
+//   const select = document.getElementById("remoteSelect");
+//   if (!select) return;
+//   try {
+//     const res = await fetch("/remotes.json");
+//     remotes = await res.json();
+//     select.innerHTML = "";
+//     Object.keys(remotes).forEach((model) => {
+//       const opt = document.createElement("option");
+//       opt.value = model;
+//       opt.textContent = model;
+//       select.appendChild(opt);
+//     });
+//     // Restaura modelo salvo, ou usa o primeiro disponível
+//     const saved =
+//       localStorage.getItem("selectedRemote") || state.selectedRemote;
+//     if (saved && remotes[saved]) {
+//       select.value = saved;
+//       state.selectedRemote = saved;
+//     }
+//     loadButtons(select.value);
+//   } catch (e) {
+//     console.error("Erro ao carregar remotes:", e);
+//   }
+// }
 
 function loadButtons(model) {
   const container = document.getElementById("buttonsContainer");
@@ -566,6 +603,11 @@ function showCfgStatus(msg, color) {
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Cancela timer de dot que pode ter sobrado da página anterior
+  if (state.irDotTimer) {
+    clearTimeout(state.irDotTimer);
+    state.irDotTimer = null;
+  }
   setText("uptime", "0d 00h 00m 00s");
   renderIRHistory();
 

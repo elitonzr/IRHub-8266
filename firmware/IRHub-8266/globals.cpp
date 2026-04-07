@@ -24,8 +24,7 @@ String clientID = "";
 
 // -------- Build --------
 const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
-const String buildVersion = "0.4.5";
-const String buildFile = "";
+const String buildVersion = "0.5.0";
 
 // -------- Password --------
 char Password[16];

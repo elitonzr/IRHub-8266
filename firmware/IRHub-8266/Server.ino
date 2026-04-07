@@ -72,7 +72,7 @@ const char FILES_PAGE[] PROGMEM = R"rawliteral(
   </button>
   <span class="navbar-brand" id="name">IRHub-8266</span>
   <div class="navbar-links">
-    <a href="/" class="active">Home</a>
+    <a href="/">Home</a>
     <a href="/system">System</a>
   </div>
 </nav>
@@ -261,7 +261,7 @@ void setup_server() {
 
     server.send(200, "text/html", html);
   });
-  
+
   // --- Gerenciamento de Arquivos (download) --- ex.: http://IP_DO_ESP/download?file=/config.json
   server.on("/download", HTTP_GET, []() {
     if (!checkAuth()) return;
@@ -365,8 +365,14 @@ void setup_server() {
 
 // upload
 void handleUpload() {
-
   HTTPUpload& upload = server.upload();
+
+  if (!checkAuth()) {
+    if (fsUploadFile) {
+      fsUploadFile.close();
+    }
+    return;
+  }
 
   switch (upload.status) {
 
@@ -720,7 +726,6 @@ void wsSendInfoIR_Receptor() {
   if (!lastIR.valido) return;
   StaticJsonDocument<256> doc;
   doc["type"] = "ir_receptor";
-  doc["timestamp"] = lastIR.timestamp;
   doc["protocol"] = lastIR.protocolo;
   doc["bits"] = lastIR.bits;
   doc["dec"] = lastIR.dec;

@@ -288,10 +288,13 @@ void MQTTsendIR_Received() {
   doc["bits"] = lastIR.bits;
   doc["dec"] = lastIR.dec;
   doc["hex"] = lastIR.hexStr;
-  doc["timestamp"] = lastIR.timestamp;
 
   char msg[128];
   size_t len = serializeJson(doc, msg, sizeof(msg));
+  if (len == 0 || len >= sizeof(msg)) {
+    debugPrintln("[MQTT] Erro: JSON ir_received truncado");
+    return;
+  }
   if (!mqtt_client.connected()) return;
   mqtt_client.publish(topic_sensor_ir_received, msg, len);
 }

@@ -159,7 +159,7 @@ const char* getIRProtocol(decode_type_t type) {
 
     default:
       {
-        static char buf[24];
+        static char buf[32];
         typeToString(type).toCharArray(buf, sizeof(buf));
         return buf;
       }
