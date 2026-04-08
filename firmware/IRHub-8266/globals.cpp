@@ -14,6 +14,7 @@ char snStr[16] = "";
 
 // -------- MQTT --------
 char mqtt_server[64] = "mqtt.local";
+uint16_t mqtt_port = 1883;
 char mqtt_user_buf[64] = "";
 char mqtt_password_buf[64] = "";
 char mqtt_enabled_buf[4] = "no";

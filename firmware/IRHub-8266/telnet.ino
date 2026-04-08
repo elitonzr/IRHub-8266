@@ -261,9 +261,6 @@ void debugIR() {
   debugPrintln("============= IR Receptor ==============");
   debugPrintln("");
 
-  debugPrint("Timestamp : ");
-  debugPrintln(lastIR.timestamp);
-
   debugPrint("Protocol  : ");
   debugPrint(lastIR.protocolo);
   debugPrint(" (");

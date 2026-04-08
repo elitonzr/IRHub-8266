@@ -53,7 +53,7 @@ void setup_mqtt() {
   snprintf(topic_command, sizeof(topic_command), "%s/command", myTopic.c_str());
 
   if (mqttEnabled()) {
-    mqtt_client.setServer(mqtt_server, 1883);
+    mqtt_client.setServer(mqtt_server, mqtt_port);
     mqtt_client.setCallback(callback);
   }
 
@@ -148,7 +148,7 @@ void MQTTsendStatus() {
 * Publica informações sobre a rede
 ************************************************************/
 void MQTTsendInfoDevice() {
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<384> doc;
   doc["build_datetime"] = buildDateTime;
   doc["version"] = buildVersion;
   doc["chip_id"] = ESP.getChipId();
@@ -158,8 +158,9 @@ void MQTTsendInfoDevice() {
   doc["topic_main"] = myTopic;
   doc["client_id"] = clientID;
 
-  char msg[256];
+  char msg[384];
   size_t len = serializeJson(doc, msg, sizeof(msg));
+  if (len == 0 || len >= sizeof(msg)) return;
   if (!mqtt_client.connected()) return;
   mqtt_client.publish(topic_info_device, msg, len);
 }

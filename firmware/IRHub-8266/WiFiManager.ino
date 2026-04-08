@@ -15,13 +15,13 @@ void setup_WiFiManager() {
   // ======= PARAMETROS =======
   WiFiManagerParameter *p_hostname, *p_mqtt_id, *p_grupo;
   WiFiManagerParameter *p_ip, *p_gw, *p_sn;
-  WiFiManagerParameter *p_mqtt_server, *p_mqtt_user, *p_mqtt_password, *p_mqtt_enabled;
+  WiFiManagerParameter *p_mqtt_server, *p_mqtt_port, *p_mqtt_user, *p_mqtt_password, *p_mqtt_enabled;
 
   setupWiFiManagerParams(
     wifiManager,
     p_hostname, p_mqtt_id, p_grupo,
     p_ip, p_gw, p_sn,
-    p_mqtt_server, p_mqtt_user, p_mqtt_password, p_mqtt_enabled);
+    p_mqtt_server, p_mqtt_port, p_mqtt_user, p_mqtt_password, p_mqtt_enabled);
 
   // ---------- IP FIXO ANTES ----------
   IPAddress ip, gw, sn, dns(8, 8, 8, 8);
@@ -53,7 +53,7 @@ void setup_WiFiManager() {
   atualizaConfig(
     *p_hostname, *p_mqtt_id, *p_grupo,
     *p_ip, *p_gw, *p_sn,
-    *p_mqtt_server, *p_mqtt_user, *p_mqtt_password, *p_mqtt_enabled);
+    *p_mqtt_server, *p_mqtt_port, *p_mqtt_user, *p_mqtt_password, *p_mqtt_enabled);
 
   // ---------- INFO ----------
   Serial.println("SSID: " + WiFi.SSID());
@@ -62,104 +62,6 @@ void setup_WiFiManager() {
   Serial.println("Subnet: " + WiFi.subnetMask().toString());
   Serial.println("RSSI: " + String(WiFi.RSSI()));
 }
-
-// void startWiFiManagerPortal() {
-
-//   debugPrintln("");
-//   debugPrintln("========================================");
-//   debugPrintln("[WiFi] 🚀 Portal de configuração iniciado");
-//   debugPrintln("========================================");
-
-
-//   debugPrintln("[WiFi] 📡 Conecte-se na rede Wi-Fi:");
-//   debugPrintln(String("       SSID: ") + hostname_buf);
-//   debugPrintln("       Senha: 12345678");
-
-//   debugPrintln("");
-//   debugPrintln("[WiFi] 🌐 Após conectar, acesse:");
-//   debugPrintln("[WiFi] Portal IP: " + WiFi.softAPIP().toString());
-//   debugPrintln("");
-
-//   WiFiManager wifiManager;
-//   wifiManager.setDebugOutput(true);
-//   wifiManager.setConfigPortalTimeout(180);
-//   wifiManager.setSaveConfigCallback(saveConfigCallback);
-
-//   wifiManager.setWebServerCallback([]() {
-//     ArduinoOTA.handle();
-//     handleTelnet();
-//   });
-
-//   // ======= PARAMETROS =======
-//   WiFiManagerParameter *p_hostname, *p_mqtt_id, *p_grupo;
-//   WiFiManagerParameter *p_ip, *p_gw, *p_sn;
-//   WiFiManagerParameter *p_mqtt_server, *p_mqtt_user, *p_mqtt_password, *p_mqtt_enabled;
-
-//   setupWiFiManagerParams(
-//     wifiManager,
-//     p_hostname, p_mqtt_id, p_grupo,
-//     p_ip, p_gw, p_sn,
-//     p_mqtt_server, p_mqtt_user, p_mqtt_password, p_mqtt_enabled);
-
-//   // ---------- ABRE PORTAL ----------
-//   if (!wifiManager.startConfigPortal(hostname_buf, "12345678")) {
-//     debugPrintln("[WiFi] ⚠️ Portal fechado ou timeout");
-//     return;
-//   }
-
-//   debugPrintln("");
-//   debugPrintln("[WiFi] ✅ Portal finalizado");
-//   debugPrintln("[WiFi] 📶 Rede selecionada: " + WiFi.SSID());
-
-//   // ---------- SALVA CONFIG ----------
-//   atualizaConfig(
-//     *p_hostname, *p_mqtt_id, *p_grupo,
-//     *p_ip, *p_gw, *p_sn,
-//     *p_mqtt_server, *p_mqtt_user, *p_mqtt_password, *p_mqtt_enabled);
-
-//   // ---------- REAPLICA IP FIXO ----------
-//   IPAddress ip, gw, sn, dns(8, 8, 8, 8);
-
-//   bool dhcp = (strlen(ipStr) == 0);
-
-//   if (!dhcp && ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
-
-//     String ssid = WiFi.SSID();
-//     String pass = WiFi.psk();
-
-//     debugPrintln("");
-//     debugPrintln("[WiFi] 🔧 Reconfigurando rede com IP fixo...");
-//     debugPrintln("[WiFi] SSID: " + ssid);
-//     debugPrintln("[WiFi] IP configurado: " + String(ipStr));
-
-//     WiFi.disconnect(true);
-//     delay(200);
-
-//     WiFi.config(ip, gw, sn, dns);
-//     WiFi.begin(ssid, pass);
-
-//     unsigned long start = millis();
-
-//     while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
-//       delay(500);
-//       debugPrint(".");
-//     }
-
-//     debugPrintln("");
-
-//     if (WiFi.status() == WL_CONNECTED) {
-//       debugPrintln("[WiFi] ✅ Reconectado com sucesso!");
-//       debugPrintln("[WiFi] 🌐 IP: " + WiFi.localIP().toString());
-//     } else {
-//       debugPrintln("[WiFi] ❌ Falha ao reconectar");
-//     }
-//   } else {
-//     debugPrintln("[WiFi] 📡 DHCP ativo");
-//     debugPrintln("[WiFi] 🌐 IP: " + WiFi.localIP().toString());
-//   }
-
-//   debugPrintln("========================================");
-// }
 
 void startWiFiManagerPortal() {
 
@@ -205,13 +107,13 @@ void startWiFiManagerPortal() {
   // ======= PARAMETROS =======
   WiFiManagerParameter *p_hostname, *p_mqtt_id, *p_grupo;
   WiFiManagerParameter *p_ip, *p_gw, *p_sn;
-  WiFiManagerParameter *p_mqtt_server, *p_mqtt_user, *p_mqtt_password, *p_mqtt_enabled;
+  WiFiManagerParameter *p_mqtt_server, *p_mqtt_port, *p_mqtt_user, *p_mqtt_password, *p_mqtt_enabled;
 
   setupWiFiManagerParams(
     wifiManager,
     p_hostname, p_mqtt_id, p_grupo,
     p_ip, p_gw, p_sn,
-    p_mqtt_server, p_mqtt_user, p_mqtt_password, p_mqtt_enabled);
+    p_mqtt_server, p_mqtt_port, p_mqtt_user, p_mqtt_password, p_mqtt_enabled);
 
   // ---------- ABRE PORTAL ----------
   if (!wifiManager.startConfigPortal(hostname_buf, "12345678")) {
@@ -227,7 +129,7 @@ void startWiFiManagerPortal() {
   atualizaConfig(
     *p_hostname, *p_mqtt_id, *p_grupo,
     *p_ip, *p_gw, *p_sn,
-    *p_mqtt_server, *p_mqtt_user, *p_mqtt_password, *p_mqtt_enabled);
+    *p_mqtt_server, *p_mqtt_port, *p_mqtt_user, *p_mqtt_password, *p_mqtt_enabled);
 
   // ---------- REAPLICA IP FIXO ----------
   IPAddress ip, gw, sn, dns(8, 8, 8, 8);
@@ -283,6 +185,7 @@ void setupWiFiManagerParams(
   WiFiManagerParameter*& p_gw,
   WiFiManagerParameter*& p_sn,
   WiFiManagerParameter*& p_mqtt_server,
+  WiFiManagerParameter*& p_mqtt_port,
   WiFiManagerParameter*& p_mqtt_user,
   WiFiManagerParameter*& p_mqtt_password,
   WiFiManagerParameter*& p_mqtt_enabled) {
@@ -313,6 +216,7 @@ void setupWiFiManagerParams(
   wifiManager.addParameter(new WiFiManagerParameter("<hr><p><b>MQTT</b></p>"));
 
   p_mqtt_server = new WiFiManagerParameter("mqtt_server", "Servidor MQTT", mqtt_server, 64);
+  p_mqtt_port = new WiFiManagerParameter("mqtt_port", "Porta MQTT", String(mqtt_port).c_str(), 6);
   p_mqtt_user = new WiFiManagerParameter("mqtt_user", "Usuário MQTT", mqtt_user_buf, 64);
   p_mqtt_password = new WiFiManagerParameter("mqtt_password", "Senha MQTT", mqtt_password_buf, 64, "type='password'");
 
@@ -332,6 +236,7 @@ void setupWiFiManagerParams(
   p_mqtt_enabled = new WiFiManagerParameter("mqtt_enabled", "MQTT", mqtt_enabled_buf, 4, mqttSelectHtml);
 
   wifiManager.addParameter(p_mqtt_server);
+  wifiManager.addParameter(p_mqtt_port);
   wifiManager.addParameter(p_mqtt_user);
   wifiManager.addParameter(p_mqtt_password);
   wifiManager.addParameter(p_mqtt_enabled);
@@ -345,6 +250,7 @@ void atualizaConfig(
   WiFiManagerParameter& p_gw,
   WiFiManagerParameter& p_sn,
   WiFiManagerParameter& p_mqtt_server,
+  WiFiManagerParameter& p_mqtt_port,
   WiFiManagerParameter& p_mqtt_user,
   WiFiManagerParameter& p_mqtt_password,
   WiFiManagerParameter& p_mqtt_enabled) {
@@ -402,6 +308,8 @@ void atualizaConfig(
   // MQTT
   // ==========================
   strlcpy(mqtt_server, p_mqtt_server.getValue(), sizeof(mqtt_server));
+  mqtt_port = atoi(p_mqtt_port.getValue());
+  if (mqtt_port == 0) mqtt_port = 1883;
   strlcpy(mqtt_user_buf, p_mqtt_user.getValue(), sizeof(mqtt_user_buf));
 
   if (strcmp(p_mqtt_password.getValue(), "") != 0) {
@@ -504,9 +412,16 @@ void loadConfig() {
     strlcpy(gwStr, doc["gw"] | gwStr, sizeof(gwStr));
     strlcpy(snStr, doc["sn"] | snStr, sizeof(snStr));
     strlcpy(mqtt_server, doc["mqtt_server"] | mqtt_server, sizeof(mqtt_server));
+    mqtt_port = doc["mqtt_port"] | 1883;
     strlcpy(mqtt_user_buf, doc["mqtt_user"] | mqtt_user_buf, sizeof(mqtt_user_buf));
     strlcpy(mqtt_password_buf, doc["mqtt_password"] | mqtt_password_buf, sizeof(mqtt_password_buf));
     strlcpy(mqtt_enabled_buf, doc["mqtt_enabled"] | mqtt_enabled_buf, sizeof(mqtt_enabled_buf));
+
+    int ir_receptor = doc["ir_receptor"] | (int)IR_ALL;
+    if (ir_receptor >= 0 && ir_receptor <= 4) {
+      IR_ReceptorEstado = static_cast<IR_ReceptorMode>(ir_receptor);
+    }
+
     debugPrintln("[FS] Config carregada");
   }
   file.close();
@@ -525,9 +440,11 @@ void saveConfig() {
   doc["gw"] = gwStr;
   doc["sn"] = snStr;
   doc["mqtt_server"] = mqtt_server;
+  doc["mqtt_port"] = mqtt_port;
   doc["mqtt_user"] = mqtt_user_buf;
   doc["mqtt_password"] = mqtt_password_buf;
   doc["mqtt_enabled"] = mqtt_enabled_buf;
+  doc["ir_receptor"] = (int)IR_ReceptorEstado;
   File file = LittleFS.open("/config.json", "w");
   if (!file) return;
   serializeJson(doc, file);
@@ -565,31 +482,6 @@ void resetConfig() {
   delay(1000);
   ESP.restart();
 }
-// void resetConfig() {
-//   WiFiManager wifiManager;
-//   wifiManager.resetSettings();
-
-//   //clean FS
-//   LittleFS.format();
-
-//   // if (LittleFS.exists("/config.json")) {
-//   //   if (LittleFS.remove("/config.json")) {
-//   //     Serial.println("Arquivo removido com sucesso!");
-//   //   } else {
-//   //     Serial.println("Erro ao remover o arquivo.");
-//   //   }
-//   // } else {
-//   //   Serial.println("Arquivo não existe.");
-//   // }
-
-//   Dir dir = LittleFS.openDir("/");
-//   while (dir.next()) {
-//     debugPrintln(dir.fileName());
-//   }
-
-//   delay(1000);
-//   ESP.restart();
-// }
 
 // ==========================
 // FEEDBACK VISUAL LED

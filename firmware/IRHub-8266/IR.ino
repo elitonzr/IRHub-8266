@@ -41,7 +41,7 @@ void myIRdecoder() {
     return;
   }
 
-  lastIRCode = results.value;
+  // lastIRCode = results.value;
   lastIRTime = now;
 
   // Se receptor estiver ativo
@@ -107,7 +107,7 @@ const char* EstadoIRReceptor() {
 /************ Registro do último IR ************/
 void lastIR_Receptor() {
 
-  unsigned long now = millis();
+  // unsigned long now = millis();
 
   const char* protocolo = getIRProtocol(results.decode_type);
 
@@ -118,7 +118,6 @@ void lastIR_Receptor() {
   lastIR.bits = results.bits;
   lastIR.decode_type = results.decode_type;
   lastIR.rawlen = results.rawlen;
-  lastIR.timestamp = now;
 
   // snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "0x%lX", lastIR.dec);
   snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "0x%08X", (unsigned int)lastIR.dec);
@@ -158,11 +157,7 @@ const char* getIRProtocol(decode_type_t type) {
     case NIKAI: return "NIKAI";
 
     default:
-      {
-        static char buf[32];
-        typeToString(type).toCharArray(buf, sizeof(buf));
-        return buf;
-      }
+      return "UNKNOWN";
   }
 }
 

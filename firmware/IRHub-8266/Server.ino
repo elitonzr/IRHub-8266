@@ -318,7 +318,10 @@ void setup_server() {
       server.send(303);
     },
     []() {
-      if (!checkAuth()) return;
+      if (!checkAuth()) {
+        if (fsUploadFile) fsUploadFile.close();
+        return;
+      }
 
       handleUpload();
     });
@@ -366,13 +369,6 @@ void setup_server() {
 // upload
 void handleUpload() {
   HTTPUpload& upload = server.upload();
-
-  if (!checkAuth()) {
-    if (fsUploadFile) {
-      fsUploadFile.close();
-    }
-    return;
-  }
 
   switch (upload.status) {
 
@@ -543,6 +539,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           const char* v_gw = doc["gw"] | gwStr;
           const char* v_sn = doc["sn"] | snStr;
           const char* v_mqtt_server = doc["mqtt_server"] | mqtt_server;
+          const char* v_mqtt_port = doc["mqtt_port"] | "1883";
+          mqtt_port = atoi(v_mqtt_port);
+          if (mqtt_port == 0) mqtt_port = 1883;
           const char* v_mqtt_user = doc["mqtt_user"] | mqtt_user_buf;
           const char* v_mqtt_password = doc["mqtt_password"] | "";
           const char* v_mqtt_enabled = doc["mqtt_enabled"] | mqtt_enabled_buf;
@@ -567,7 +566,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
           if (mqttEnabled()) {
             mqtt_client.disconnect();
-            mqtt_client.setServer(mqtt_server, 1883);
+            mqtt_client.setServer(mqtt_server, mqtt_port);
             debugPrintln("[MQTT] Reconectando com novas configurações...");
           } else {
             mqtt_client.disconnect();
@@ -623,6 +622,7 @@ void wsSendSystem() {
   cfg["gw"] = gwStr;
   cfg["sn"] = snStr;
   cfg["mqtt_server"] = mqtt_server;
+  cfg["mqtt_port"] = mqtt_port;
   cfg["mqtt_user"] = mqtt_user_buf;
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
 
@@ -724,13 +724,13 @@ void wsSendInfoIR() {
 
 void wsSendInfoIR_Receptor() {
   if (!lastIR.valido) return;
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<192> doc;
   doc["type"] = "ir_receptor";
   doc["protocol"] = lastIR.protocolo;
   doc["bits"] = lastIR.bits;
   doc["dec"] = lastIR.dec;
   doc["hex"] = lastIR.hexStr;
-  char buffer[256];
+  char buffer[192];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
     debugPrintln("[WS] Erro: JSON ir_receptor truncado");
@@ -740,7 +740,7 @@ void wsSendInfoIR_Receptor() {
 }
 
 void wsSendIR_Emissor(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
-  char payload[192];
+  char payload[256];
   size_t len = buildIRJson(payload, sizeof(payload), code, proto, bits, status, origem);
   if (len == 0 || len >= sizeof(payload)) {
     debugPrintln("[WS] Erro JSON IR");

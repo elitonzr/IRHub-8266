@@ -57,7 +57,7 @@ int mqttErro = 0;  // Variável para armazenar erro de conexão do MQTT.
 int mqttOK = 0;    // Variável para armazenar número de conexãos do MQTT.
 
 // -- TOPICS MQTT PUBLISHERS --
-char topic_status[64];  // birth/will
+char topic_status[96];  // birth/will
 
 char topic_info_device[128];
 char topic_info_network[128];
@@ -74,12 +74,12 @@ char topic_sensor_ir_received[128];
 char topic_sensor_ir_sent[128];
 
 // -- TOPICS MQTT SUBSCRIPTIONS --
-char topic_command[64];
+char topic_command[96];
 
 // BUFFERS
 #define MAX_PAYLOAD 250
-char MQTT_Topic[MAX_PAYLOAD];
-char MQTT_Msg[MAX_PAYLOAD];
+// char MQTT_Topic[MAX_PAYLOAD];
+// char MQTT_Msg[MAX_PAYLOAD];
 
 /************ Botão de Reset ************/
 #define BTN_RESET 0  // GPIO0
@@ -98,17 +98,17 @@ IRsend irsend(kIrLed);
 IRrecv irrecv(kRecvPin);
 decode_results results;
 
-enum IR_ReceptorMode {
-  IR_DESABILITADO,        // Não envia nada.
-  IR_PROTOCOL_NEC,        // Somente NEC.
-  IR_PROTOCOL_NIKAI,      // Somente NIKAI.
-  IR_PROTOCOL_NEC_NIKAI,  // NEC e NIKAI.
-  IR_ALL                  // Tudo.
-};
+// enum IR_ReceptorMode {
+//   IR_DESABILITADO,        // Não envia nada.
+//   IR_PROTOCOL_NEC,        // Somente NEC.
+//   IR_PROTOCOL_NIKAI,      // Somente NIKAI.
+//   IR_PROTOCOL_NEC_NIKAI,  // NEC e NIKAI.
+//   IR_ALL                  // Tudo.
+// };
 
 IR_ReceptorMode IR_ReceptorEstado = IR_ALL;  // Flag para indicar tipo de recepção IR
 
-uint32_t lastIRCode = 0;
+// uint32_t lastIRCode = 0;
 unsigned long lastIRTime = 0;
 const unsigned long IR_DEBOUNCE_MS = 300;
 
@@ -124,8 +124,6 @@ struct IRLastData {
 
   uint16_t rawlen;
 
-  unsigned long timestamp;
-
   char resultToHumanReadableBasic[64];
   char resultToSourceCode[640];
 
@@ -139,7 +137,6 @@ IRLastData lastIR = {
   0,     // bits
   0,     // decode_type
   0,     // rawlen
-  0,     // timestamp
   "",    // resultToHumanReadableBasic
   "",    // resultToSourceCode
   false  // valido

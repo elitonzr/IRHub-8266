@@ -216,7 +216,11 @@ function updateIRWS(data) {
   if (!state.irDotTimer) {
     const dot = document.getElementById("irDot");
     if (dot)
-      dot.className = "dot " + (data.receptor_protocol ? "green" : "yellow");
+      dot.className =
+        "dot " +
+        (data.receptor_protocol && data.receptor_protocol !== "DESABILITADO"
+          ? "green"
+          : "yellow");
   }
 }
 
@@ -315,7 +319,7 @@ if (!state.uptimeInterval) {
 ========================================================= */
 
 function saveIRToHistory(payload) {
-  if (payload.dec === 0) return;
+  if (!payload.dec) return;
   if (state.irHistory[0]?.dec === payload.dec) return;
   state.irHistory.unshift(payload);
   if (state.irHistory.length > 10) state.irHistory.pop();
@@ -557,6 +561,7 @@ function populateConfig(data) {
     cfg_gw: data.gw,
     cfg_sn: data.sn,
     cfg_mqtt_server: data.mqtt_server,
+    cfg_mqtt_port: data.mqtt_port,
     cfg_mqtt_user: data.mqtt_user,
     cfg_mqtt_enabled: data.mqtt_enabled,
     cfg_wifi_ssid: data.wifi_ssid,
@@ -581,6 +586,7 @@ function saveDeviceConfig() {
     gw: get("cfg_gw").trim(),
     sn: get("cfg_sn").trim(),
     mqtt_server: get("cfg_mqtt_server").trim(),
+    mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
     mqtt_user: get("cfg_mqtt_user").trim(),
     mqtt_password: password.length > 0 ? password : "__keep__",
     mqtt_enabled: get("cfg_mqtt_enabled"),
@@ -628,7 +634,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (select) {
     select.addEventListener("change", (e) => {
       state.selectedRemote = e.target.value;
-      localStorage.setItem("selectedRemote", e.target.value);
+      try {
+        localStorage.setItem("selectedRemote", e.target.value);
+      } catch (_) {}
       loadButtons(e.target.value);
     });
   }

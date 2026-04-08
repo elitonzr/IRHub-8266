@@ -42,7 +42,6 @@
     <!-- CONTEÚDO -->
     <div class="page-content">
       <div class="grid">
-
         <!-- CONFIG -->
         <section class="card cfg-card">
           <header>Configuração</header>
@@ -96,6 +95,10 @@
           <p class="section-label">MQTT</p>
           <div class="item">
             Servidor: <input id="cfg_mqtt_server" type="text" />
+          </div>
+          <div class="item">
+            Porta:
+            <input id="cfg_mqtt_port" type="number" min="1" max="65535" />
           </div>
           <div class="item">
             Usuário: <input id="cfg_mqtt_user" type="text" />
