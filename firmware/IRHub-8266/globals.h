@@ -42,3 +42,38 @@ enum IR_ReceptorMode {
 };
 
 extern IR_ReceptorMode IR_ReceptorEstado;
+
+// -------- LED --------
+#define LEDA 2
+
+// -------- Controle do LED sem delay --------
+
+enum LedMode {
+  LED_IR,
+  LED_IDLE,
+  LED_WIFI_DISCONNECTED,
+  LED_WIFI_CONNECTING,
+  LED_MQTT_DISCONNECTED,
+  LED_OTA,
+  LED_FEEDBACK
+};
+
+struct LedControl {
+  int vezes;
+  int intervalo;
+  int contador;
+  bool estado;
+  unsigned long ultimoMillis;
+  bool ativo;
+
+  LedMode modo;
+};
+
+extern LedControl ledCtrl;
+
+// funções
+void startFeedbackLED(int vezes, int intervalo);
+void handleFeedbackLED();
+void setLedMode(LedMode modo);
+void setLed(bool on);
+const char* getLedModeString();

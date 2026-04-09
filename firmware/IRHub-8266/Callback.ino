@@ -79,11 +79,14 @@ void processaComando(byte* payload, unsigned int length) {
     }
 
     if (strcasecmp(action, "toggle") == 0) {
-      ledState = !ledState;
+      setLed(!ledCtrl.estado);
+
     } else if (strcasecmp(action, "on") == 0) {
-      ledState = true;
+      setLed(true);
+
     } else if (strcasecmp(action, "off") == 0) {
-      ledState = false;
+      setLed(false);
+
     } else {
       debugPrint("[processaComando] Comando LED inválido: ");
       debugPrintln(action);
@@ -118,7 +121,7 @@ void processaComando(byte* payload, unsigned int length) {
     }
 
     if (modo != -1) {
-      IR_RecepitorSET(modo);
+      IR_ReceptorSET(modo);
 
       // 🔄 já publica o novo estado
       MQTTsendIRConfig();

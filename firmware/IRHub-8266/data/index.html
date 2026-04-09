@@ -152,10 +152,18 @@
           <hr />
 
           <p class="section-label">Configuração</p>
-
           <div class="item">
-            <button class="btn-ir-receptor" onclick="toggleIRReceptor()">
-              🔁 Alternar Protocolo
+            <select id="irReceptorSelect">
+              <option value="0">Desabilitado</option>
+              <option value="1">NEC</option>
+              <option value="2">NIKAI</option>
+              <option value="3">NEC e NIKAI</option>
+              <option value="4">Tudo</option>
+            </select>
+          </div>
+          <div class="item">
+            <button class="btn-ir-receptor btn-block" onclick="setIRReceptor()">
+              ✅ Aplicar Protocolo
             </button>
           </div>
         </section>

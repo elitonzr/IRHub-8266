@@ -452,7 +452,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         if (!cmd) return;
 
         if (strcmp(cmd, "toggleLED") == 0) {
-          ledState = !ledState;
+
+          setLed(!ledCtrl.estado);
+
           wsSendOutputs();
           return;
         }
@@ -481,7 +483,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         if (strcmp(cmd, "setIRReceptor") == 0) {
           int mode = doc["mode"] | -1;
           if (mode >= 0 && mode <= 4) {
-            IR_RecepitorSET(mode);
+            IR_ReceptorSET(mode);
           }
           return;
         }
@@ -637,7 +639,7 @@ void wsSendSystem() {
 void wsSendOutputs() {
   StaticJsonDocument<64> doc;
   doc["type"] = "outputs";
-  doc["led"] = ledState;
+  doc["led"] = ledCtrl.estado;
   char buffer[64];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {

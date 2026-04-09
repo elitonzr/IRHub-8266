@@ -1,5 +1,7 @@
 void setup_WiFiManager() {
 
+  setLedMode(LED_WIFI_DISCONNECTED);
+
   loadConfig();
 
   WiFiManager wifiManager;
@@ -34,6 +36,8 @@ void setup_WiFiManager() {
 
   WiFi.hostname(hostname_buf);
 
+  setLedMode(LED_WIFI_CONNECTING);
+
   // ---------- CONEXÃO ----------
   if (!wifiManager.autoConnect(hostname_buf, PasswordPortal)) {
     Serial.println("[WiFi] Falha. Reiniciando...");
@@ -64,6 +68,7 @@ void setup_WiFiManager() {
 }
 
 void startWiFiManagerPortal() {
+  setLedMode(LED_WIFI_DISCONNECTED);
 
   debugPrintln("");
   debugPrintln("========================================");
@@ -154,13 +159,15 @@ void startWiFiManagerPortal() {
     unsigned long start = millis();
 
     while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
-      delay(500);
-      debugPrint(".");
+      handleFeedbackLED();  // 👈 mantém LED vivo
+      yield();              // 👈 mantém sistema vivo
+      delay(50);
     }
 
     debugPrintln("");
 
     if (WiFi.status() == WL_CONNECTED) {
+      setLedMode(LED_IDLE);
       debugPrintln("[WiFi] ✅ Reconectado com sucesso!");
       debugPrintln("[WiFi] 🌐 IP: " + WiFi.localIP().toString());
     } else {
@@ -275,7 +282,7 @@ void atualizaConfig(
 
   if (!(validIP || dhcp)) {
     Serial.println("[WiFi] IP inválido digitado no portal, configuração ignorada.");
-    feedbackLED(6, 50);
+    startFeedbackLED(6, 50);
     return;
   }
 
@@ -324,8 +331,13 @@ void atualizaConfig(
   saveConfig();
 
   Serial.println("[WiFi] Config válida salva. Reiniciando...");
-  feedbackLED(3, 100);
-  delay(1000);
+  startFeedbackLED(3, 100);
+
+  while (ledCtrl.ativo) {
+    handleFeedbackLED();
+    yield();
+  }
+
   ESP.restart();
 }
 
@@ -333,21 +345,41 @@ void atualizaConfig(
 // WATCHDOG DE WIFI
 // ==========================
 void wifi_watchdog() {
-  if (WiFi.status() == WL_CONNECTED) return;
 
   static unsigned long reconnectStart = 0;
   static bool reconnecting = false;
 
+  // Já conectado
+  if (WiFi.status() == WL_CONNECTED) {
+    if (reconnecting) {
+      reconnecting = false;
+      setLedMode(LED_IDLE);
+      debugPrintln("[WiFi] Reconectado!");
+      debugPrintln("IP: " + WiFi.localIP().toString());
+    }
+    return;
+  }
+
+  // Não conectado
   if (!reconnecting) {
+
+    setLedMode(LED_WIFI_CONNECTING);
+
     debugPrintln("[WiFi] Conexão perdida! Tentando reconectar...");
+
     String ssid = WiFi.SSID();
     String pass = WiFi.psk();
+
     WiFi.disconnect();
     delay(200);
 
     // Reaplica IP fixo se configurado
     IPAddress ip, gw, sn, dns(8, 8, 8, 8);
-    if (strlen(ipStr) > 6 && ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
+    if (strlen(ipStr) > 6 &&
+        ip.fromString(ipStr) &&
+        gw.fromString(gwStr) &&
+        sn.fromString(snStr)) {
+
       WiFi.config(ip, gw, sn, dns);
       debugPrintln("[WiFi] IP fixo reaplicado");
     }
@@ -357,19 +389,18 @@ void wifi_watchdog() {
     } else {
       WiFi.begin();
     }
+
     reconnectStart = millis();
     reconnecting = true;
     return;
   }
 
-  if (millis() - reconnectStart < 15000) return;
+  // Timeout de reconexão
+  if (millis() - reconnectStart >= 15000) {
 
-  reconnecting = false;
+    reconnecting = false;
+    setLedMode(LED_WIFI_DISCONNECTED);
 
-  if (WiFi.status() == WL_CONNECTED) {
-    debugPrintln("[WiFi] Reconectado!");
-    debugPrintln("IP: " + WiFi.localIP().toString());
-  } else {
     debugPrintln("[WiFi] Falha ao reconectar");
   }
 }
@@ -488,18 +519,6 @@ void resetConfig() {
 
   delay(1000);
   ESP.restart();
-}
-
-// ==========================
-// FEEDBACK VISUAL LED
-// ==========================
-void feedbackLED(int vezes, int intervalo) {
-  for (int i = 0; i < vezes; i++) {
-    digitalWrite(LEDA, LOW);
-    delay(intervalo);
-    digitalWrite(LEDA, HIGH);
-    delay(intervalo);
-  }
 }
 
 void printPortalCredentials() {

@@ -78,16 +78,9 @@ char topic_command[96];
 
 // BUFFERS
 #define MAX_PAYLOAD 250
-// char MQTT_Topic[MAX_PAYLOAD];
-// char MQTT_Msg[MAX_PAYLOAD];
 
 /************ Botão de Reset ************/
 #define BTN_RESET 0  // GPIO0
-
-/************ LED ************/
-#define LEDA 2              // LED A GPIO02
-bool ledState = false;      // Estado lógico desejado
-bool lastLedState = false;  // Último estado publicado
 
 /************ IR ************/
 // Configuração
@@ -98,17 +91,6 @@ IRsend irsend(kIrLed);
 IRrecv irrecv(kRecvPin);
 decode_results results;
 
-// enum IR_ReceptorMode {
-//   IR_DESABILITADO,        // Não envia nada.
-//   IR_PROTOCOL_NEC,        // Somente NEC.
-//   IR_PROTOCOL_NIKAI,      // Somente NIKAI.
-//   IR_PROTOCOL_NEC_NIKAI,  // NEC e NIKAI.
-//   IR_ALL                  // Tudo.
-// };
-
-IR_ReceptorMode IR_ReceptorEstado = IR_ALL;  // Flag para indicar tipo de recepção IR
-
-// uint32_t lastIRCode = 0;
 unsigned long lastIRTime = 0;
 const unsigned long IR_DEBOUNCE_MS = 300;
 
@@ -190,13 +172,12 @@ void setup() {
   setup_AHT10();   // Inicializa AHT10
 
   pinMode(BTN_RESET, INPUT_PULLUP);
-  pinMode(LEDA, OUTPUT);  // LED A GPIO02
+  pinMode(LEDA, OUTPUT);     // LED A GPIO02
+  digitalWrite(LEDA, HIGH);  // LED apagado
 
-  // Irá piscar o LED 10x com intervalo de 0,5 Segundo
-  for (long x = 0; x < 10; x++) {
-    digitalWrite(LEDA, !digitalRead(LEDA));  // Inverte o estado do LED.
-    delay(500);                              // Espera 0,5 Segundo.
-  }
+  ledCtrl.modo = LED_IDLE;
+
+  startFeedbackLED(5, 200);  // boot rápido
 
   Serial.println();
   Serial.println("=================================");
@@ -285,12 +266,17 @@ void loop() {
   handleTelnet();
 
   // ---- LED ----
-  digitalWrite(LEDA, ledState ? LOW : HIGH);
+  handleFeedbackLED();
+
+  static bool lastState = false;
+  // estado lógico do LED (invertido por causa do LOW = ligado)
+
+  bool currentLedState = ledCtrl.estado;
 
   // WS + MQTT somente se mudar
-  if (ledState != lastLedState) {
+  if (currentLedState != lastState) {
 
-    lastLedState = ledState;
+    lastState = currentLedState;
 
     wsSendOutputs();
     MQTTsendLED();

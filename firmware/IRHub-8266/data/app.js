@@ -211,6 +211,8 @@ function updateIRWS(data) {
     irModeMap[data.receptor_protocol] !== undefined
   ) {
     state.irModeIndex = irModeMap[data.receptor_protocol];
+    const sel = document.getElementById("irReceptorSelect");
+    if (sel) sel.value = irModeMap[data.receptor_protocol];
   }
 
   if (!state.irDotTimer) {
@@ -476,9 +478,11 @@ function toggleIREmissor() {
   wsSend({ cmd: "toggleIREmissor" });
 }
 
-function toggleIRReceptor() {
-  state.irModeIndex = (state.irModeIndex + 1) % 5;
-  wsSend({ cmd: "setIRReceptor", mode: state.irModeIndex });
+function setIRReceptor() {
+  const select = document.getElementById("irReceptorSelect");
+  if (!select) return;
+  const mode = parseInt(select.value);
+  wsSend({ cmd: "setIRReceptor", mode: mode });
 }
 
 /* =========================================================

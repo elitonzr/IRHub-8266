@@ -120,7 +120,22 @@
           </div>
         </section>
 
-        <!-- IR -->
+        <!-- GPIO -->
+        <section class="card">
+          <header>GPIO</header>
+          <div class="item"><span class="value">GPIO0</span> Botão Reset</div>
+          <div class="item"><span class="value">GPIO2</span> LED A</div>
+          <div class="item">
+            <span class="value">GPIO4</span> Emissor IR (D2)
+          </div>
+          <div class="item"><span class="value">GPIO12</span> SDA — AHT10</div>
+          <div class="item"><span class="value">GPIO13</span> SCL — AHT10</div>
+          <div class="item">
+            <span class="value">GPIO14</span> Receptor IR (D5)
+          </div>
+        </section>
+
+                <!-- IR -->
         <section class="card">
           <header>IR</header>
           <div class="item">
@@ -137,7 +152,9 @@
             <span id="ledState" class="value">--</span>
           </div>
           <div class="item">
-            <button class="btn-led btn-block" onclick="toggleLED()">Alternar LED</button>
+            <button class="btn-led btn-block" onclick="toggleLED()">
+              Alternar LED
+            </button>
           </div>
         </section>
 

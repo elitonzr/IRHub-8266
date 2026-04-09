@@ -25,7 +25,7 @@ String clientID = "";
 
 // -------- Build --------
 const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
-const String buildVersion = "0.5.0";
+const String buildVersion = "0.5.2";
 
 // -------- Password --------
 char PasswordPortal[16] = "12345678";
@@ -33,4 +33,114 @@ char Password[16];
 
 void initPassword() {
   snprintf(Password, sizeof(Password), "%08X", ESP.getChipId());
+}
+
+// -------- IR --------
+IR_ReceptorMode IR_ReceptorEstado = IR_ALL;
+
+// -------- Controle do LED sem delay --------
+LedControl ledCtrl = {0};
+
+// -------- FEEDBACK MODE --------
+const char* getLedModeString() {
+  switch (ledCtrl.modo) {
+    case LED_IR: return "LED_IR";
+    case LED_IDLE: return "LED_IDLE";
+    case LED_WIFI_DISCONNECTED: return "LED_WIFI_DISCONNECTED";
+    case LED_WIFI_CONNECTING: return "LED_WIFI_CONNECTING";
+    case LED_MQTT_DISCONNECTED: return "LED_MQTT_DISCONNECTED";
+    case LED_OTA: return "LED_OTA";
+    case LED_FEEDBACK: return "LED_FEEDBACK";
+    default: return "DESCONHECIDO";
+  }
+}
+
+// -------- SET MODE --------
+void setLedMode(LedMode modo) {
+  if (ledCtrl.modo == LED_FEEDBACK) return;  // não sobrescreve feedback
+  ledCtrl.modo = modo;
+}
+
+// -------- FEEDBACK --------
+void startFeedbackLED(int vezes, int intervalo) {
+  ledCtrl.vezes = vezes * 2;
+  ledCtrl.intervalo = intervalo;
+  ledCtrl.contador = 0;
+  ledCtrl.estado = false;
+  ledCtrl.ultimoMillis = millis();
+  ledCtrl.ativo = true;
+  ledCtrl.modo = LED_FEEDBACK;
+}
+
+// -------- LOOP --------
+void handleFeedbackLED() {
+  unsigned long agora = millis();
+
+  // 🔴 PRIORIDADE: feedback manual
+  if (ledCtrl.modo == LED_FEEDBACK) {
+
+    if (!ledCtrl.ativo) {
+      ledCtrl.modo = LED_IDLE;
+      digitalWrite(LEDA, HIGH);
+      return;
+    }
+
+    if (agora - ledCtrl.ultimoMillis >= ledCtrl.intervalo) {
+      ledCtrl.ultimoMillis = agora;
+
+      ledCtrl.estado = !ledCtrl.estado;
+      digitalWrite(LEDA, ledCtrl.estado ? LOW : HIGH);
+
+      ledCtrl.contador++;
+
+      if (ledCtrl.contador >= ledCtrl.vezes) {
+        ledCtrl.ativo = false;
+      }
+    }
+    return;
+  }
+
+  // 🟡 MODOS AUTOMÁTICOS
+  int intervalo = 1000;
+
+  switch (ledCtrl.modo) {
+
+    case LED_IR:
+      intervalo = 200;
+      break;
+
+    case LED_WIFI_DISCONNECTED:
+      intervalo = 300;  // lento
+      break;
+
+    case LED_WIFI_CONNECTING:
+      intervalo = 1000;  // mais rápido
+      break;
+
+    case LED_MQTT_DISCONNECTED:
+      intervalo = 200;
+      break;
+
+    case LED_OTA:
+      intervalo = 100;
+      break;
+
+    case LED_IDLE:
+    default:
+      digitalWrite(LEDA, HIGH);
+      return;
+  }
+
+  if (agora - ledCtrl.ultimoMillis >= intervalo) {
+    ledCtrl.ultimoMillis = agora;
+
+    ledCtrl.estado = !ledCtrl.estado;
+    digitalWrite(LEDA, ledCtrl.estado ? LOW : HIGH);
+  }
+}
+
+void setLed(bool on) {
+  ledCtrl.modo = LED_IDLE;
+  ledCtrl.estado = on;
+  digitalWrite(LEDA, on ? LOW : HIGH);
 }

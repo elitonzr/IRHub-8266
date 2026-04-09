@@ -1,5 +1,5 @@
 /************ TELNET CLI ************/
-#define TELNET_BUFFER 64
+#define TELNET_BUFFER 128
 char telnetBuffer[TELNET_BUFFER];
 
 void processTelnetCommand(char* cmd);
@@ -50,7 +50,7 @@ void processTelnetCommand(char* cmd) {
   }
 
   else if (strcmp(cmd, "led") == 0) {
-    ledState = !ledState;
+    setLed(!ledCtrl.estado);
     debugLED();
   }
 
@@ -67,6 +67,12 @@ void processTelnetCommand(char* cmd) {
 
   }
 
+  else if (strcmp(cmd, "mqtt") == 0) {
+    debugPrintln("");
+    debugMQTT();
+    debugPrintln("");
+  }
+
   else if ((strcmp(cmd, "senha") == 0) || (strcmp(cmd, "password") == 0)) {
     debugPrintln("");
     debugPassword();
@@ -79,8 +85,13 @@ void processTelnetCommand(char* cmd) {
     debugPrintln("");
   }
 
-  else if (strcmp(cmd, "irteste") == 0) {
+  else if (strcmp(cmd, "irteste") == 0 || strcmp(cmd, "irteste on") == 0) {
     IR_EmissorTeste = true;
+    MQTTsendIRConfig();
+    debugsendInfoIR();
+    wsSendInfoIR();
+  } else if (strcmp(cmd, "irteste off") == 0) {
+    IR_EmissorTeste = false;
     MQTTsendIRConfig();
     debugsendInfoIR();
     wsSendInfoIR();
@@ -95,8 +106,7 @@ void processTelnetCommand(char* cmd) {
 
   else if (strcmp(cmd, "heap") == 0) {
 
-    debugPrint("Heap livre: ");
-    debugPrintln(ESP.getFreeHeap());
+    debugPrintf("Heap livre: %u bytes\n", ESP.getFreeHeap());
   }
 
   else if (strcmp(cmd, "help") == 0) {
@@ -120,24 +130,10 @@ void debugPrint(const String& msg) {
   }
 }
 
-void debugPrint(float val) {
-  Serial.print(val);
-  if (telnetClient && telnetClient.connected()) {
-    telnetClient.print(val);
-  }
-}
-
 void debugPrintln(const String& msg) {
   Serial.println(msg);
   if (telnetClient && telnetClient.connected()) {
     telnetClient.println(msg);
-  }
-}
-
-void debugPrintln(float val) {
-  Serial.println(val);
-  if (telnetClient && telnetClient.connected()) {
-    telnetClient.println(val);
   }
 }
 
@@ -185,19 +181,20 @@ void debugHelp() {
   debugPrintln("");
   debugPrintln("========= COMANDOS DISPONIVEIS =========");
   debugPrintln("");
-  debugPrintln("  status   -> Mostra estado geral");
-  debugPrintln("  led      -> Inverte estado do LED A");
-  debugPrintln("  IR       -> Sensores IR");
-  debugPrintln("  AHT10    -> Sensor AHT10");
-  debugPrintln("  info     -> Informacoes de compilacao");
-  debugPrintln("  irteste  -> Testa emissor IR");
-  debugPrintln("  heap     -> Mostra memoria livre");
-  debugPrintln("  reboot   -> Reinicia o dispositivo");
-  debugPrintln("  help     -> Mostra esta lista");
+  debugPrintln("  status            -> Mostra estado geral");
+  debugPrintln("  led               -> Inverte estado do LED A");
+  debugPrintln("  IR                -> Sensores IR");
+  debugPrintln("  AHT10             -> Sensor AHT10");
+  debugPrintln("  mqtt              -> Status do MQTT");
+  debugPrintln("  info              -> Informacoes de compilacao");
+  debugPrintln("  irteste [on/off]  -> Ativa/desativa teste do emissor IR");
+  debugPrintln("  heap              -> Mostra memoria livre");
+  debugPrintln("  reboot            -> Reinicia o dispositivo");
+  debugPrintln("  help              -> Mostra esta lista");
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
-};
+}
 
 void debugUptime() {
   debugPrintln("================ UPTIME ================");
@@ -212,8 +209,11 @@ void debugUptime() {
 void debugLED() {
   debugPrintln("================ LED A =================");
   debugPrintln("");
-  debugPrint("  LED A: ");
-  debugPrintln(ledState ? "Ligado" : "Desligado");
+  debugPrint("  Modo: ");
+  debugPrintln(getLedModeString());
+
+  debugPrint("  Estado: ");
+  debugPrintln(ledCtrl.estado ? "Ligado" : "Desligado");
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
@@ -235,11 +235,9 @@ void debugAHT10() {
   }
 
 
-  debugPrint("AHT10: ");
-  debugPrint(temperatura);
-  debugPrint("°C\t");
-  debugPrint(umidade);
-  debugPrintln("%");
+  debugPrintf("  Temperatura : %.1f °C\n", temperatura);
+  debugPrintf("  Umidade     : %.1f %%\n", umidade);
+  debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
 }
@@ -247,47 +245,36 @@ void debugAHT10() {
 void debugsendInfoIR() {
   debugPrintln("============= IR Info ==============");
   debugPrintln("");
-
-  Serial.print("    Receptor  : GPIO ");
-  Serial.println(kRecvPin);
-  debugPrint("IR_Receptor : ");
+  debugPrintf("  Receptor  : GPIO %d\n", kRecvPin);
+  debugPrint("  IR_Receptor : ");
   debugPrintln(EstadoIRReceptor());
-
-  Serial.print("    Emissor   : GPIO ");
-  Serial.println(kIrLed);
-  debugPrint("IR_Emissor : ");
-  debugPrintln(IR_EmissorTeste);
+  debugPrintf("  Emissor   : GPIO %d\n", kIrLed);
+  debugPrint("  IR_Emissor  : ");
+  debugPrintln(IR_EmissorTeste ? "Ativo" : "Desligado");
 }
 
 void debugIR() {
   debugPrintln("============= IR Receptor ==============");
   debugPrintln("");
 
-  debugPrint("Protocol  : ");
-  debugPrint(lastIR.protocolo);
-  debugPrint(" (");
-  debugPrint(lastIR.decode_type);
-  debugPrintln(")");
+  if (!lastIR.valido) {
+    debugPrintln("  Nenhum sinal recebido ainda.");
+    debugPrintln("========================================");
+    debugPrintln("");
+    debugPrintln("");
+    return;
+  }
 
-  debugPrint("Bits      : ");
-  debugPrintln(lastIR.bits);
-
-  debugPrint("DEC       : ");
-  debugPrintln(lastIR.dec);
-
-  debugPrint("HEX       : 0x");
-  debugPrintln(lastIR.hexStr);
-
-  debugPrint("RAW Len   : ");
-  debugPrintln(lastIR.rawlen);
-
+  debugPrintf("  Protocol  : %s (%d)\n", lastIR.protocolo, lastIR.decode_type);
+  debugPrintf("  Bits      : %d\n", lastIR.bits);
+  debugPrintf("  DEC       : %u\n", lastIR.dec);
+  debugPrintf("  HEX       : %s\n", lastIR.hexStr);
+  debugPrintf("  RAW Len   : %d\n", lastIR.rawlen);
   debugPrintln("");
   debugPrintln("--- Human Readable ---");
   debugPrintln(lastIR.resultToHumanReadableBasic);
-
   debugPrintln("--- Source Code ---");
   debugPrintln(lastIR.resultToSourceCode);
-
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
@@ -304,10 +291,8 @@ void debugMQTT() {
   debugPrintln(clientID);
   debugPrint("  Tópico        : ");
   debugPrintln(myTopic + "/#");
-  debugPrint("  Sucessos      : ");
-  debugPrintln(mqttOK);
-  debugPrint("  Erros         : ");
-  debugPrintln(mqttErro);
+  debugPrintf("  Sucessos      : %d\n", mqttOK);
+  debugPrintf("  Erros         : %d\n", mqttErro);
 
   debugPrintln("  Subscriptions:");
   debugPrint("    ");

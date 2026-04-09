@@ -218,7 +218,7 @@ void MQTTsendUptime() {
 ************************************************************/
 void MQTTsendLED() {
   StaticJsonDocument<64> doc;
-  doc["state"] = lastLedState ? "ON" : "OFF";
+  doc["state"] = ledCtrl.estado ? "ON" : "OFF";
 
   char msg[64];
   size_t len = serializeJson(doc, msg, sizeof(msg));
