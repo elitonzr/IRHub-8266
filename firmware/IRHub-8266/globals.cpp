@@ -28,6 +28,7 @@ const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
 const String buildVersion = "0.5.0";
 
 // -------- Password --------
+char PasswordPortal[16] = "12345678";
 char Password[16];
 
 void initPassword() {

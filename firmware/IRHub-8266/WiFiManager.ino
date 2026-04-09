@@ -35,7 +35,7 @@ void setup_WiFiManager() {
   WiFi.hostname(hostname_buf);
 
   // ---------- CONEXÃO ----------
-  if (!wifiManager.autoConnect(hostname_buf, "12345678")) {
+  if (!wifiManager.autoConnect(hostname_buf, PasswordPortal)) {
     Serial.println("[WiFi] Falha. Reiniciando...");
     delay(1000);
     ESP.restart();
@@ -76,15 +76,14 @@ void startWiFiManagerPortal() {
   WiFi.mode(WIFI_AP_STA);
 
   // ---------- SOBE AP MANUALMENTE ----------
-  WiFi.softAP(hostname_buf, "12345678");
+  WiFi.softAP(hostname_buf, PasswordPortal);
   delay(500);  // garante subida
 
   IPAddress apIP = WiFi.softAPIP();
 
   debugPrintln("");
   debugPrintln("[WiFi] 📡 Conecte-se na rede Wi-Fi:");
-  debugPrintln(String("       SSID: ") + hostname_buf);
-  debugPrintln("       Senha: 12345678");
+  printPortalCredentials();
 
   debugPrintln("");
   debugPrintln("[WiFi] 🌐 Acesse o portal em:");
@@ -116,7 +115,7 @@ void startWiFiManagerPortal() {
     p_mqtt_server, p_mqtt_port, p_mqtt_user, p_mqtt_password, p_mqtt_enabled);
 
   // ---------- ABRE PORTAL ----------
-  if (!wifiManager.startConfigPortal(hostname_buf, "12345678")) {
+  if (!wifiManager.startConfigPortal(hostname_buf, PasswordPortal)) {
     debugPrintln("[WiFi] ⚠️ Portal fechado ou timeout");
     return;
   }
@@ -345,6 +344,14 @@ void wifi_watchdog() {
     String pass = WiFi.psk();
     WiFi.disconnect();
     delay(200);
+
+    // Reaplica IP fixo se configurado
+    IPAddress ip, gw, sn, dns(8, 8, 8, 8);
+    if (strlen(ipStr) > 6 && ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
+      WiFi.config(ip, gw, sn, dns);
+      debugPrintln("[WiFi] IP fixo reaplicado");
+    }
+
     if (ssid.length() > 0) {
       WiFi.begin(ssid, pass);
     } else {
@@ -493,4 +500,13 @@ void feedbackLED(int vezes, int intervalo) {
     digitalWrite(LEDA, HIGH);
     delay(intervalo);
   }
+}
+
+void printPortalCredentials() {
+  debugPrintln("=============== Portal AUTH ===============");
+  debugPrintln(" ");
+  debugPrintln(String("  SSID: ") + hostname_buf);
+  debugPrintln(String("  Senha: ") + PasswordPortal);
+  debugPrintln(" ");
+  debugPrintln("========================================");
 }

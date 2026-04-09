@@ -269,10 +269,6 @@ void MQTTsendIRConfig() {
   JsonObject received = doc.createNestedObject("received");
   received["protocol"] = EstadoIRReceptor();
 
-  // StaticJsonDocument<128> doc;
-  // doc["receptor_protocolo"] = EstadoIRReceptor();
-  // doc["emissor_teste"] = IR_EmissorTeste;
-
   char msg[128];
   size_t len = serializeJson(doc, msg, sizeof(msg));
   if (!mqtt_client.connected()) return;

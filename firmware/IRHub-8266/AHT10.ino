@@ -23,8 +23,21 @@ void setup_AHT10() {
 }
 
 void lerSensorAHT10() {
-
   if (estadoAHT10 != AHT10_ONLINE) {
+
+    static unsigned long lastRetry = 0;
+    const unsigned long retryInterval = 60000;  // tenta reconectar a cada 60s
+
+    if (millis() - lastRetry < retryInterval) return;
+    lastRetry = millis();
+
+    debugPrintln("[AHT10] Tentando reinicializar sensor...");
+    if (aht.begin(&Wire)) {
+      estadoAHT10 = AHT10_ONLINE;
+      debugPrintln("[AHT10] Sensor recuperado!");
+    } else {
+      debugPrintln("[AHT10] Falha na reinicialização.");
+    }
     return;
   }
 

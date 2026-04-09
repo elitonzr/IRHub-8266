@@ -162,6 +162,8 @@ void debugPassword() {
   debugPrintln(" ");
   printOTACredentials();
   debugPrintln("");
+  printPortalCredentials();
+  debugPrintln("");
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");

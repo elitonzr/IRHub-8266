@@ -247,12 +247,6 @@ function updateIRReceptorWS(data) {
   saveIRToHistory(entry);
 }
 
-// function updateIRReceptorWS(data) {
-//   flashIRDot();
-//   const entry = { ...data, timestamp: new Date().toLocaleTimeString() };
-//   saveIRToHistory(entry);
-// }
-
 function flashIRDot() {
   const dot = document.getElementById("irDot");
   if (!dot) return;
@@ -413,32 +407,6 @@ async function loadRemotes() {
     console.error("Erro ao carregar remotes:", e);
   }
 }
-
-// async function loadRemotes() {
-//   const select = document.getElementById("remoteSelect");
-//   if (!select) return;
-//   try {
-//     const res = await fetch("/remotes.json");
-//     remotes = await res.json();
-//     select.innerHTML = "";
-//     Object.keys(remotes).forEach((model) => {
-//       const opt = document.createElement("option");
-//       opt.value = model;
-//       opt.textContent = model;
-//       select.appendChild(opt);
-//     });
-//     // Restaura modelo salvo, ou usa o primeiro disponível
-//     const saved =
-//       localStorage.getItem("selectedRemote") || state.selectedRemote;
-//     if (saved && remotes[saved]) {
-//       select.value = saved;
-//       state.selectedRemote = saved;
-//     }
-//     loadButtons(select.value);
-//   } catch (e) {
-//     console.error("Erro ao carregar remotes:", e);
-//   }
-// }
 
 function loadButtons(model) {
   const container = document.getElementById("buttonsContainer");

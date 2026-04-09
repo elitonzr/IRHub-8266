@@ -29,6 +29,7 @@ extern const String buildVersion;
 
 // -------- Password --------
 extern char Password[16];
+extern char PasswordPortal[16];
 void initPassword();
 
 // -------- IR --------

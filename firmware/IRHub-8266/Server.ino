@@ -32,26 +32,6 @@ void printHttpCredentials() {
 }
 
 // ==============================
-// PAGE_MAIN — fallback sem LittleFS
-// ==============================
-const char PAGE_MAIN[] PROGMEM = R"rawliteral(
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IRHub-8266</title>
-</head>
-<body>
-  <h1>IRHub-8266</h1>
-  <p>Arquivos do LittleFS nao encontrados.</p>
-  <p>Faca o upload de index.html, style.css e app.js em <a href="/files">/files</a>.</p>
-  <p>Acesse <a href="/files">/files</a> para verificar os arquivos gravados.</p>
-</body>
-</html>
-)rawliteral";
-
-// ==============================
 // FILES_PAGE — upload
 // ==============================
 const char FILES_PAGE[] PROGMEM = R"rawliteral(
@@ -156,7 +136,8 @@ void setup_server() {
       server.streamFile(f, "text/html");
       f.close();
     } else {
-      server.send_P(200, "text/html", PAGE_MAIN);
+      redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
+      ;
     }
   });
 
@@ -172,7 +153,8 @@ void setup_server() {
         server.streamFile(f, "text/html");
         f.close();
       } else {
-        server.send_P(200, "text/html", PAGE_MAIN);
+        redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
+        ;
       }
     }
   });
@@ -189,7 +171,8 @@ void setup_server() {
         server.streamFile(f, "text/html");
         f.close();
       } else {
-        server.send_P(200, "text/html", PAGE_MAIN);
+        redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
+        ;
       }
     }
   });
@@ -356,7 +339,7 @@ void setup_server() {
       return;
     }
 
-    server.send(404, "text/plain", "404: Not Found - " + path);
+    redirectToFiles("Pagina não encontrada. Faça o upload dos arquivos do frontend.");
   });
 
   server.begin();
@@ -413,6 +396,22 @@ void handleUpload() {
         break;
       }
   }
+}
+
+void redirectToFiles(const char* motivo) {
+  String html = F("<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+                  "<meta http-equiv='refresh' content='3;url=/files'>"
+                  "<title>IRHub-8266</title></head><body style='"
+                  "font-family:sans-serif;background:#111827;color:#f9fafb;"
+                  "display:flex;flex-direction:column;align-items:center;"
+                  "justify-content:center;height:100vh;gap:16px;'>"
+                  "<h2>⚠️ IRHub-8266</h2>"
+                  "<p>");
+  html += motivo;
+  html += F("</p><p>Redirecionando para o <a href='/files' "
+            "style='color:#60a5fa'>File Manager</a>...</p>"
+            "</body></html>");
+  server.send(200, "text/html", html);
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
