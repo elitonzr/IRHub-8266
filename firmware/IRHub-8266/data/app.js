@@ -431,12 +431,10 @@ function renderIRHistory() {
     // Double-click: carrega no form de envio manual
     li.ondblclick = () => {
       const proto = document.getElementById("irProto");
-      const format = document.getElementById("irFormat");
       const code = document.getElementById("irCode");
       const bits = document.getElementById("irBits");
 
       if (proto) proto.value = d.protocol;
-      if (format) format.value = "hex";
       if (code) {
         code.value = d.hex;
         code.placeholder = "Código hex (ex: 0x20DF10EF)";
@@ -753,20 +751,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setText("uptime", "0d 00h 00m 00s");
   renderIRHistory();
-
-  // Listener do select de formato IR (hex/dec) — só existe em index.html
-  const irFormat = document.getElementById("irFormat");
-  if (irFormat) {
-    irFormat.addEventListener("change", function () {
-      const input = document.getElementById("irCode");
-      if (!input) return;
-      input.placeholder =
-        this.value === "dec"
-          ? "Código decimal (ex: 551489775)"
-          : "Código hex (ex: 0x20DF10EF)";
-      input.value = "";
-    });
-  }
 
   // Listener do select de modelo de controle remoto — só existe em index.html
   const select = document.getElementById("remoteSelect");

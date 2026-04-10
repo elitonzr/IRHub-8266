@@ -57,6 +57,13 @@ const char FILES_PAGE[] PROGMEM = R"rawliteral(
   </div>
 </nav>
 
+<div class="drawer-overlay" id="drawerOverlay" onclick="drawerClose()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-title">IRHub-8266</div>
+  <a href="/">&#x1F3E0; Home</a>
+  <a href="/system">&#x1F916; System</a>
+</div>
+
 <div class="page-content">
 
 
@@ -482,7 +489,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         if (strcmp(cmd, "setIRReceptor") == 0) {
           int mode = doc["mode"] | -1;
-          if (mode >= 0 && mode <= 4) {
+          if (mode >= 0 && mode <= 11) {
             IR_ReceptorSET(mode);
           }
           return;

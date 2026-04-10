@@ -108,18 +108,25 @@ void processTelnetCommand(char* cmd) {
   else if (strncmp(cmd, "ir receptor ", 12) == 0) {
     const char* modo = cmd + 12;
     int n = -1;
-    if (strcmp(modo, "desabilitado") == 0) n = 0;
-    else if (strcmp(modo, "nec") == 0) n = 1;
-    else if (strcmp(modo, "nikai") == 0) n = 2;
-    else if (strcmp(modo, "nec nikai") == 0) n = 3;
-    else if (strcmp(modo, "tudo") == 0) n = 4;
+    if (strcmp(modo, "all") == 0)      n = 0;
+    else if (strcmp(modo, "known") == 0)    n = 1;
+    else if (strcmp(modo, "disabled") == 0) n = 2;
+    else if (strcmp(modo, "nec") == 0)      n = 3;
+    else if (strcmp(modo, "sony") == 0)     n = 4;
+    else if (strcmp(modo, "rc5") == 0)      n = 5;
+    else if (strcmp(modo, "rc6") == 0)      n = 6;
+    else if (strcmp(modo, "samsung") == 0)  n = 7;
+    else if (strcmp(modo, "nikai") == 0)    n = 8;
+    else if (strcmp(modo, "lg") == 0)       n = 9;
+    else if (strcmp(modo, "jvc") == 0)      n = 10;
+    else if (strcmp(modo, "whynter") == 0)  n = 11;
 
     if (n >= 0) {
       IR_ReceptorSET(n);
       debugPrint("  IR Receptor: ");
       debugPrintln(EstadoIRReceptor());
     } else {
-      debugPrintln("  Modos válidos: desabilitado, nec, nikai, nec nikai, tudo");
+      debugPrintln("  Modos válidos: all, known, disabled, nec, sony, rc5, rc6, samsung, nikai, lg, jvc, whynter");
     }
   }
 

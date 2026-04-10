@@ -40,8 +40,21 @@ void setup_IR() {
 // com base no modo de recepção configurado.
 bool irAceitar(decode_type_t tipo) {
   if (IR_ReceptorEstado == IR_PROTOCOL_ALL) return true;
-  if (tipo == NEC && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_PROTOCOL_KNOWN)) return true;
-  if (tipo == NIKAI && (IR_ReceptorEstado == IR_PROTOCOL_NIKAI || IR_ReceptorEstado == IR_PROTOCOL_KNOWN)) return true;
+
+  // Modo KNOWN: aceita todos os protocolos conhecidos (não-UNKNOWN)
+  if (IR_ReceptorEstado == IR_PROTOCOL_KNOWN) return (tipo != UNKNOWN);
+
+  // Modos específicos: aceita apenas o protocolo configurado
+  if (tipo == NEC     && IR_ReceptorEstado == IR_PROTOCOL_NEC)     return true;
+  if (tipo == SONY    && IR_ReceptorEstado == IR_PROTOCOL_SONY)    return true;
+  if (tipo == RC5     && IR_ReceptorEstado == IR_PROTOCOL_RC5)     return true;
+  if (tipo == RC6     && IR_ReceptorEstado == IR_PROTOCOL_RC6)     return true;
+  if (tipo == SAMSUNG && IR_ReceptorEstado == IR_PROTOCOL_SAMSUNG) return true;
+  if (tipo == NIKAI   && IR_ReceptorEstado == IR_PROTOCOL_NIKAI)   return true;
+  if (tipo == LG      && IR_ReceptorEstado == IR_PROTOCOL_LG)      return true;
+  if (tipo == JVC     && IR_ReceptorEstado == IR_PROTOCOL_JVC)     return true;
+  if (tipo == WHYNTER && IR_ReceptorEstado == IR_PROTOCOL_WHYNTER) return true;
+
   return false;
 }
 
@@ -87,7 +100,7 @@ void myIRdecoder() {
 // Define o modo de recepção IR (0–4).
 // Persiste o novo estado e notifica WS e MQTT.
 void IR_ReceptorSET(int n) {
-  if (n < 0 || n > 4) return;
+  if (n < 0 || n > 11) return;
   IR_ReceptorEstado = static_cast<IR_ReceptorMode>(n);
   saveConfig();
   MQTTsendIRConfig();
@@ -103,9 +116,9 @@ const char* EstadoIRReceptor() {
     case IR_PROTOCOL_DISABLED: return "DISABLED";
     case IR_PROTOCOL_NEC: return "NEC";
     case IR_PROTOCOL_SONY: return "SONY";
-    case IR_PROTOCOL_RC5: return "NEC";
-    case IR_PROTOCOL_RC6: return "NEC";
-    case IR_PROTOCOL_SAMSUNG: return "NEC";
+    case IR_PROTOCOL_RC5: return "RC5";
+    case IR_PROTOCOL_RC6: return "RC6";
+    case IR_PROTOCOL_SAMSUNG: return "SAMSUNG";
     case IR_PROTOCOL_NIKAI: return "NIKAI";
     case IR_PROTOCOL_LG: return "LG";
     case IR_PROTOCOL_JVC: return "JVC";

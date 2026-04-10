@@ -108,17 +108,18 @@ void processaComando(byte* payload, unsigned int length) {
 
     int modo = -1;
 
-    if (strcasecmp(mode, "DESABILITADO") == 0) {
-      modo = 0;
-    } else if (strcasecmp(mode, "NEC") == 0) {
-      modo = 1;
-    } else if (strcasecmp(mode, "NIKAI") == 0) {
-      modo = 2;
-    } else if (strcasecmp(mode, "NEC e NIKAI") == 0) {
-      modo = 3;
-    } else if (strcasecmp(mode, "TUDO") == 0) {
-      modo = 4;
-    }
+    if (strcasecmp(mode, "ALL") == 0)          modo = 0;
+    else if (strcasecmp(mode, "KNOWN") == 0)   modo = 1;
+    else if (strcasecmp(mode, "DISABLED") == 0) modo = 2;
+    else if (strcasecmp(mode, "NEC") == 0)     modo = 3;
+    else if (strcasecmp(mode, "SONY") == 0)    modo = 4;
+    else if (strcasecmp(mode, "RC5") == 0)     modo = 5;
+    else if (strcasecmp(mode, "RC6") == 0)     modo = 6;
+    else if (strcasecmp(mode, "SAMSUNG") == 0) modo = 7;
+    else if (strcasecmp(mode, "NIKAI") == 0)   modo = 8;
+    else if (strcasecmp(mode, "LG") == 0)      modo = 9;
+    else if (strcasecmp(mode, "JVC") == 0)     modo = 10;
+    else if (strcasecmp(mode, "WHYNTER") == 0) modo = 11;
 
     if (modo != -1) {
       IR_ReceptorSET(modo);
