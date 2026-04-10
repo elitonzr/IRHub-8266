@@ -12,6 +12,13 @@
   </head>
 
   <body>
+    <!-- OVERLAY RECONECTANDO -->
+    <div id="wsOverlay">
+      <div class="ws-overlay-icon">⚡</div>
+      <div class="ws-overlay-title">Reconectando...</div>
+      <div class="ws-overlay-subtitle">Aguarde a conexão com o dispositivo</div>
+    </div>
+
     <!-- NAVBAR -->
     <nav class="navbar">
       <button class="navbar-burger" onclick="drawerOpen()" aria-label="Menu">
@@ -104,6 +111,9 @@
             Server: <span id="mqttServer" class="value">--</span>
           </div>
           <div class="item">
+            Port: <span id="mqttPort" class="value">--</span>
+          </div>
+          <div class="item">
             Client ID: <span id="mqttClient" class="value">--</span>
           </div>
           <div class="item">
@@ -135,7 +145,7 @@
           </div>
         </section>
 
-                <!-- IR -->
+        <!-- IR -->
         <section class="card">
           <header>IR</header>
           <div class="item">

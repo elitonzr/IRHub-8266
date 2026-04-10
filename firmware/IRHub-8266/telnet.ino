@@ -35,7 +35,7 @@ void handleTelnet() {
 
   processTelnetCommand(telnetBuffer);
 
-  debugPrint("> ");  // Prompt estilo CLI
+  debugPrint("> ");
 }
 
 void processTelnetCommand(char* cmd) {
@@ -43,6 +43,7 @@ void processTelnetCommand(char* cmd) {
   if (strcmp(cmd, "status") == 0) {
     debugPrintln(" ");
     debugUptime();
+    debugNetwork();
     debugLED();
     debugAHT10();
     debugIR();
@@ -73,6 +74,12 @@ void processTelnetCommand(char* cmd) {
     debugPrintln("");
   }
 
+  else if (strcmp(cmd, "network") == 0) {
+    debugPrintln("");
+    debugNetwork();
+    debugPrintln("");
+  }
+
   else if ((strcmp(cmd, "senha") == 0) || (strcmp(cmd, "password") == 0)) {
     debugPrintln("");
     debugPassword();
@@ -90,11 +97,30 @@ void processTelnetCommand(char* cmd) {
     MQTTsendIRConfig();
     debugsendInfoIR();
     wsSendInfoIR();
+
   } else if (strcmp(cmd, "irteste off") == 0) {
     IR_EmissorTeste = false;
     MQTTsendIRConfig();
     debugsendInfoIR();
     wsSendInfoIR();
+  }
+
+  else if (strncmp(cmd, "ir receptor ", 12) == 0) {
+    const char* modo = cmd + 12;
+    int n = -1;
+    if (strcmp(modo, "desabilitado") == 0) n = 0;
+    else if (strcmp(modo, "nec") == 0) n = 1;
+    else if (strcmp(modo, "nikai") == 0) n = 2;
+    else if (strcmp(modo, "nec nikai") == 0) n = 3;
+    else if (strcmp(modo, "tudo") == 0) n = 4;
+
+    if (n >= 0) {
+      IR_ReceptorSET(n);
+      debugPrint("  IR Receptor: ");
+      debugPrintln(EstadoIRReceptor());
+    } else {
+      debugPrintln("  Modos válidos: desabilitado, nec, nikai, nec nikai, tudo");
+    }
   }
 
   else if (strcmp(cmd, "reboot") == 0) {
@@ -181,16 +207,18 @@ void debugHelp() {
   debugPrintln("");
   debugPrintln("========= COMANDOS DISPONIVEIS =========");
   debugPrintln("");
-  debugPrintln("  status            -> Mostra estado geral");
-  debugPrintln("  led               -> Inverte estado do LED A");
-  debugPrintln("  IR                -> Sensores IR");
-  debugPrintln("  AHT10             -> Sensor AHT10");
-  debugPrintln("  mqtt              -> Status do MQTT");
-  debugPrintln("  info              -> Informacoes de compilacao");
-  debugPrintln("  irteste [on/off]  -> Ativa/desativa teste do emissor IR");
-  debugPrintln("  heap              -> Mostra memoria livre");
-  debugPrintln("  reboot            -> Reinicia o dispositivo");
-  debugPrintln("  help              -> Mostra esta lista");
+  debugPrintln("  status              -> Mostra estado geral");
+  debugPrintln("  led                 -> Inverte estado do LED A");
+  debugPrintln("  IR                  -> Sensores IR");
+  debugPrintln("  ir receptor [modo]  -> Define protocolo do receptor IR");
+  debugPrintln("  AHT10               -> Sensor AHT10");
+  debugPrintln("  mqtt                -> Status do MQTT");
+  debugPrintln("  network             -> Status da rede WiFi");
+  debugPrintln("  info                -> Informacoes de compilacao");
+  debugPrintln("  irteste [on/off]    -> Ativa/desativa teste do emissor IR");
+  debugPrintln("  heap                -> Mostra memoria livre");
+  debugPrintln("  reboot              -> Reinicia o dispositivo");
+  debugPrintln("  help                -> Mostra esta lista");
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
@@ -234,7 +262,6 @@ void debugAHT10() {
     return;
   }
 
-
   debugPrintf("  Temperatura : %.1f °C\n", temperatura);
   debugPrintf("  Umidade     : %.1f %%\n", umidade);
   debugPrintln("========================================");
@@ -243,14 +270,18 @@ void debugAHT10() {
 }
 
 void debugsendInfoIR() {
-  debugPrintln("============= IR Info ==============");
+  debugPrintln("=============== IR Info ================");
   debugPrintln("");
-  debugPrintf("  Receptor  : GPIO %d\n", kRecvPin);
-  debugPrint("  IR_Receptor : ");
+  debugPrintf("  Receptor   : GPIO %d\n", kRecvPin);
+  debugPrint("  Modo       : ");
   debugPrintln(EstadoIRReceptor());
-  debugPrintf("  Emissor   : GPIO %d\n", kIrLed);
-  debugPrint("  IR_Emissor  : ");
+  debugPrintln("");
+  debugPrintf("  Emissor    : GPIO %d\n", kIrLed);
+  debugPrint("  Teste      : ");
   debugPrintln(IR_EmissorTeste ? "Ativo" : "Desligado");
+  debugPrintln("========================================");
+  debugPrintln("");
+  debugPrintln("");
 }
 
 void debugIR() {
@@ -275,6 +306,20 @@ void debugIR() {
   debugPrintln(lastIR.resultToHumanReadableBasic);
   debugPrintln("--- Source Code ---");
   debugPrintln(lastIR.resultToSourceCode);
+  debugPrintln("========================================");
+  debugPrintln("");
+  debugPrintln("");
+}
+
+void debugNetwork() {
+  debugPrintln("================ NETWORK ===============");
+  debugPrintln("");
+  debugPrintf("  SSID      : %s\n", WiFi.SSID().c_str());
+  debugPrintf("  IP        : %s\n", WiFi.localIP().toString().c_str());
+  debugPrintf("  Gateway   : %s\n", WiFi.gatewayIP().toString().c_str());
+  debugPrintf("  Subnet    : %s\n", WiFi.subnetMask().toString().c_str());
+  debugPrintf("  RSSI      : %d dBm\n", WiFi.RSSI());
+  debugPrintf("  mDNS      : http://%s.local\n", hostname_buf);
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");

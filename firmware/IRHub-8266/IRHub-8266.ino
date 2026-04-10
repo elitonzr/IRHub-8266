@@ -124,6 +124,9 @@ IRLastData lastIR = {
   false  // valido
 };
 
+// Auxiliares
+boolean enviandoCod = false;      // Sinalizador para evitar recepção de IR durante transmissão.
+boolean IR_EmissorTeste = false;  // executa teste do emissor
 
 /************ AHT10 ************/
 Adafruit_AHTX0 aht;  // Endereço I2C 0x38
@@ -137,10 +140,6 @@ enum AHT10State {
 };
 
 AHT10State estadoAHT10 = AHT10_OFFLINE;  // Flag para indicar que sensor está AHT10 conectado
-
-// Auxiliares
-boolean enviandoCod = false;      // Sinalizador para evitar recepção de IR durante transmissão.
-boolean IR_EmissorTeste = false;  // executa teste do emissor
 
 /************ SETUP ************/
 void setup() {

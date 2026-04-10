@@ -11,7 +11,6 @@
         "bits": 32
       },
       { "name": "null", "type": "space" },
-
       {
         "name": "Input",
         "type": "button",
@@ -30,6 +29,7 @@
         "code": "0x20DF0FF0",
         "bits": 32
       },
+
       {
         "name": "Ratio",
         "type": "button",
@@ -39,6 +39,7 @@
         "code": "0x20DF9E61",
         "bits": 32
       },
+
       {
         "name": "Energy",
         "type": "button",
@@ -48,37 +49,10 @@
         "code": "0x20DFA956",
         "bits": 32
       },
-      {
-        "name": "List",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NEC",
-        "code": "0x20DFCA35",
-        "bits": 32
-      },
-      {
-        "name": "Vol-",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NEC",
-        "code": "0x20DFC03F",
-        "bits": 32
-      },
-      {
-        "name": "Vol+",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NEC",
-        "code": "0x20DF40BF",
-        "bits": 32
-      },
 
       { "name": "null", "type": "space" },
       { "name": "null", "type": "space" },
-
+      { "name": "null", "type": "space" },
       {
         "name": "1",
         "type": "button",
@@ -161,6 +135,15 @@
         "bits": 32
       },
       {
+        "name": "List",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NEC",
+        "code": "0x20DFCA35",
+        "bits": 32
+      },
+      {
         "name": "0",
         "type": "button",
         "background": "333",
@@ -169,7 +152,78 @@
         "code": "0x20DF08F7",
         "bits": 32
       },
+      {
+        "name": "Q.View",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NEC",
+        "code": "0x20DF58A7",
+        "bits": 32
+      },
+      { "name": "null", "type": "space" },
+      { "name": "null", "type": "space" },
+      { "name": "null", "type": "space" },
+      {
+        "name": "Vol+",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NEC",
+        "code": "0x20DF40BF",
+        "bits": 32
+      },
 
+      {
+        "name": "Settings",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NEC",
+        "code": "0x20DFC23D",
+        "bits": 32
+      },
+      {
+        "name": "P+",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NEC",
+        "code": "0x20DF00FF",
+        "bits": 32
+      },
+
+      {
+        "name": "Vol-",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NEC",
+        "code": "0x20DFC03F",
+        "bits": 32
+      },
+      {
+        "name": "Mute",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NEC",
+        "code": "0x20DF906F",
+        "bits": 32
+      },
+
+      {
+        "name": "P-",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NEC",
+        "code": "0x20DF807F",
+        "bits": 32
+      },
+      { "name": "null", "type": "space" },
+      { "name": "null", "type": "space" },
+      { "name": "null", "type": "space" },
       { "name": "null", "type": "space" },
 
       {
@@ -221,16 +275,8 @@
       },
 
       { "name": "null", "type": "space" },
-
-      {
-        "name": "Exit",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NEC",
-        "code": "0x20DFDA25",
-        "bits": 32
-      },
+      { "name": "null", "type": "space" },
+      { "name": "null", "type": "space" },
       { "name": "null", "type": "space" },
       {
         "name": "Back",
@@ -239,71 +285,6 @@
         "color": "fff",
         "protocol": "NEC",
         "code": "0x20DF14EB",
-        "bits": 32
-      },
-      {
-        "name": "Q.View",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NEC",
-        "code": "0x20DF58A7",
-        "bits": 32
-      },
-      {
-        "name": "Q.Menu",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NEC",
-        "code": "0x20DFA25D",
-        "bits": 32
-      },
-
-      {
-        "name": "Mute",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NEC",
-        "code": "0x20DF906F",
-        "bits": 32
-      },
-      {
-        "name": "P+",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NEC",
-        "code": "0x20DF00FF",
-        "bits": 32
-      },
-      {
-        "name": "P-",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NEC",
-        "code": "0x20DF807F",
-        "bits": 32
-      },
-      {
-        "name": "Settings",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NEC",
-        "code": "0x20DFC23D",
-        "bits": 32
-      },
-
-      {
-        "name": "Backward",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NEC",
-        "code": "0x20DFF10E",
         "bits": 32
       },
       {
@@ -316,12 +297,42 @@
         "bits": 32
       },
       {
+        "name": "Exit",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NEC",
+        "code": "0x20DFDA25",
+        "bits": 32
+      },
+
+      {
+        "name": "Q.Menu",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NEC",
+        "code": "0x20DFA25D",
+        "bits": 32
+      },
+
+      {
         "name": "Forward",
         "type": "button",
         "background": "333",
         "color": "fff",
         "protocol": "NEC",
         "code": "0x20DF718E",
+        "bits": 32
+      },
+
+      {
+        "name": "Backward",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NEC",
+        "code": "0x20DFF10E",
         "bits": 32
       },
 
@@ -358,6 +369,17 @@
   "TCL": {
     "buttons": [
       {
+        "name": "MUTE",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "code": "0xC0F3F"
+      },
+      { "name": "null", "type": "space" },
+
+      {
         "name": "POWER",
         "type": "button",
         "background": "cf5656",
@@ -366,7 +388,6 @@
         "bits": 24,
         "code": "0xD5F2A"
       },
-      { "name": "null", "type": "space" },
 
       {
         "name": "SOURCE",
@@ -377,15 +398,7 @@
         "bits": 24,
         "code": "0x5CFA3"
       },
-      {
-        "name": "CH +",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NIKAI",
-        "bits": 24,
-        "code": "0xD2F2D"
-      },
+      { "name": "null", "type": "space" },
       {
         "name": "LIST",
         "type": "button",
@@ -395,6 +408,21 @@
         "bits": 24,
         "code": "0x9EF61"
       },
+      { "name": "null", "type": "space" },
+      { "name": "null", "type": "space" },
+      { "name": "null", "type": "space" },
+
+      {
+        "name": "CH +",
+        "type": "button",
+        "background": "333",
+        "color": "fff",
+        "protocol": "NIKAI",
+        "bits": 24,
+        "code": "0xD2F2D"
+      },
+      { "name": "null", "type": "space" },
+
       {
         "name": "VOL+",
         "type": "button",
@@ -413,15 +441,8 @@
         "bits": 24,
         "code": "0xD3F2C"
       },
-      {
-        "name": "MUTE",
-        "type": "button",
-        "background": "333",
-        "color": "fff",
-        "protocol": "NIKAI",
-        "bits": 24,
-        "code": "0xC0F3F"
-      },
+      { "name": "null", "type": "space" },
+
       {
         "name": "VOL-",
         "type": "button",
@@ -432,6 +453,9 @@
         "code": "0xD1F2E"
       },
 
+      { "name": "null", "type": "space" },
+      { "name": "null", "type": "space" },
+      { "name": "null", "type": "space" },
       { "name": "null", "type": "space" },
 
       {
@@ -482,6 +506,9 @@
         "code": "0xA7F58"
       },
 
+      { "name": "null", "type": "space" },
+      { "name": "null", "type": "space" },
+      { "name": "null", "type": "space" },
       { "name": "null", "type": "space" },
 
       {

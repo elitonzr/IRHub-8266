@@ -694,6 +694,7 @@ void wsSendMQTT() {
   doc["type"] = "mqtt";
   doc["enabled"] = mqttEnabled();
   doc["server"] = mqtt_server;
+  doc["port"] = mqtt_port;
   doc["client_id"] = clientID;
   doc["topic_main"] = myTopic + "/#";
   doc["status"] = mqtt_client.connected();

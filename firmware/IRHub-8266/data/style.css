@@ -254,6 +254,34 @@ progress {
   font-weight: 600;
 }
 
+/* ---------------- WS OVERLAY ---------------- */
+#wsOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #f9fafb;
+}
+
+#wsOverlay .ws-overlay-icon {
+  font-size: 32px;
+}
+
+#wsOverlay .ws-overlay-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+#wsOverlay .ws-overlay-subtitle {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
 /* ---------------- CONTENT ---------------- */
 .page-content {
   padding: 24px 20px;

@@ -34,11 +34,18 @@ void initPassword();
 
 // -------- IR --------
 enum IR_ReceptorMode {
-  IR_DESABILITADO,        // Não envia nada.
-  IR_PROTOCOL_NEC,        // Somente NEC.
-  IR_PROTOCOL_NIKAI,      // Somente NIKAI.
-  IR_PROTOCOL_NEC_NIKAI,  // NEC e NIKAI.
-  IR_ALL                  // Tudo.
+  IR_PROTOCOL_ALL,       // Envio de qualquer código
+  IR_PROTOCOL_KNOWN,     // Envio somente de protocolos conhecidos
+  IR_PROTOCOL_DISABLED,  // Envio desabilitado
+  IR_PROTOCOL_NEC,
+  IR_PROTOCOL_SONY,
+  IR_PROTOCOL_RC5,
+  IR_PROTOCOL_RC6,
+  IR_PROTOCOL_SAMSUNG,
+  IR_PROTOCOL_NIKAI,
+  IR_PROTOCOL_LG,
+  IR_PROTOCOL_JVC,
+  IR_PROTOCOL_WHYNTER,
 };
 
 extern IR_ReceptorMode IR_ReceptorEstado;

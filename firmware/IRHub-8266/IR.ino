@@ -39,9 +39,9 @@ void setup_IR() {
 // Verifica se o protocolo recebido deve ser aceito
 // com base no modo de recepção configurado.
 bool irAceitar(decode_type_t tipo) {
-  if (IR_ReceptorEstado == IR_ALL) return true;
-  if (tipo == NEC && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_PROTOCOL_NEC_NIKAI)) return true;
-  if (tipo == NIKAI && (IR_ReceptorEstado == IR_PROTOCOL_NIKAI || IR_ReceptorEstado == IR_PROTOCOL_NEC_NIKAI)) return true;
+  if (IR_ReceptorEstado == IR_PROTOCOL_ALL) return true;
+  if (tipo == NEC && (IR_ReceptorEstado == IR_PROTOCOL_NEC || IR_ReceptorEstado == IR_PROTOCOL_KNOWN)) return true;
+  if (tipo == NIKAI && (IR_ReceptorEstado == IR_PROTOCOL_NIKAI || IR_ReceptorEstado == IR_PROTOCOL_KNOWN)) return true;
   return false;
 }
 
@@ -69,7 +69,7 @@ void myIRdecoder() {
   lastIRTime = now;
 
   // Registra sinal se receptor estiver ativo e protocolo for aceito
-  if (IR_ReceptorEstado != IR_DESABILITADO && irAceitar(results.decode_type)) {
+  if (IR_ReceptorEstado != IR_PROTOCOL_DISABLED && irAceitar(results.decode_type)) {
     startFeedbackLED(1, 200);
 
     lastIR_Receptor();
@@ -98,12 +98,19 @@ void IR_ReceptorSET(int n) {
 // Retorna o nome do modo de recepção atual como string.
 const char* EstadoIRReceptor() {
   switch (IR_ReceptorEstado) {
-    case IR_DESABILITADO: return "DESABILITADO";
+    case IR_PROTOCOL_ALL: return "ALL";
+    case IR_PROTOCOL_KNOWN: return "KNOWN";
+    case IR_PROTOCOL_DISABLED: return "DISABLED";
     case IR_PROTOCOL_NEC: return "NEC";
+    case IR_PROTOCOL_SONY: return "SONY";
+    case IR_PROTOCOL_RC5: return "NEC";
+    case IR_PROTOCOL_RC6: return "NEC";
+    case IR_PROTOCOL_SAMSUNG: return "NEC";
     case IR_PROTOCOL_NIKAI: return "NIKAI";
-    case IR_PROTOCOL_NEC_NIKAI: return "NEC e NIKAI";
-    case IR_ALL: return "TUDO";
-    default: return "DESCONHECIDO";
+    case IR_PROTOCOL_LG: return "LG";
+    case IR_PROTOCOL_JVC: return "JVC";
+    case IR_PROTOCOL_WHYNTER: return "WHYNTER";
+    default: return "UNKNOWN";
   }
 }
 
@@ -114,12 +121,12 @@ const char* getIRProtocol(decode_type_t type) {
     case SONY: return "SONY";
     case RC5: return "RC5";
     case RC6: return "RC6";
-    case PANASONIC: return "PANASONIC";
-    case LG: return "LG";
     case SAMSUNG: return "SAMSUNG";
+    case NIKAI: return "NIKAI";
+    case LG: return "LG";
     case JVC: return "JVC";
     case WHYNTER: return "WHYNTER";
-    case NIKAI: return "NIKAI";
+    case PANASONIC: return "PANASONIC";
     default: return "UNKNOWN";
   }
 }

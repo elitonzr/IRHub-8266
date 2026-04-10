@@ -36,7 +36,7 @@ void initPassword() {
 }
 
 // -------- IR --------
-IR_ReceptorMode IR_ReceptorEstado = IR_ALL;
+IR_ReceptorMode IR_ReceptorEstado = IR_PROTOCOL_KNOWN;
 
 // -------- Controle do LED sem delay --------
 LedControl ledCtrl = {0};

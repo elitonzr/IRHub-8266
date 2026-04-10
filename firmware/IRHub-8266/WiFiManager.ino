@@ -455,7 +455,7 @@ void loadConfig() {
     strlcpy(mqtt_password_buf, doc["mqtt_password"] | mqtt_password_buf, sizeof(mqtt_password_buf));
     strlcpy(mqtt_enabled_buf, doc["mqtt_enabled"] | mqtt_enabled_buf, sizeof(mqtt_enabled_buf));
 
-    int ir_receptor = doc["ir_receptor"] | (int)IR_ALL;
+    int ir_receptor = doc["ir_receptor"] | (int)IR_PROTOCOL_KNOWN;
     if (ir_receptor >= 0 && ir_receptor <= 4) {
       IR_ReceptorEstado = static_cast<IR_ReceptorMode>(ir_receptor);
     }
