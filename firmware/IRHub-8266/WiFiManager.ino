@@ -375,10 +375,7 @@ void wifi_watchdog() {
 
     // Reaplica IP fixo se configurado
     IPAddress ip, gw, sn, dns(8, 8, 8, 8);
-    if (strlen(ipStr) > 6 &&
-        ip.fromString(ipStr) &&
-        gw.fromString(gwStr) &&
-        sn.fromString(snStr)) {
+    if (strlen(ipStr) > 6 && ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
 
       WiFi.config(ip, gw, sn, dns);
       debugPrintln("[WiFi] IP fixo reaplicado");
@@ -455,8 +452,10 @@ void loadConfig() {
     strlcpy(mqtt_password_buf, doc["mqtt_password"] | mqtt_password_buf, sizeof(mqtt_password_buf));
     strlcpy(mqtt_enabled_buf, doc["mqtt_enabled"] | mqtt_enabled_buf, sizeof(mqtt_enabled_buf));
 
+    aht10_enabled = doc["aht10_enabled"] | false;
+
     int ir_receptor = doc["ir_receptor"] | (int)IR_PROTOCOL_KNOWN;
-    if (ir_receptor >= 0 && ir_receptor <= 4) {
+    if (ir_receptor >= 0 && ir_receptor <= 11) {
       IR_ReceptorEstado = static_cast<IR_ReceptorMode>(ir_receptor);
     }
 
@@ -482,6 +481,7 @@ void saveConfig() {
   doc["mqtt_user"] = mqtt_user_buf;
   doc["mqtt_password"] = mqtt_password_buf;
   doc["mqtt_enabled"] = mqtt_enabled_buf;
+  doc["aht10_enabled"] = aht10_enabled;
   doc["ir_receptor"] = (int)IR_ReceptorEstado;
   File file = LittleFS.open("/config.json", "w");
   if (!file) return;

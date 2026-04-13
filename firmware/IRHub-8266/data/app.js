@@ -229,6 +229,10 @@ function updateSystemWS(data) {
     populateConfig(data.config);
     state.configPopulated = true;
   }
+
+  // Mostra/oculta card AHT10 conforme configuração
+  const cardAHT10 = document.getElementById("cardAHT10");
+  if (cardAHT10) cardAHT10.style.display = data.aht10_enabled ? "" : "none";
 }
 
 // Atualiza estado do LED (dot + texto).
@@ -334,6 +338,9 @@ function updateNetworkWS(data) {
 
 // Atualiza dados MQTT (status, server, tópicos, contadores).
 function updateMQTTWS(data) {
+  const cardMQTT = document.getElementById("cardMQTT");
+  if (cardMQTT) cardMQTT.style.display = data.enabled ? "" : "none";
+
   setText("mqttServer", data.server);
   setText("mqttPort", data.port);
   setText("mqttClient", data.client_id);
@@ -654,6 +661,7 @@ function populateConfig(data) {
     cfg_mqtt_port: data.mqtt_port,
     cfg_mqtt_user: data.mqtt_user,
     cfg_mqtt_enabled: data.mqtt_enabled,
+    cfg_aht10_enabled: data.aht10_enabled ? "true" : "false",
     cfg_wifi_ssid: data.wifi_ssid,
     // cfg_mqtt_password omitido intencionalmente — backend não envia a senha
   };
@@ -713,6 +721,7 @@ function saveDeviceConfig() {
     mqtt_password: password.length > 0 ? password : "__keep__",
     mqtt_enabled: get("cfg_mqtt_enabled"),
     mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
+    aht10_enabled: get("cfg_aht10_enabled") === "true",
   };
 
   wsSend(payload);

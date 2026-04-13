@@ -251,7 +251,7 @@ void loop() {
   static unsigned long tSensor = 0;
   if (now - tSensor > 2000) {
     tSensor = now;
-    wsSendAHT10();
+    if (aht10_enabled) wsSendAHT10();
   }
 
   // ---- SYSTEM WS ----
@@ -329,7 +329,7 @@ void loop() {
   static unsigned long lastMsgAHT10 = 0;
   if (now - lastMsgAHT10 > 300000) {
     lastMsgAHT10 = now;
-    MQTTsendAHT10();
+    if (aht10_enabled) MQTTsendAHT10();
   }
 
   // ---- TELNET CLIENT ----

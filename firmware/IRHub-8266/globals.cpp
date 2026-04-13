@@ -19,13 +19,16 @@ char mqtt_user_buf[64] = "";
 char mqtt_password_buf[64] = "";
 char mqtt_enabled_buf[4] = "no";
 
+// -------- Features --------
+bool aht10_enabled = false;
+
 // -------- Tópicos --------
 String myTopic = "";
 String clientID = "";
 
 // -------- Build --------
 const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
-const String buildVersion = "0.5.5";
+const String buildVersion = "0.5.7";
 
 // -------- Password --------
 char PasswordPortal[16] = "12345678";

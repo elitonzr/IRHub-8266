@@ -35,8 +35,10 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 
 ### Sensor AHT10
 - Temperatura e umidade via I2C (SDA: GPIO12, SCL: GPIO13)
-- Tentativa de reinicialização automática a cada 60s em caso de falha
-- Publicação periódica via MQTT e WebSocket
+- Habilitação configurável em runtime via `/settings` (sem necessidade de reboot)
+- Quando desabilitado: nenhuma leitura I2C, nenhuma publicação MQTT/WS, card oculto na UI
+- Quando habilitado: tentativa de reinicialização automática a cada 60s em caso de falha
+- Publicação periódica via MQTT e WebSocket (somente quando habilitado)
 
 ### Web Server / Frontend
 - Frontend servido do LittleFS (HTML/CSS/JS separados)
@@ -97,6 +99,7 @@ A configuração é feita pelo portal WiFiManager (primeira inicialização ou p
 | MQTT User     | —            | Usuário MQTT                     |
 | MQTT Password | —            | Senha MQTT                       |
 | MQTT Enabled  | `no`         | Habilita/desabilita MQTT         |
+| AHT10 Enabled | `false`      | Habilita/desabilita sensor AHT10 |
 
 ### Senhas padrão
 
@@ -134,7 +137,7 @@ IRHub-8266-Sala/
         └── sent/state
 ```
 
-Para detalhes completos sobre payloads e comandos, consulte [`docs/mqtt-topics.md`](docs/mqtt-topics.md).
+Para detalhes completos sobre payloads e comandos, consulte [`docs/MQTT.md`](docs/MQTT.md).
 
 ---
 
@@ -149,7 +152,7 @@ Durante o boot o dispositivo executa na ordem:
 5. Configura e conecta ao MQTT (se habilitado)
 6. Inicia servidor HTTP (porta 80) e WebSocket (porta 81)
 7. Inicializa IR (emissor GPIO4, receptor GPIO14)
-8. Inicializa AHT10 (I2C GPIO12/13)
+8. Inicializa AHT10 (I2C GPIO12/13, somente se habilitado em `config.json`)
 9. Configura botão de reset (GPIO0)
 10. Pisca LED 5 vezes (feedback de boot)
 

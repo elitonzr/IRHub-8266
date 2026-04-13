@@ -7,6 +7,12 @@
 // SCL = GPIO13
 
 void setup_AHT10() {
+
+  if (!aht10_enabled) {
+    Serial.println("[AHT10] Desabilitado.");
+    return;
+  }
+
   Serial.println();
   Serial.println("=================================");
   Serial.println("        Configurando AHT10        ");
@@ -23,6 +29,9 @@ void setup_AHT10() {
 }
 
 void lerSensorAHT10() {
+
+  if (!aht10_enabled) return;
+
   if (estadoAHT10 != AHT10_ONLINE) {
 
     static unsigned long lastRetry = 0;

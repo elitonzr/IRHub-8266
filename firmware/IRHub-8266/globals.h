@@ -19,6 +19,9 @@ extern char mqtt_user_buf[64];
 extern char mqtt_password_buf[64];
 extern char mqtt_enabled_buf[4];
 
+// -------- Features --------
+extern bool aht10_enabled;
+
 // -------- Tópicos --------
 extern String myTopic;
 extern String clientID;

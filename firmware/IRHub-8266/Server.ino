@@ -489,9 +489,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         if (strcmp(cmd, "setIRReceptor") == 0) {
           int mode = doc["mode"] | -1;
-          if (mode >= 0 && mode <= 11) {
-            IR_ReceptorSET(mode);
-          }
+          IR_ResceptorSET(mode);
           return;
         }
         if (strcmp(cmd, "sendIR") == 0) {
@@ -569,6 +567,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
           strlcpy(mqtt_enabled_buf, v_mqtt_enabled, sizeof(mqtt_enabled_buf));
 
+          aht10_enabled = doc["aht10_enabled"] | aht10_enabled;
+
           recalcularTopicos();
           saveConfig();
 
@@ -633,6 +633,7 @@ void wsSendSystem() {
   cfg["mqtt_port"] = mqtt_port;
   cfg["mqtt_user"] = mqtt_user_buf;
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
+  cfg["aht10_enabled"] = aht10_enabled;
 
   char buffer[1600];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
