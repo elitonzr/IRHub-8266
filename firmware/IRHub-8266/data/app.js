@@ -18,12 +18,14 @@ const state =
     wsQueue: [], // fila de mensagens pendentes enquanto WS está offline
     uptimeSeconds: 0, // segundos de uptime sincronizados com o backend
     irHistory: [], // histórico de sinais IR recebidos (máx 10)
+    logHistory: [], // histórico de logs em tempo real
     configPopulated: false, // evita repopular o form de config a cada mensagem
     irModeIndex: 0, // índice do modo de recepção IR atual
     irDotTimer: null, // timer do dot de atividade IR
     uptimeInterval: null, // setInterval do contador de uptime
-    selectedRemote: null, // modelo de controle remoto selecionado
     saveConfigTimer: null, // timeout de confirmação de saveConfig
+    remotesData: {}, // <--- ADICIONE ESTA LINHA
+    selectedRemote: localStorage.getItem("selectedRemote") || null, // modelo de controle remoto selecionado
   });
 
 /* =========================================================
@@ -154,6 +156,10 @@ function handleWSMessage(event) {
 
     case "authError":
       alert("❌ Senha incorreta!");
+      break;
+
+    case "log":
+      saveLogToHistory(data.msg);
       break;
   }
 }
@@ -456,6 +462,91 @@ function renderIRHistory() {
   });
 }
 
+function saveLogToHistory(msg) {
+  if (!msg) return;
+  const timestamp = new Date().toLocaleTimeString("pt-BR");
+  state.logHistory.push(`${timestamp} ${msg}`);
+  renderLogHistory();
+}
+
+function renderLogHistory() {
+  const list = document.getElementById("logHistory");
+  if (!list) return;
+
+  // Se a lista está vazia (navegação entre páginas), renderiza todo o histórico
+  if (list.children.length === 0 && state.logHistory.length > 0) {
+    state.logHistory.forEach((msg) => {
+      const li = document.createElement("li");
+      li.textContent = msg;
+      list.appendChild(li);
+    });
+  } else {
+    // Caso normal: adiciona apenas o último item
+    const li = document.createElement("li");
+    li.textContent = state.logHistory[state.logHistory.length - 1];
+    list.appendChild(li);
+  }
+
+  list.scrollTop = list.scrollHeight;
+}
+
+function clearLogs() {
+  state.logHistory = [];
+  const list = document.getElementById("logHistory");
+  if (list) list.innerHTML = "";
+}
+
+function exportRemotes() {
+  window.location.href = "/download?file=/remotes.json";
+}
+
+async function importRemotes() {
+  const file = document.getElementById("remotesFile")?.files[0];
+  if (!file) return alert("Selecione um arquivo .json");
+
+  // Valida JSON antes de enviar
+  try {
+    const text = await file.text();
+    JSON.parse(text);
+  } catch {
+    showRemotesStatus("❌ Arquivo JSON inválido.", "#ef4444");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("upload", file);
+
+  const xhr = new XMLHttpRequest();
+  xhr.withCredentials = true;
+  xhr.open("POST", "/upload", true);
+
+  xhr.onload = () => {
+    showRemotesStatus("✅ Importado com sucesso!", "#22c55e");
+    loadRemotes(); // recarrega imediatamente na UI
+  };
+
+  xhr.onerror = () => showRemotesStatus("❌ Erro no upload.", "#ef4444");
+
+  xhr.send(formData);
+}
+
+function showRemotesStatus(msg, color) {
+  const el = document.getElementById("remotesStatus");
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color;
+  setTimeout(() => (el.textContent = ""), 3000);
+}
+
+function sendTelnetCmd() {
+  const input = document.getElementById("telnetInput");
+  if (!input) return;
+  const line = input.value.trim();
+  if (!line) return;
+  wsSend({ cmd: "telnetCmd", line });
+  input.value = "";
+}
+
 /* =========================================================
    10. CONTROLES DE REDE (settings)
 ========================================================= */
@@ -494,69 +585,97 @@ let remotes = {};
 
 // Carrega remotes.json e popula o select de modelos.
 async function loadRemotes() {
-  const select = document.getElementById("remoteSelect");
-  if (!select) return;
-
   try {
-    const res = await fetch("/remotes.json");
-    remotes = await res.json();
+    const response = await fetch("/remotes.json");
+    if (!response.ok) throw new Error("Erro ao baixar remotes.json");
 
-    select.innerHTML = "";
-    Object.keys(remotes).forEach((model) => {
-      const opt = document.createElement("option");
-      opt.value = model;
-      opt.textContent = model;
-      select.appendChild(opt);
-    });
+    const data = await response.json();
+    state.remotesData = data; // Salva no estado global
 
-    // Restaura modelo salvo no localStorage ou state
-    let saved = state.selectedRemote;
-    try {
-      saved = localStorage.getItem("selectedRemote") || saved;
-    } catch (_) {}
+    console.log("Remotes carregados com sucesso");
 
-    if (saved && remotes[saved]) {
-      select.value = saved;
-      state.selectedRemote = saved;
-    }
+    // Só agora que temos os dados, populamos o Select e os Botões
+    populateRemoteSelect();
+  } catch (err) {
+    console.error("Erro ao carregar remotes:", err);
+  }
+}
 
-    loadButtons(select.value);
-  } catch (e) {
-    console.error("Erro ao carregar remotes:", e);
+function populateRemoteSelect() {
+  const select = document.getElementById("remoteSelect");
+  if (!select || !state.remotesData) return;
+
+  select.innerHTML = ""; // Limpa atual
+
+  // Pega as chaves (LG, TCL, etc)
+  const models = Object.keys(state.remotesData);
+
+  models.forEach((model) => {
+    const opt = document.createElement("option");
+    opt.value = model;
+    opt.textContent = model;
+    select.appendChild(opt);
+  });
+
+  // Define qual modelo carregar inicialmente
+  const initialModel = state.selectedRemote || models[0];
+  if (initialModel && state.remotesData[initialModel]) {
+    select.value = initialModel;
+    loadButtons(initialModel);
   }
 }
 
 // Renderiza os botões do modelo selecionado.
 function loadButtons(model) {
+  // Se o estado ainda não tem os dados, sai da função silenciosamente
+  if (!state.remotesData || !state.remotesData[model]) {
+    console.warn(`Dados para o modelo ${model} ainda não disponíveis.`);
+    return;
+  }
+
   const container = document.getElementById("buttonsContainer");
-  if (!container || !remotes[model]) return;
+  if (!container) return;
 
   container.innerHTML = "";
 
-  remotes[model].buttons.forEach((btn) => {
-    const button = document.createElement("button");
+  const remote = state.remotesData[model];
 
+  const buttons = remote.buttons || remote.button || [];
+
+  buttons.forEach((btn) => {
     if (btn.type === "space") {
-      // Espaço vazio para alinhar botões no grid
-      button.className = "btn-remote";
-      button.style.visibility = "hidden";
-      button.disabled = true;
-    } else {
-      button.className = "btn-remote";
-      button.textContent = btn.name;
-      if (btn.background) button.style.background = `#${btn.background}`;
-      if (btn.color) button.style.color = `#${btn.color}`;
-      button.onclick = () => {
-        sendIR(btn);
-        button.classList.add("active");
-        setTimeout(() => button.classList.remove("active"), 150);
-      };
+      const space = document.createElement("div");
+      // Se o espaço também tiver span, aplica
+      if (btn.span) space.className = `span-${btn.span}`;
+      container.appendChild(space);
+      return;
     }
 
-    container.appendChild(button);
-  });
+    const b = document.createElement("button");
+    b.textContent = btn.name;
+    b.className = "btn-ir-remote"; // Sua classe base de botão
 
-  console.debug(`Modelo Carregado: ${model}`);
+    if (btn.fontSize) {
+      b.style.fontSize = btn.fontSize;
+    }
+    // --- LÓGICA DE SPAN ---
+    if (btn.span) {
+      b.classList.add(`span-${btn.span}`);
+    }
+
+    // Se quiser suporte a span vertical (linhas)
+    if (btn.rowSpan) {
+      b.classList.add(`row-span-${btn.rowSpan}`);
+    }
+    // ---------------------------
+
+    if (btn.background) b.style.background = `#${btn.background}`;
+    if (btn.color) b.style.color = `#${btn.color}`;
+
+    b.onclick = () => sendIR(btn.protocol, btn.code, btn.bits, b);
+
+    container.appendChild(b);
+  });
 }
 
 /* =========================================================
@@ -564,18 +683,43 @@ function loadButtons(model) {
 ========================================================= */
 
 // Envia código IR de um botão do controle remoto.
-function sendIR(btn) {
-  if (!btn.code) {
-    console.warn("Botão sem campo code:", btn);
+function sendIR(protocol, code, bits, element = null) {
+  if (element) {
+    element.classList.add("btn-active-feedback");
+    setTimeout(() => element.classList.remove("btn-active-feedback"), 150);
+  }
+
+  if (!code) {
+    console.warn("Botão sem campo code:", code);
+    showIrToast(`Erro: Código ausente!`, true); // <--- Feedback em vermelho
     return;
   }
-  wsSend({
-    cmd: "sendIR",
-    code: btn.code,
-    protocol: btn.protocol,
-    bits: btn.bits || 32,
-  });
-  console.log("IR enviado:", btn.name);
+
+  showIrToast(`Enviando ${protocol}...`); // <--- Feedback normal (roxo)
+
+  const msg = {
+    type: "ir_send",
+    protocol: protocol,
+    code: code,
+    bits: parseInt(bits) || 32,
+  };
+
+  wsSend(msg);
+}
+
+// Função auxiliar para o Toast
+function showIrToast(message, isError = false) {
+  const existing = document.querySelector(".ir-sending-toast");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.className = "ir-sending-toast";
+  if (isError) toast.classList.add("error"); // Adiciona classe de erro
+
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => toast.remove(), 1000);
 }
 
 // Envia código IR digitado manualmente no form.
@@ -760,6 +904,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setText("uptime", "0d 00h 00m 00s");
   renderIRHistory();
+  renderLogHistory();
 
   // Listener do select de modelo de controle remoto — só existe em index.html
   const select = document.getElementById("remoteSelect");

@@ -216,6 +216,24 @@ void setup_server() {
     file.close();
   });
 
+  // Rota IR
+  server.on("/ir", HTTP_GET, []() {
+    if (LittleFS.exists("/ir.html")) {
+      File f = LittleFS.open("/ir.html", "r");
+      server.streamFile(f, "text/html");
+      f.close();
+    } else {
+      if (LittleFS.exists("/index.html")) {
+        File f = LittleFS.open("/index.html", "r");
+        server.streamFile(f, "text/html");
+        f.close();
+      } else {
+        redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
+        ;
+      }
+    }
+  });
+
   // --- Diagnóstico: lista arquivos do LittleFS --- ex.: http://IP_DO_ESP/files
   server.on("/files", HTTP_GET, []() {
     if (!checkAuth()) return;
@@ -489,7 +507,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         if (strcmp(cmd, "setIRReceptor") == 0) {
           int mode = doc["mode"] | -1;
-          IR_ResceptorSET(mode);
+          IR_ReceptorSET(mode);
           return;
         }
         if (strcmp(cmd, "sendIR") == 0) {
@@ -603,6 +621,19 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           webSocket.broadcastTXT("{\"type\":\"reboot\"}");
           delay(500);
           ESP.restart();
+        }
+
+        if (strcmp(cmd, "telnetCmd") == 0) {
+          const char* line = doc["line"] | "";
+          if (strlen(line) > 0) {
+            char buf[TELNET_BUFFER];
+            strlcpy(buf, line, sizeof(buf));
+            // converte para minúsculo igual ao handleTelnet()
+            for (size_t i = 0; i < strlen(buf); i++)
+              buf[i] = tolower((unsigned char)buf[i]);
+            processTelnetCommand(buf);
+          }
+          return;
         }
 
         break;

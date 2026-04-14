@@ -14,6 +14,9 @@
   --btn-ir-receptor-bg: linear-gradient(135deg, #facc15, #f59e0b);
   --btn-ir-receptor-hv: linear-gradient(135deg, #fde047, #d97706);
 
+  --btn-ir-remote-bg: #333333;
+  --btn-ir-remote-tx: #ffffff;
+
   --btn-clean-bg: linear-gradient(135deg, #f87171, #ef4444);
   --btn-clean-hv: linear-gradient(135deg, #fca5a5, #dc2626);
 
@@ -285,7 +288,7 @@ progress {
 /* ---------------- CONTENT ---------------- */
 .page-content {
   padding: 24px 20px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -323,7 +326,8 @@ progress {
 /* ---------------- GRID ---------------- */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 300px));
+  justify-content: center;
   gap: 20px;
 }
 
@@ -333,6 +337,7 @@ section.card {
   padding: 20px;
   border-radius: 14px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
 }
 
 section.card header {
@@ -458,10 +463,25 @@ button:active {
   background: var(--btn-ir-receptor-hv);
 }
 
+.btn-ir-remote {
+  background: var(--btn-ir-remote-bg);
+  color: var(--btn-ir-remote-tx);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
 .btn-send {
   background: var(--btn-send-bg);
-  padding: 5px 100px;
-  cursor: pointer;
+  /* padding: 5px 100px; */
+  /* cursor: pointer; */
 }
 
 .btn-send:hover {
@@ -476,10 +496,84 @@ button:active {
   background: var(--btn-clean-hv);
 }
 
+/* Efeito de clique no botão */
+.btn-active-feedback {
+  transform: scale(0.95);
+  filter: brightness(1.3);
+  transition: transform 0.1s, filter 0.1s;
+}
+
+/* Indicador de envio no topo da tela (opcional) */
+.ir-sending-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--btn-ir-emitter-bg);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: fadeInOut 1s forwards;
+}
+
+/* Cor padrão (Sucesso/Envio) */
+.ir-sending-toast {
+  background: var(--btn-ir-emitter-bg);
+  /* Roxo */
+}
+
+/* Cor de erro */
+.ir-sending-toast.error {
+  background: var(--btn-clean-bg);
+  /* Vermelho baseado nas suas variáveis */
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+
+  20% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+}
+
 .grid-buttons {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 10px;
+}
+
+.span-1 {
+  grid-column: span 1;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.span-3 {
+  grid-column: span 3;
+}
+
+/* Ajuste opcional para botões verticais (ocupar 2 linhas) */
+.row-span-2 {
+  grid-row: span 2;
+  height: 100%;
 }
 
 .btn-remote {
@@ -563,6 +657,11 @@ p.cfg-note {
   50% {
     opacity: 0;
   }
+}
+
+.card.remotes {
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .card.ir-history {

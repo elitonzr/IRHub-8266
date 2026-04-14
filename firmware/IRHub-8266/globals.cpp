@@ -38,6 +38,8 @@ void initPassword() {
   snprintf(Password, sizeof(Password), "%08X", ESP.getChipId());
 }
 
+
+
 // -------- IR --------
 IR_ReceptorMode IR_ReceptorEstado = IR_PROTOCOL_KNOWN;
 

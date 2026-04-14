@@ -41,6 +41,10 @@ File fsUploadFile;
 bool shouldSaveConfig = false;
 
 /************ Telnet ************/
+#define TELNET_BUFFER 128
+char telnetBuffer[TELNET_BUFFER];
+
+void processTelnetCommand(char* cmd);
 // Necessário para fazer com que o software Arduino detecte automaticamente o dispositivo OTA
 WiFiServer telnetServer(8266);
 WiFiClient telnetClient;
