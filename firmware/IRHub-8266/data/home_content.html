@@ -1,0 +1,41 @@
+<div class="page-content">
+  <!-- CONTEÚDO -->
+  <div class="control">
+    <!-- IR CONTROLE -->
+    <section class="card">
+      <header>Controle IR</header>
+
+      <div class="item">
+        <label>Modelo:</label>
+        <select id="remoteSelect"></select>
+      </div>
+
+      <div id="buttonsContainer" class="grid-buttons"></div>
+    </section>
+  </div>
+
+  <!-- REMOTES MANAGER -->
+  <section class="card card-file-manager">
+    <header>Controles Remotos</header>
+    <div class="item">
+      <div class="upload-row">
+        <input type="file" id="remotesFile" accept=".json" />
+        <button class="btn-send" onclick="importRemotes()">📤 Importar</button>
+      </div>
+      <div class="item">
+        <button class="btn-primary btn-block" onclick="exportRemotes()">
+          📥 Exportar remotes.json
+        </button>
+      </div>
+    </div>
+    <div
+      id="remotesStatus"
+      style="
+        text-align: center;
+        font-size: 11px;
+        min-height: 16px;
+        margin-top: 8px;
+      "
+    ></div>
+  </section>
+</div>

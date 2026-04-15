@@ -87,97 +87,6 @@ function flushQueue() {
   }
 }
 
-// Configuração de rotas e arquivos correspondentes
-const routes = {
-  "/": "/home_content.html",
-  "/ir": "/ir_content.html",
-  "/system": "/system_content.html",
-  "/settings": "/settings_content.html",
-};
-
-async function navigateTo(path) {
-  const contentArea = document.getElementById("app-content");
-  if (!contentArea) return;
-
-  // 1. Atualiza a URL no navegador sem recarregar
-  window.history.pushState({}, "", path);
-
-  try {
-    // 2. Busca o conteúdo HTML parcial
-    const file = routes[path] != null ? routes[path] : routes["/"];
-    const response = await fetch(file);
-
-    if (!response.ok) {
-      const msg = `fetch(${file}) → HTTP ${response.status} ${response.statusText}`;
-      contentArea.innerHTML = `<div style="padding:20px;font-family:monospace"><b>Erro ao carregar página</b><br><span style="font-size:12px;opacity:0.6">${msg}</span></div>`;
-      console.error("navigateTo:", msg);
-      return;
-    }
-
-    const html = await response.text();
-
-    // 3. Injeta o HTML na página
-    contentArea.innerHTML = html;
-
-    // 4. Re-inicializa funções específicas da página, se necessário
-    initPageScript(path);
-    updateActiveLinks(path);
-  } catch (err) {
-    contentArea.innerHTML = `<div style="padding:20px;font-family:monospace"><b>Erro ao carregar página</b><br><span style="font-size:12px;opacity:0.6">${err}</span></div>`;
-    console.error("navigateTo exception:", err);
-  }
-}
-
-// Escuta o botão "Voltar" do navegador
-window.onpopstate = () => navigateTo(window.location.pathname);
-
-// Intercepta cliques nos links da Navbar e Drawer
-document.addEventListener("click", (e) => {
-  if (e.target.matches("[data-link]")) {
-    e.preventDefault();
-    navigateTo(e.target.getAttribute("href"));
-  }
-});
-
-function initPageScript(path) {
-  if (path === "/" || path === "/index.html") {
-    // Listener do select de modelo — só existe após home_content.html ser injetado
-    const select = document.getElementById("remoteSelect");
-    if (select) {
-      select.addEventListener("change", (e) => {
-        state.selectedRemote = e.target.value;
-        try {
-          localStorage.setItem("selectedRemote", e.target.value);
-        } catch (_) {}
-        loadButtons(e.target.value);
-      });
-    }
-    loadRemotes(); // Carrega os controles remotos
-  }
-  if (path === "/system") {
-    renderLogHistory(); // Atualiza o console
-  }
-  // Se houver gráficos ou outros componentes, inicie-os aqui
-}
-
-// Adicione esta função para gerenciar o estado visual do menu
-function updateActiveLinks(path) {
-  // Seleciona todos os links que têm o atributo data-link (tanto na navbar quanto no drawer)
-  const links = document.querySelectorAll("[data-link]");
-
-  links.forEach((link) => {
-    // Remove a classe active de todos
-    link.classList.remove("active");
-
-    // Se o href do link for igual ao caminho atual, adiciona a classe active
-    // Usamos o objeto URL para comparar apenas o path, ignorando o domínio
-    const linkPath = new URL(link.href, window.location.origin).pathname;
-    if (linkPath === path) {
-      link.classList.add("active");
-    }
-  });
-}
-
 /* =========================================================
    3. HANDLER DE MENSAGENS WS
    Roteador central — cada tipo de mensagem dispara
@@ -557,28 +466,26 @@ function saveLogToHistory(msg) {
   if (!msg) return;
   const timestamp = new Date().toLocaleTimeString("pt-BR");
   state.logHistory.push(`${timestamp} ${msg}`);
-  if (state.logHistory.length > 50) state.logHistory.shift(); // Mantém apenas os últimos 50
   renderLogHistory();
 }
-
-// function saveLogToHistory(msg) {
-//   if (!msg) return;
-//   const timestamp = new Date().toLocaleTimeString("pt-BR");
-//   state.logHistory.push(`${timestamp} ${msg}`);
-//   renderLogHistory();
-// }
 
 function renderLogHistory() {
   const list = document.getElementById("logHistory");
   if (!list) return;
 
-  // Limpa e reconstrói para garantir que o estado visual condiz com o state.logHistory
-  list.innerHTML = "";
-  state.logHistory.forEach((msg) => {
+  // Se a lista está vazia (navegação entre páginas), renderiza todo o histórico
+  if (list.children.length === 0 && state.logHistory.length > 0) {
+    state.logHistory.forEach((msg) => {
+      const li = document.createElement("li");
+      li.textContent = msg;
+      list.appendChild(li);
+    });
+  } else {
+    // Caso normal: adiciona apenas o último item
     const li = document.createElement("li");
-    li.textContent = msg;
+    li.textContent = state.logHistory[state.logHistory.length - 1];
     list.appendChild(li);
-  });
+  }
 
   list.scrollTop = list.scrollHeight;
 }
@@ -587,53 +494,6 @@ function clearLogs() {
   state.logHistory = [];
   const list = document.getElementById("logHistory");
   if (list) list.innerHTML = "";
-}
-
-function exportConfig() {
-  window.location.href = "/download?file=/config.json";
-}
-
-async function importConfig() {
-  if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?"))
-    return;
-
-  const pass = prompt("Digite a senha para confirmar:");
-  if (!pass) return;
-
-  const file = document.getElementById("configFile")?.files[0];
-  if (!file) return alert("Selecione um arquivo .json");
-
-  // Valida JSON antes de enviar
-  try {
-    const text = await file.text();
-    JSON.parse(text);
-  } catch {
-    showConfigStatus("❌ Arquivo JSON inválido.", "#ef4444");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("upload", file);
-
-  const xhr = new XMLHttpRequest();
-  xhr.withCredentials = true;
-  xhr.open("POST", "/upload", true);
-
-  xhr.onload = () => {
-    showConfigStatus("✅ Importado com sucesso!", "#22c55e");
-  };
-
-  xhr.onerror = () => showConfigStatus("❌ Erro no upload.", "#ef4444");
-
-  xhr.send(formData);
-}
-
-function showConfigStatus(msg, color) {
-  const el = document.getElementById("configFileStatus");
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = color;
-  setTimeout(() => (el.textContent = ""), 3000);
 }
 
 function exportRemotes() {
@@ -683,7 +543,7 @@ function sendTelnetCmd() {
   if (!input) return;
   const line = input.value.trim();
   if (!line) return;
-  wsSend({ type: "telnetCmd", line });
+  wsSend({ cmd: "telnetCmd", line });
   input.value = "";
 }
 
@@ -921,8 +781,7 @@ function resetWifi() {
 }
 
 function resetConfig() {
-  if (!confirm("Apagar config.json? Isso apagará todas as configurações!"))
-    return;
+  if (!confirm("Reset total? Isso apagará todas as configurações!")) return;
   const pass = prompt("Digite a senha para confirmar:");
   if (!pass) return;
   wsSend({ cmd: "resetConfig", password: pass });
@@ -1047,15 +906,19 @@ document.addEventListener("DOMContentLoaded", () => {
   renderIRHistory();
   renderLogHistory();
 
-  // Verifica se o caminho atual exige carregamento de outra "página"
-  const currentPath = window.location.pathname;
-  if (currentPath !== "/" && routes[currentPath]) {
-    navigateTo(currentPath);
-  } else {
-    // Na home: injeta o conteúdo e depois inicializa scripts
-    navigateTo("/");
+  // Listener do select de modelo de controle remoto — só existe em index.html
+  const select = document.getElementById("remoteSelect");
+  if (select) {
+    select.addEventListener("change", (e) => {
+      state.selectedRemote = e.target.value;
+      try {
+        localStorage.setItem("selectedRemote", e.target.value);
+      } catch (_) {}
+      loadButtons(e.target.value);
+    });
   }
 
+  loadRemotes();
   connectWS();
 
   // Se WS já estava aberto ao navegar, atualiza badge e título imediatamente

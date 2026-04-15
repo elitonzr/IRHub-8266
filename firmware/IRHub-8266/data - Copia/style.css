@@ -331,13 +331,6 @@ progress {
   gap: 20px;
 }
 
-.grid2 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 400px));
-  justify-content: center;
-  gap: 20px;
-}
-
 /* ---------------- CARD ---------------- */
 section.card {
   background: #1f2937;
@@ -666,9 +659,8 @@ p.cfg-note {
   }
 }
 
-.card.card-file-manager {
+.card.remotes {
   max-width: 400px;
-  min-width: 400px;
   margin: 0 auto;
 }
 
@@ -683,11 +675,11 @@ p.cfg-note {
   font-size: 13px;
 }
 
-/* .card.cfg-card {
+.card.cfg-card {
   grid-column: 1 / -1;
   max-width: 800px;
   margin: 0 auto;
-} */
+}
 
 /* ---------------- EFFECTS ---------------- */
 .flash {
