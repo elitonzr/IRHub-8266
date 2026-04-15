@@ -683,7 +683,7 @@ function sendTelnetCmd() {
   if (!input) return;
   const line = input.value.trim();
   if (!line) return;
-  wsSend({ type: "telnetCmd", line });
+  wsSend({ cmd: "telnetCmd", line });
   input.value = "";
 }
 
@@ -720,8 +720,6 @@ function validarIP(ip) {
    11. CONTROLES REMOTOS (remotes.json)
    Carrega lista de modelos e renderiza botões dinamicamente.
 ========================================================= */
-
-let remotes = {};
 
 // Carrega remotes.json e popula o select de modelos.
 async function loadRemotes() {
@@ -838,9 +836,9 @@ function sendIR(protocol, code, bits, element = null) {
   showIrToast(`Enviando ${protocol}...`); // <--- Feedback normal (roxo)
 
   const msg = {
-    type: "ir_send",
-    protocol: protocol,
+    cmd: "sendIR",
     code: code,
+    protocol: protocol,
     bits: parseInt(bits) || 32,
   };
 
