@@ -45,14 +45,14 @@ bool irAceitar(decode_type_t tipo) {
   if (IR_ReceptorEstado == IR_PROTOCOL_KNOWN) return (tipo != UNKNOWN);
 
   // Modos específicos: aceita apenas o protocolo configurado
-  if (tipo == NEC     && IR_ReceptorEstado == IR_PROTOCOL_NEC)     return true;
-  if (tipo == SONY    && IR_ReceptorEstado == IR_PROTOCOL_SONY)    return true;
-  if (tipo == RC5     && IR_ReceptorEstado == IR_PROTOCOL_RC5)     return true;
-  if (tipo == RC6     && IR_ReceptorEstado == IR_PROTOCOL_RC6)     return true;
+  if (tipo == NEC && IR_ReceptorEstado == IR_PROTOCOL_NEC) return true;
+  if (tipo == SONY && IR_ReceptorEstado == IR_PROTOCOL_SONY) return true;
+  if (tipo == RC5 && IR_ReceptorEstado == IR_PROTOCOL_RC5) return true;
+  if (tipo == RC6 && IR_ReceptorEstado == IR_PROTOCOL_RC6) return true;
   if (tipo == SAMSUNG && IR_ReceptorEstado == IR_PROTOCOL_SAMSUNG) return true;
-  if (tipo == NIKAI   && IR_ReceptorEstado == IR_PROTOCOL_NIKAI)   return true;
-  if (tipo == LG      && IR_ReceptorEstado == IR_PROTOCOL_LG)      return true;
-  if (tipo == JVC     && IR_ReceptorEstado == IR_PROTOCOL_JVC)     return true;
+  if (tipo == NIKAI && IR_ReceptorEstado == IR_PROTOCOL_NIKAI) return true;
+  if (tipo == LG && IR_ReceptorEstado == IR_PROTOCOL_LG) return true;
+  if (tipo == JVC && IR_ReceptorEstado == IR_PROTOCOL_JVC) return true;
   if (tipo == WHYNTER && IR_ReceptorEstado == IR_PROTOCOL_WHYNTER) return true;
 
   return false;
@@ -246,7 +246,7 @@ bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits, const char*
     case WHYNTER: irsend.sendWhynter(code, bits); break;
     case SAMSUNG:
       if (bits == 36) irsend.sendSamsung36(code);
-      else irsend.sendNEC(code, bits);
+      else irsend.sendSAMSUNG(code, bits);
       break;
     default:
       debugPrintf("Protocolo IR não suportado (%d)\n", protocol);
@@ -257,10 +257,6 @@ bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits, const char*
   enviandoCod = false;  // reativa receptor antes do yield
 
   yield();
-
-  debugPrintf("[IR][%s] Protocol:%s | Bits:%d | Code:0x%08X (%u)\n",
-              origem, getIRProtocol(protocol), bits,
-              (unsigned int)code, (unsigned int)code);
 
   startFeedbackLED(1, 200);
   return true;
@@ -290,10 +286,17 @@ void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, co
   sendIRFeedback(code, proto, bits, ok ? "ok" : "fail", origem);
 }
 
-// Notifica WS e MQTT com o resultado de um envio IR.
-void sendIRFeedback(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
-  wsSendIR_Emissor(code, proto, bits, status, origem);
-  MQTTsendIR_Sent(code, proto, bits, status, origem);
+void debugSendIREmissor(uint32_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
+  debugPrintf("[IR] - status:%s origem:%s Protocol:%s | Bits:%d | Code:0x%08X (%u)\n",
+              status, origem, getIRProtocol(protocol), bits,
+              (unsigned int)code, (unsigned int)code);
+}
+
+// Notifica WS, MQTT e telnet com o resultado de um envio IR.
+void sendIRFeedback(uint32_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
+  wsSendIREmissor(code, protocol, bits, status, origem);
+  MQTTSendIREmissor(code, protocol, bits, status, origem);
+  debugSendIREmissor(code, protocol, bits, status, origem);
 }
 
 // ============================================================

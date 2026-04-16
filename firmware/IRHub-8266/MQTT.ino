@@ -299,9 +299,9 @@ void MQTTsendIR_Received() {
 /************************************************************
 * IR SENT — feedback do emissor
 ************************************************************/
-void MQTTsendIR_Sent(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
+void MQTTSendIREmissor(uint32_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
   char payload[256];
-  size_t len = buildIRJson(payload, sizeof(payload), code, proto, bits, status, origem);
+  size_t len = buildIRJson(payload, sizeof(payload), code, protocol, bits, status, origem);
   if (len == 0 || len >= sizeof(payload)) return;
   if (!mqtt_client.connected()) return;
   mqtt_client.publish(topic_sensor_ir_sent, payload, len);
@@ -399,8 +399,16 @@ void processaComando(byte* payload, unsigned int length) {
     } else {
       debugPrint("[processaComando] Comando LED inválido: ");
       debugPrintln(action);
+      wsSendOutputs();
+      MQTTsendLED();
+      debugLED();
       return;
     }
+
+    wsSendOutputs();
+    MQTTsendLED();
+    debugLED();
+
   }
 
   // =========================
@@ -417,17 +425,17 @@ void processaComando(byte* payload, unsigned int length) {
 
     int modo = -1;
 
-    if (strcasecmp(mode, "ALL") == 0)          modo = 0;
-    else if (strcasecmp(mode, "KNOWN") == 0)   modo = 1;
+    if (strcasecmp(mode, "ALL") == 0) modo = 0;
+    else if (strcasecmp(mode, "KNOWN") == 0) modo = 1;
     else if (strcasecmp(mode, "DISABLED") == 0) modo = 2;
-    else if (strcasecmp(mode, "NEC") == 0)     modo = 3;
-    else if (strcasecmp(mode, "SONY") == 0)    modo = 4;
-    else if (strcasecmp(mode, "RC5") == 0)     modo = 5;
-    else if (strcasecmp(mode, "RC6") == 0)     modo = 6;
+    else if (strcasecmp(mode, "NEC") == 0) modo = 3;
+    else if (strcasecmp(mode, "SONY") == 0) modo = 4;
+    else if (strcasecmp(mode, "RC5") == 0) modo = 5;
+    else if (strcasecmp(mode, "RC6") == 0) modo = 6;
     else if (strcasecmp(mode, "SAMSUNG") == 0) modo = 7;
-    else if (strcasecmp(mode, "NIKAI") == 0)   modo = 8;
-    else if (strcasecmp(mode, "LG") == 0)      modo = 9;
-    else if (strcasecmp(mode, "JVC") == 0)     modo = 10;
+    else if (strcasecmp(mode, "NIKAI") == 0) modo = 8;
+    else if (strcasecmp(mode, "LG") == 0) modo = 9;
+    else if (strcasecmp(mode, "JVC") == 0) modo = 10;
     else if (strcasecmp(mode, "WHYNTER") == 0) modo = 11;
 
     if (modo != -1) {

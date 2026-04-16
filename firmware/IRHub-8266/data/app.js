@@ -13,19 +13,20 @@
 const state =
   window.appState ||
   (window.appState = {
-    ws: null,               // instância do WebSocket
-    reconnectTimer: null,   // timer de reconexão automática
-    wsQueue: [],            // fila de mensagens pendentes enquanto WS está offline
-    uptimeSeconds: 0,       // segundos de uptime sincronizados com o backend
-    irHistory: [],          // histórico de sinais IR recebidos (máx 10)
-    logHistory: [],         // histórico de logs em tempo real (máx 50)
+    ws: null, // instância do WebSocket
+    reconnectTimer: null, // timer de reconexão automática
+    wsQueue: [], // fila de mensagens pendentes enquanto WS está offline
+    uptimeSeconds: 0, // segundos de uptime sincronizados com o backend
+    irHistory: [], // histórico de sinais IR recebidos (máx 10)
+    logHistory: [], // histórico de logs em tempo real (máx 50)
     configPopulated: false, // evita repopular o form de config a cada mensagem
-    irModeIndex: 0,         // índice do modo de recepção IR atual
-    irDotTimer: null,       // timer do dot de atividade IR
-    uptimeInterval: null,   // setInterval do contador de uptime
-    saveConfigTimer: null,  // timeout de confirmação de saveConfig
-    remotesData: {},        // dados do remotes.json carregados em memória
+    irModeIndex: 0, // índice do modo de recepção IR atual
+    irDotTimer: null, // timer do dot de atividade IR
+    uptimeInterval: null, // setInterval do contador de uptime
+    saveConfigTimer: null, // timeout de confirmação de saveConfig
+    remotesData: {}, // dados do remotes.json carregados em memória
     selectedRemote: localStorage.getItem("selectedRemote") || null, // último modelo selecionado
+    lastPayloads: {}, // cache dos últimos payloads recebidos por type
   });
 
 /* =========================================================
@@ -119,6 +120,7 @@ async function navigateTo(path) {
     contentArea.innerHTML = await response.text();
     initPageScript(path);
     updateActiveLinks(path);
+    replayLastPayloads();
   } catch (err) {
     contentArea.innerHTML = `<div style="padding:20px;font-family:monospace"><b>Erro ao carregar página</b><br><span style="font-size:12px;opacity:0.6">${err}</span></div>`;
     console.error("navigateTo exception:", err);
@@ -143,7 +145,9 @@ function initPageScript(path) {
     if (select) {
       select.addEventListener("change", (e) => {
         state.selectedRemote = e.target.value;
-        try { localStorage.setItem("selectedRemote", e.target.value); } catch (_) {}
+        try {
+          localStorage.setItem("selectedRemote", e.target.value);
+        } catch (_) {}
         loadButtons(e.target.value);
       });
     }
@@ -152,6 +156,10 @@ function initPageScript(path) {
 
   if (path === "/system") {
     renderLogHistory();
+  }
+
+  if (path === "/settings") {
+    state.configPopulated = false;
   }
 }
 
@@ -177,16 +185,32 @@ function handleWSMessage(event) {
     return;
   }
 
+  if (data.type) state.lastPayloads[data.type] = data;
+
   if (!data.type) return;
 
   switch (data.type) {
-    case "system":      updateSystemWS(data);    break;
-    case "outputs":     updateOutputsWS(data);   break;
-    case "sensor":      updateSensorWS(data);    break;
-    case "ir":          updateIRWS(data);         break;
-    case "ir_receptor": updateIRReceptorWS(data); break;
-    case "network":     updateNetworkWS(data);   break;
-    case "mqtt":        updateMQTTWS(data);       break;
+    case "system":
+      updateSystemWS(data);
+      break;
+    case "outputs":
+      updateOutputsWS(data);
+      break;
+    case "sensor":
+      updateSensorWS(data);
+      break;
+    case "ir":
+      updateIRWS(data);
+      break;
+    case "ir_receptor":
+      updateIRReceptorWS(data);
+      break;
+    case "network":
+      updateNetworkWS(data);
+      break;
+    case "mqtt":
+      updateMQTTWS(data);
+      break;
 
     case "reboot":
       alert("Dispositivo reiniciando...");
@@ -287,7 +311,8 @@ function updateSystemWS(data) {
 
   document.title = `✅ ${data.name}`;
 
-  if (data.uptime_seconds !== undefined) state.uptimeSeconds = data.uptime_seconds;
+  if (data.uptime_seconds !== undefined)
+    state.uptimeSeconds = data.uptime_seconds;
 
   // Popula o form de configurações apenas uma vez por conexão.
   if (data.config && !state.configPopulated) {
@@ -297,7 +322,7 @@ function updateSystemWS(data) {
 
   // Mostra/oculta card AHT10 conforme configuração.
   const cardAHT10 = document.getElementById("cardAHT10");
-  if (cardAHT10) cardAHT10.style.display = data.aht10_enabled ? "" : "none";
+  if (cardAHT10) cardAHT10.style.display = data.config.aht10_enabled ? "" : "none";
 }
 
 // Atualiza estado do LED (dot + texto).
@@ -309,9 +334,18 @@ function updateOutputsWS(data) {
 
 // Mapa de nome de protocolo IR para índice numérico (espelhado no backend).
 const irModeMap = {
-  ALL: 0, KNOWN: 1, DISABLED: 2,
-  NEC: 3, SONY: 4, RC5: 5, RC6: 6,
-  SAMSUNG: 7, NIKAI: 8, LG: 9, JVC: 10, WHYNTER: 11,
+  ALL: 0,
+  KNOWN: 1,
+  DISABLED: 2,
+  NEC: 3,
+  SONY: 4,
+  RC5: 5,
+  RC6: 6,
+  SAMSUNG: 7,
+  NIKAI: 8,
+  LG: 9,
+  JVC: 10,
+  WHYNTER: 11,
 };
 
 // Atualiza estado do emissor e receptor IR.
@@ -319,7 +353,10 @@ function updateIRWS(data) {
   setText("irEmitter", data.emissor_teste ? "Ativo" : "Desligado");
   setText("irMode", data.receptor_protocol || "--");
 
-  if (data.receptor_protocol && irModeMap[data.receptor_protocol] !== undefined) {
+  if (
+    data.receptor_protocol &&
+    irModeMap[data.receptor_protocol] !== undefined
+  ) {
     state.irModeIndex = irModeMap[data.receptor_protocol];
     const sel = document.getElementById("irReceptorSelect");
     if (sel) sel.value = irModeMap[data.receptor_protocol];
@@ -329,9 +366,11 @@ function updateIRWS(data) {
   if (!state.irDotTimer) {
     const dot = document.getElementById("irDot");
     if (dot)
-      dot.className = "dot " +
+      dot.className =
+        "dot " +
         (data.receptor_protocol && data.receptor_protocol !== "DESABILITADO"
-          ? "green" : "yellow");
+          ? "green"
+          : "yellow");
   }
 }
 
@@ -356,7 +395,10 @@ function updateSensorWS(data) {
 // Trata sinal IR recebido: pisca dot e adiciona ao histórico.
 function updateIRReceptorWS(data) {
   flashIRDot();
-  saveIRToHistory({ ...data, timestamp: new Date().toLocaleTimeString("pt-BR") });
+  saveIRToHistory({
+    ...data,
+    timestamp: new Date().toLocaleTimeString("pt-BR"),
+  });
 }
 
 // Pisca o dot IR por 300ms ao receber um sinal.
@@ -379,7 +421,9 @@ function flashIRDot() {
 
 // Atualiza dados de rede.
 function updateNetworkWS(data) {
-  ["mdns", "wifi", "ip", "gateway", "mask", "rssi"].forEach((id) => setText(id, data[id]));
+  ["mdns", "wifi", "ip", "gateway", "mask", "rssi"].forEach((id) =>
+    setText(id, data[id]),
+  );
 }
 
 // Atualiza dados MQTT (status, server, tópicos, contadores).
@@ -407,6 +451,22 @@ function updateMQTTWS(data) {
     status.className = "status offline";
     status.textContent = "offline";
   }
+}
+
+// Reaplica o último estado conhecido de cada tipo ao navegar entre páginas.
+function replayLastPayloads() {
+  const updaters = {
+    system: updateSystemWS,
+    outputs: updateOutputsWS,
+    sensor: updateSensorWS,
+    ir: updateIRWS,
+    ir_receptor: updateIRReceptorWS,
+    network: updateNetworkWS,
+    mqtt: updateMQTTWS,
+  };
+  Object.entries(updaters).forEach(([type, fn]) => {
+    if (state.lastPayloads[type]) fn(state.lastPayloads[type]);
+  });
 }
 
 /* =========================================================
@@ -489,7 +549,10 @@ function renderIRHistory() {
       const bits = document.getElementById("irBits");
 
       if (proto) proto.value = d.protocol;
-      if (code) { code.value = d.hex; code.placeholder = "Código hex (ex: 0x20DF10EF)"; }
+      if (code) {
+        code.value = d.hex;
+        code.placeholder = "Código hex (ex: 0x20DF10EF)";
+      }
       if (bits) bits.value = d.bits;
 
       li.classList.add("flash");
@@ -555,7 +618,8 @@ function exportConfig() {
 }
 
 async function importConfig() {
-  if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?")) return;
+  if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?"))
+    return;
 
   const pass = prompt("Digite a senha para confirmar:");
   if (!pass) return;
@@ -708,7 +772,8 @@ function loadButtons(model) {
 
   container.innerHTML = "";
 
-  const buttons = state.remotesData[model].buttons || state.remotesData[model].button || [];
+  const buttons =
+    state.remotesData[model].buttons || state.remotesData[model].button || [];
 
   buttons.forEach((btn) => {
     if (btn.type === "space") {
@@ -723,10 +788,10 @@ function loadButtons(model) {
     b.className = "btn-ir-remote";
 
     if (btn.fontSize) b.style.fontSize = btn.fontSize;
-    if (btn.span)     b.classList.add(`span-${btn.span}`);
-    if (btn.rowSpan)  b.classList.add(`row-span-${btn.rowSpan}`);
+    if (btn.span) b.classList.add(`span-${btn.span}`);
+    if (btn.rowSpan) b.classList.add(`row-span-${btn.rowSpan}`);
     if (btn.background) b.style.background = `#${btn.background}`;
-    if (btn.color)      b.style.color = `#${btn.color}`;
+    if (btn.color) b.style.color = `#${btn.color}`;
 
     b.onclick = () => sendIR(btn.protocol, btn.code, btn.bits, b);
     container.appendChild(b);
@@ -827,7 +892,8 @@ function resetWifi() {
 }
 
 function resetConfig() {
-  if (!confirm("Apagar config.json? Isso apagará todas as configurações!")) return;
+  if (!confirm("Apagar config.json? Isso apagará todas as configurações!"))
+    return;
   const pass = prompt("Digite a senha para confirmar:");
   if (!pass) return;
   wsSend({ cmd: "resetConfig", password: pass });
@@ -841,18 +907,18 @@ function resetConfig() {
 // Chamado uma vez por conexão WS (via updateSystemWS).
 function populateConfig(data) {
   const fields = {
-    cfg_hostname:     data.hostname,
-    cfg_mqtt_id:      data.mqtt_id,
-    cfg_grupo:        data.grupo,
-    cfg_ip:           data.ip,
-    cfg_gw:           data.gw,
-    cfg_sn:           data.sn,
-    cfg_mqtt_server:  data.mqtt_server,
-    cfg_mqtt_port:    data.mqtt_port,
-    cfg_mqtt_user:    data.mqtt_user,
+    cfg_hostname: data.hostname,
+    cfg_mqtt_id: data.mqtt_id,
+    cfg_grupo: data.grupo,
+    cfg_ip: data.ip,
+    cfg_gw: data.gw,
+    cfg_sn: data.sn,
+    cfg_mqtt_server: data.mqtt_server,
+    cfg_mqtt_port: data.mqtt_port,
+    cfg_mqtt_user: data.mqtt_user,
     cfg_mqtt_enabled: data.mqtt_enabled,
     cfg_aht10_enabled: data.aht10_enabled ? "true" : "false",
-    cfg_wifi_ssid:    data.wifi_ssid,
+    cfg_wifi_ssid: data.wifi_ssid,
     // cfg_mqtt_password omitido — backend não envia a senha
   };
 
@@ -895,16 +961,18 @@ function saveDeviceConfig() {
 
   wsSend({
     cmd: "saveConfig",
-    hostname:       get("cfg_hostname").trim(),
-    mqtt_id:        get("cfg_mqtt_id").trim(),
-    grupo:          get("cfg_grupo").trim(),
-    ip, gw, sn,
-    mqtt_server:    get("cfg_mqtt_server").trim(),
-    mqtt_user:      get("cfg_mqtt_user").trim(),
-    mqtt_password:  password.length > 0 ? password : "__keep__",
-    mqtt_enabled:   get("cfg_mqtt_enabled"),
-    mqtt_port:      parseInt(get("cfg_mqtt_port")) || 1883,
-    aht10_enabled:  get("cfg_aht10_enabled") === "true",
+    hostname: get("cfg_hostname").trim(),
+    mqtt_id: get("cfg_mqtt_id").trim(),
+    grupo: get("cfg_grupo").trim(),
+    ip,
+    gw,
+    sn,
+    mqtt_server: get("cfg_mqtt_server").trim(),
+    mqtt_user: get("cfg_mqtt_user").trim(),
+    mqtt_password: password.length > 0 ? password : "__keep__",
+    mqtt_enabled: get("cfg_mqtt_enabled"),
+    mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
+    aht10_enabled: get("cfg_aht10_enabled") === "true",
   });
 
   showCfgStatus("⏳ Salvando...", "#facc15");
@@ -913,7 +981,10 @@ function saveDeviceConfig() {
   if (state.saveConfigTimer) clearTimeout(state.saveConfigTimer);
   state.saveConfigTimer = setTimeout(() => {
     state.saveConfigTimer = null;
-    showCfgStatus("⚠️ Sem confirmação do dispositivo. Verifique a conexão.", "#f59e0b");
+    showCfgStatus(
+      "⚠️ Sem confirmação do dispositivo. Verifique a conexão.",
+      "#f59e0b",
+    );
   }, 5000);
 }
 

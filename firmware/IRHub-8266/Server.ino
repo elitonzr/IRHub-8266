@@ -149,40 +149,58 @@ void setup_server() {
   });
 
   // Rota System
-  server.on("/system", HTTP_GET, []() {
-    if (LittleFS.exists("/system.html")) {
-      File f = LittleFS.open("/system.html", "r");
-      server.streamFile(f, "text/html");
-      f.close();
-    } else {
-      if (LittleFS.exists("/index.html")) {
-        File f = LittleFS.open("/index.html", "r");
-        server.streamFile(f, "text/html");
-        f.close();
-      } else {
-        redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
-        ;
-      }
-    }
-  });
+  // server.on("/system", HTTP_GET, []() {
+  //   if (LittleFS.exists("/system.html")) {
+  //     File f = LittleFS.open("/system.html", "r");
+  //     server.streamFile(f, "text/html");
+  //     f.close();
+  //   } else {
+  //     if (LittleFS.exists("/index.html")) {
+  //       File f = LittleFS.open("/index.html", "r");
+  //       server.streamFile(f, "text/html");
+  //       f.close();
+  //     } else {
+  //       redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
+  //       ;
+  //     }
+  //   }
+  // });
 
   // Rota settings
-  server.on("/settings", HTTP_GET, []() {
-    if (LittleFS.exists("/settings.html")) {
-      File f = LittleFS.open("/settings.html", "r");
-      server.streamFile(f, "text/html");
-      f.close();
-    } else {
-      if (LittleFS.exists("/index.html")) {
-        File f = LittleFS.open("/index.html", "r");
-        server.streamFile(f, "text/html");
-        f.close();
-      } else {
-        redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
-        ;
-      }
-    }
-  });
+  // server.on("/settings", HTTP_GET, []() {
+  //   if (LittleFS.exists("/settings.html")) {
+  //     File f = LittleFS.open("/settings.html", "r");
+  //     server.streamFile(f, "text/html");
+  //     f.close();
+  //   } else {
+  //     if (LittleFS.exists("/index.html")) {
+  //       File f = LittleFS.open("/index.html", "r");
+  //       server.streamFile(f, "text/html");
+  //       f.close();
+  //     } else {
+  //       redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
+  //       ;
+  //     }
+  //   }
+  // });
+
+  // Rota IR
+  // server.on("/ir", HTTP_GET, []() {
+  //   if (LittleFS.exists("/ir.html")) {
+  //     File f = LittleFS.open("/ir.html", "r");
+  //     server.streamFile(f, "text/html");
+  //     f.close();
+  //   } else {
+  //     if (LittleFS.exists("/index.html")) {
+  //       File f = LittleFS.open("/index.html", "r");
+  //       server.streamFile(f, "text/html");
+  //       f.close();
+  //     } else {
+  //       redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
+  //       ;
+  //     }
+  //   }
+  // });
 
   // Rotas explícitas para assets estáticos
   server.on("/app.js", HTTP_GET, []() {
@@ -214,24 +232,6 @@ void setup_server() {
 
     server.streamFile(file, "application/json");
     file.close();
-  });
-
-  // Rota IR
-  server.on("/ir", HTTP_GET, []() {
-    if (LittleFS.exists("/ir.html")) {
-      File f = LittleFS.open("/ir.html", "r");
-      server.streamFile(f, "text/html");
-      f.close();
-    } else {
-      if (LittleFS.exists("/index.html")) {
-        File f = LittleFS.open("/index.html", "r");
-        server.streamFile(f, "text/html");
-        f.close();
-      } else {
-        redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
-        ;
-      }
-    }
   });
 
   // --- Diagnóstico: lista arquivos do LittleFS --- ex.: http://IP_DO_ESP/files
@@ -463,7 +463,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
     case WStype_TEXT:
       {
         String msg = String((char*)payload).substring(0, length);
+        debugPrintln("");
+        debugPrint("[WS] ");
         debugPrintln(msg);
+        debugPrintln("");
 
         /* ---------- COMANDOS JSON ---------- */
 
@@ -481,6 +484,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           setLed(!ledCtrl.estado);
 
           wsSendOutputs();
+          MQTTsendLED();
+          debugLED();
           return;
         }
 
@@ -651,7 +656,6 @@ void wsSendSystem() {
   doc["uptime"] = getFormattedUptime();
   doc["uptime_seconds"] = millis() / 1000UL;
   doc["heap"] = ESP.getFreeHeap();
-  doc["aht10_enabled"] = aht10_enabled;
 
   JsonObject cfg = doc.createNestedObject("config");
   cfg["wifi_ssid"] = WiFi.SSID();
@@ -665,6 +669,7 @@ void wsSendSystem() {
   cfg["mqtt_port"] = mqtt_port;
   cfg["mqtt_user"] = mqtt_user_buf;
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
+  cfg["aht10_enabled"] = aht10_enabled;
 
   char buffer[1600];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
@@ -780,9 +785,9 @@ void wsSendInfoIR_Receptor() {
   webSocket.broadcastTXT(buffer, len);
 }
 
-void wsSendIR_Emissor(uint32_t code, decode_type_t proto, uint8_t bits, const char* status, const char* origem) {
+void wsSendIREmissor(uint32_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
   char payload[256];
-  size_t len = buildIRJson(payload, sizeof(payload), code, proto, bits, status, origem);
+  size_t len = buildIRJson(payload, sizeof(payload), code, protocol, bits, status, origem);
   if (len == 0 || len >= sizeof(payload)) {
     debugPrintln("[WS] Erro JSON IR");
     return;

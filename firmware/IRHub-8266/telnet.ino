@@ -155,6 +155,17 @@ void debugPrint(const String& msg) {
   if (telnetClient && telnetClient.connected()) {
     telnetClient.print(msg);
   }
+
+  // Remove \n e \r antes de montar o JSON
+  String clean = msg;
+  clean.replace("\n", " ");
+  clean.replace("\r", "");
+  clean.replace("\"", "\\\"");
+  clean.replace("{", "|");
+  clean.replace("}", "|");
+
+  String json = "{\"type\":\"log\",\"msg\":\"" + clean + "\"}";
+  webSocket.broadcastTXT(json);
 }
 
 void debugPrintln(const String& msg) {
@@ -163,7 +174,15 @@ void debugPrintln(const String& msg) {
     telnetClient.println(msg);
   }
 
-  String json = "{\"type\":\"log\",\"msg\":\"" + msg + "\"}";
+  // Remove \n e \r antes de montar o JSON
+  String clean = msg;
+  clean.replace("\n", " ");
+  clean.replace("\r", "");
+  clean.replace("\"", "\\\"");
+  clean.replace("{", "|");
+  clean.replace("}", "|");
+
+  String json = "{\"type\":\"log\",\"msg\":\"" + clean + "\"}";
   webSocket.broadcastTXT(json);
 }
 

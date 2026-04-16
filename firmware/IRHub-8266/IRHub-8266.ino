@@ -278,12 +278,7 @@ void loop() {
 
   // WS + MQTT somente se mudar
   if (currentLedState != lastState) {
-
     lastState = currentLedState;
-
-    wsSendOutputs();
-    MQTTsendLED();
-    debugLED();
   }
 
   // ---- WS NETWORK ----
