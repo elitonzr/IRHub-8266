@@ -651,6 +651,7 @@ void wsSendSystem() {
   doc["uptime"] = getFormattedUptime();
   doc["uptime_seconds"] = millis() / 1000UL;
   doc["heap"] = ESP.getFreeHeap();
+  doc["aht10_enabled"] = aht10_enabled;
 
   JsonObject cfg = doc.createNestedObject("config");
   cfg["wifi_ssid"] = WiFi.SSID();
@@ -664,7 +665,6 @@ void wsSendSystem() {
   cfg["mqtt_port"] = mqtt_port;
   cfg["mqtt_user"] = mqtt_user_buf;
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
-  cfg["aht10_enabled"] = aht10_enabled;
 
   char buffer[1600];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));

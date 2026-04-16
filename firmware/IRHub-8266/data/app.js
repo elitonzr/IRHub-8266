@@ -13,19 +13,19 @@
 const state =
   window.appState ||
   (window.appState = {
-    ws: null, // instância do WebSocket
-    reconnectTimer: null, // timer de reconexão automática
-    wsQueue: [], // fila de mensagens pendentes enquanto WS está offline
-    uptimeSeconds: 0, // segundos de uptime sincronizados com o backend
-    irHistory: [], // histórico de sinais IR recebidos (máx 10)
-    logHistory: [], // histórico de logs em tempo real
+    ws: null,               // instância do WebSocket
+    reconnectTimer: null,   // timer de reconexão automática
+    wsQueue: [],            // fila de mensagens pendentes enquanto WS está offline
+    uptimeSeconds: 0,       // segundos de uptime sincronizados com o backend
+    irHistory: [],          // histórico de sinais IR recebidos (máx 10)
+    logHistory: [],         // histórico de logs em tempo real (máx 50)
     configPopulated: false, // evita repopular o form de config a cada mensagem
-    irModeIndex: 0, // índice do modo de recepção IR atual
-    irDotTimer: null, // timer do dot de atividade IR
-    uptimeInterval: null, // setInterval do contador de uptime
-    saveConfigTimer: null, // timeout de confirmação de saveConfig
-    remotesData: {}, // <--- ADICIONE ESTA LINHA
-    selectedRemote: localStorage.getItem("selectedRemote") || null, // modelo de controle remoto selecionado
+    irModeIndex: 0,         // índice do modo de recepção IR atual
+    irDotTimer: null,       // timer do dot de atividade IR
+    uptimeInterval: null,   // setInterval do contador de uptime
+    saveConfigTimer: null,  // timeout de confirmação de saveConfig
+    remotesData: {},        // dados do remotes.json carregados em memória
+    selectedRemote: localStorage.getItem("selectedRemote") || null, // último modelo selecionado
   });
 
 /* =========================================================
@@ -87,7 +87,11 @@ function flushQueue() {
   }
 }
 
-// Configuração de rotas e arquivos correspondentes
+/* =========================================================
+   3. ROTEAMENTO SPA
+   Carrega partials HTML por rota sem recarregar a página.
+========================================================= */
+
 const routes = {
   "/": "/home_content.html",
   "/ir": "/ir_content.html",
@@ -99,11 +103,9 @@ async function navigateTo(path) {
   const contentArea = document.getElementById("app-content");
   if (!contentArea) return;
 
-  // 1. Atualiza a URL no navegador sem recarregar
   window.history.pushState({}, "", path);
 
   try {
-    // 2. Busca o conteúdo HTML parcial
     const file = routes[path] != null ? routes[path] : routes["/"];
     const response = await fetch(file);
 
@@ -114,12 +116,7 @@ async function navigateTo(path) {
       return;
     }
 
-    const html = await response.text();
-
-    // 3. Injeta o HTML na página
-    contentArea.innerHTML = html;
-
-    // 4. Re-inicializa funções específicas da página, se necessário
+    contentArea.innerHTML = await response.text();
     initPageScript(path);
     updateActiveLinks(path);
   } catch (err) {
@@ -128,10 +125,10 @@ async function navigateTo(path) {
   }
 }
 
-// Escuta o botão "Voltar" do navegador
+// Escuta o botão "Voltar" do navegador.
 window.onpopstate = () => navigateTo(window.location.pathname);
 
-// Intercepta cliques nos links da Navbar e Drawer
+// Intercepta cliques nos links da Navbar e Drawer.
 document.addEventListener("click", (e) => {
   if (e.target.matches("[data-link]")) {
     e.preventDefault();
@@ -139,50 +136,39 @@ document.addEventListener("click", (e) => {
   }
 });
 
+// Inicializa scripts específicos de cada rota após injeção do HTML.
 function initPageScript(path) {
   if (path === "/" || path === "/index.html") {
-    // Listener do select de modelo — só existe após home_content.html ser injetado
     const select = document.getElementById("remoteSelect");
     if (select) {
       select.addEventListener("change", (e) => {
         state.selectedRemote = e.target.value;
-        try {
-          localStorage.setItem("selectedRemote", e.target.value);
-        } catch (_) {}
+        try { localStorage.setItem("selectedRemote", e.target.value); } catch (_) {}
         loadButtons(e.target.value);
       });
     }
-    loadRemotes(); // Carrega os controles remotos
+    loadRemotes();
   }
+
   if (path === "/system") {
-    renderLogHistory(); // Atualiza o console
+    renderLogHistory();
   }
-  // Se houver gráficos ou outros componentes, inicie-os aqui
 }
 
-// Adicione esta função para gerenciar o estado visual do menu
+// Marca o link ativo na navbar e no drawer conforme o path atual.
 function updateActiveLinks(path) {
-  // Seleciona todos os links que têm o atributo data-link (tanto na navbar quanto no drawer)
-  const links = document.querySelectorAll("[data-link]");
-
-  links.forEach((link) => {
-    // Remove a classe active de todos
+  document.querySelectorAll("[data-link]").forEach((link) => {
     link.classList.remove("active");
-
-    // Se o href do link for igual ao caminho atual, adiciona a classe active
-    // Usamos o objeto URL para comparar apenas o path, ignorando o domínio
     const linkPath = new URL(link.href, window.location.origin).pathname;
-    if (linkPath === path) {
-      link.classList.add("active");
-    }
+    if (linkPath === path) link.classList.add("active");
   });
 }
 
 /* =========================================================
-   3. HANDLER DE MENSAGENS WS
-   Roteador central — cada tipo de mensagem dispara
-   um updater específico de UI.
+   4. HANDLER DE MENSAGENS WS
+   Roteador central — cada type dispara um updater de UI.
 ========================================================= */
+
 function handleWSMessage(event) {
   let data;
   try {
@@ -194,27 +180,13 @@ function handleWSMessage(event) {
   if (!data.type) return;
 
   switch (data.type) {
-    case "system":
-      updateSystemWS(data);
-      break;
-    case "outputs":
-      updateOutputsWS(data);
-      break;
-    case "sensor":
-      updateSensorWS(data);
-      break;
-    case "ir":
-      updateIRWS(data);
-      break;
-    case "ir_receptor":
-      updateIRReceptorWS(data);
-      break;
-    case "network":
-      updateNetworkWS(data);
-      break;
-    case "mqtt":
-      updateMQTTWS(data);
-      break;
+    case "system":      updateSystemWS(data);    break;
+    case "outputs":     updateOutputsWS(data);   break;
+    case "sensor":      updateSensorWS(data);    break;
+    case "ir":          updateIRWS(data);         break;
+    case "ir_receptor": updateIRReceptorWS(data); break;
+    case "network":     updateNetworkWS(data);   break;
+    case "mqtt":        updateMQTTWS(data);       break;
 
     case "reboot":
       alert("Dispositivo reiniciando...");
@@ -229,7 +201,6 @@ function handleWSMessage(event) {
       break;
 
     case "configSaved":
-      // Cancela o timeout de confirmação e exibe sucesso
       if (state.saveConfigTimer) {
         clearTimeout(state.saveConfigTimer);
         state.saveConfigTimer = null;
@@ -256,7 +227,7 @@ function handleWSMessage(event) {
 }
 
 /* =========================================================
-   4. HELPERS DE UI
+   5. HELPERS DE UI
 ========================================================= */
 
 // Define o textContent de um elemento pelo id, com segurança.
@@ -271,9 +242,10 @@ function getText(id) {
 }
 
 /* =========================================================
-   5. STATUS DO WEBSOCKET
+   6. STATUS DO WEBSOCKET
    Atualiza o badge na navbar e o overlay de reconexão.
 ========================================================= */
+
 function updateWSStatus(connected) {
   const el = document.getElementById("wsStatus");
   if (el) {
@@ -282,18 +254,16 @@ function updateWSStatus(connected) {
       : '<span class="status offline">⚡ Offline</span>';
   }
 
-  if (!connected) {
-    document.title = `❌ ${getText("name") || "IRHub-8266"}`;
-  }
+  if (!connected) document.title = `❌ ${getText("name") || "IRHub-8266"}`;
 
-  // Exibe/oculta overlay de reconexão
   const overlay = document.getElementById("wsOverlay");
   if (overlay) overlay.style.display = connected ? "none" : "flex";
 }
 
 /* =========================================================
-   6. DRAWER (menu mobile)
+   7. DRAWER (menu mobile)
 ========================================================= */
+
 function drawerOpen() {
   document.getElementById("drawer")?.classList.add("open");
   document.getElementById("drawerOverlay")?.classList.add("open");
@@ -305,7 +275,7 @@ function drawerClose() {
 }
 
 /* =========================================================
-   7. UPDATERS DE UI — chamados pelo handler de mensagens WS
+   8. UPDATERS DE UI — chamados pelo handler de mensagens WS
 ========================================================= */
 
 // Atualiza informações de sistema (nome, build, heap, uptime, config).
@@ -317,17 +287,15 @@ function updateSystemWS(data) {
 
   document.title = `✅ ${data.name}`;
 
-  if (data.uptime_seconds !== undefined) {
-    state.uptimeSeconds = data.uptime_seconds;
-  }
+  if (data.uptime_seconds !== undefined) state.uptimeSeconds = data.uptime_seconds;
 
-  // Popula o form de configurações apenas uma vez por conexão
+  // Popula o form de configurações apenas uma vez por conexão.
   if (data.config && !state.configPopulated) {
     populateConfig(data.config);
     state.configPopulated = true;
   }
 
-  // Mostra/oculta card AHT10 conforme configuração
+  // Mostra/oculta card AHT10 conforme configuração.
   const cardAHT10 = document.getElementById("cardAHT10");
   if (cardAHT10) cardAHT10.style.display = data.aht10_enabled ? "" : "none";
 }
@@ -339,20 +307,11 @@ function updateOutputsWS(data) {
   if (dot) dot.className = "dot " + (data.led ? "green" : "red");
 }
 
-// Mapa de nome de protocolo IR para índice numérico.
+// Mapa de nome de protocolo IR para índice numérico (espelhado no backend).
 const irModeMap = {
-  ALL: 0,
-  KNOWN: 1,
-  DISABLED: 2,
-  NEC: 3,
-  SONY: 4,
-  RC5: 5,
-  RC6: 6,
-  SAMSUNG: 7,
-  NIKAI: 8,
-  LG: 9,
-  JVC: 10,
-  WHYNTER: 11,
+  ALL: 0, KNOWN: 1, DISABLED: 2,
+  NEC: 3, SONY: 4, RC5: 5, RC6: 6,
+  SAMSUNG: 7, NIKAI: 8, LG: 9, JVC: 10, WHYNTER: 11,
 };
 
 // Atualiza estado do emissor e receptor IR.
@@ -360,25 +319,19 @@ function updateIRWS(data) {
   setText("irEmitter", data.emissor_teste ? "Ativo" : "Desligado");
   setText("irMode", data.receptor_protocol || "--");
 
-  // Sincroniza select e índice com o protocolo recebido
-  if (
-    data.receptor_protocol &&
-    irModeMap[data.receptor_protocol] !== undefined
-  ) {
+  if (data.receptor_protocol && irModeMap[data.receptor_protocol] !== undefined) {
     state.irModeIndex = irModeMap[data.receptor_protocol];
     const sel = document.getElementById("irReceptorSelect");
     if (sel) sel.value = irModeMap[data.receptor_protocol];
   }
 
-  // Atualiza dot apenas se não há timer ativo (evita piscar durante flash)
+  // Atualiza dot apenas se não há timer ativo (evita conflito com flash).
   if (!state.irDotTimer) {
     const dot = document.getElementById("irDot");
     if (dot)
-      dot.className =
-        "dot " +
+      dot.className = "dot " +
         (data.receptor_protocol && data.receptor_protocol !== "DESABILITADO"
-          ? "green"
-          : "yellow");
+          ? "green" : "yellow");
   }
 }
 
@@ -389,7 +342,6 @@ function updateSensorWS(data) {
   if (!status || !text) return;
 
   if (data.status) {
-    // Sensor offline ou em erro
     status.className = "status offline";
     status.textContent = data.status;
     text.textContent = "";
@@ -404,8 +356,7 @@ function updateSensorWS(data) {
 // Trata sinal IR recebido: pisca dot e adiciona ao histórico.
 function updateIRReceptorWS(data) {
   flashIRDot();
-  const entry = { ...data, timestamp: new Date().toLocaleTimeString("pt-BR") };
-  saveIRToHistory(entry);
+  saveIRToHistory({ ...data, timestamp: new Date().toLocaleTimeString("pt-BR") });
 }
 
 // Pisca o dot IR por 300ms ao receber um sinal.
@@ -420,7 +371,7 @@ function flashIRDot() {
 
   dot.className = "dot green";
   state.irDotTimer = setTimeout(() => {
-    const d = document.getElementById("irDot"); // re-busca após navegação
+    const d = document.getElementById("irDot"); // re-busca após possível navegação
     if (d) d.className = "dot yellow";
     state.irDotTimer = null;
   }, 300);
@@ -428,9 +379,7 @@ function flashIRDot() {
 
 // Atualiza dados de rede.
 function updateNetworkWS(data) {
-  ["mdns", "wifi", "ip", "gateway", "mask", "rssi"].forEach((id) =>
-    setText(id, data[id]),
-  );
+  ["mdns", "wifi", "ip", "gateway", "mask", "rssi"].forEach((id) => setText(id, data[id]));
 }
 
 // Atualiza dados MQTT (status, server, tópicos, contadores).
@@ -461,10 +410,11 @@ function updateMQTTWS(data) {
 }
 
 /* =========================================================
-   8. UPTIME
+   9. UPTIME
    Incrementa localmente a cada segundo e sincroniza
    com o valor do backend a cada mensagem "system".
 ========================================================= */
+
 function formatUptime(s) {
   const d = Math.floor(s / 86400);
   const h = Math.floor((s % 86400) / 3600);
@@ -473,7 +423,7 @@ function formatUptime(s) {
   return `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(sec).padStart(2, "0")}s`;
 }
 
-// Inicia o intervalo de uptime apenas uma vez (sobrevive à navegação).
+// Inicia o intervalo apenas uma vez — sobrevive à navegação entre páginas.
 if (!state.uptimeInterval) {
   state.uptimeInterval = setInterval(() => {
     state.uptimeSeconds++;
@@ -482,10 +432,10 @@ if (!state.uptimeInterval) {
 }
 
 /* =========================================================
-   9. HISTÓRICO IR
+   10. HISTÓRICO IR
    Armazena os últimos 10 sinais recebidos.
-   Click simples copia o hex para a área de transferência.
-   Double-click carrega no form de envio manual.
+   Click simples: copia o hex para a área de transferência.
+   Double-click: carrega no form de envio manual.
 ========================================================= */
 
 // Adiciona entrada ao histórico, ignorando duplicatas consecutivas.
@@ -514,12 +464,12 @@ function renderIRHistory() {
     const li = document.createElement("li");
     li.textContent = `${d.timestamp} | ${d.protocol} | ${d.bits}b | ${d.dec} | ${d.hex} 📋`;
 
-    // Click simples: copia hex para clipboard
+    // Click simples: copia hex para clipboard.
     li.onclick = () => {
       if (navigator.clipboard) {
         navigator.clipboard.writeText(d.hex).catch(() => {});
       } else {
-        // Fallback para browsers sem API de clipboard
+        // Fallback para browsers sem Clipboard API.
         const ta = document.createElement("textarea");
         ta.value = d.hex;
         ta.style.position = "fixed";
@@ -532,17 +482,14 @@ function renderIRHistory() {
       }
     };
 
-    // Double-click: carrega no form de envio manual
+    // Double-click: carrega no form de envio manual.
     li.ondblclick = () => {
       const proto = document.getElementById("irProto");
       const code = document.getElementById("irCode");
       const bits = document.getElementById("irBits");
 
       if (proto) proto.value = d.protocol;
-      if (code) {
-        code.value = d.hex;
-        code.placeholder = "Código hex (ex: 0x20DF10EF)";
-      }
+      if (code) { code.value = d.hex; code.placeholder = "Código hex (ex: 0x20DF10EF)"; }
       if (bits) bits.value = d.bits;
 
       li.classList.add("flash");
@@ -553,26 +500,25 @@ function renderIRHistory() {
   });
 }
 
+/* =========================================================
+   11. HISTÓRICO DE LOGS (Console)
+   Armazena as últimas 50 mensagens recebidas via WS "log".
+========================================================= */
+
+// Adiciona mensagem ao histórico e re-renderiza.
 function saveLogToHistory(msg) {
   if (!msg) return;
   const timestamp = new Date().toLocaleTimeString("pt-BR");
   state.logHistory.push(`${timestamp} ${msg}`);
-  if (state.logHistory.length > 50) state.logHistory.shift(); // Mantém apenas os últimos 50
+  if (state.logHistory.length > 50) state.logHistory.shift();
   renderLogHistory();
 }
 
-// function saveLogToHistory(msg) {
-//   if (!msg) return;
-//   const timestamp = new Date().toLocaleTimeString("pt-BR");
-//   state.logHistory.push(`${timestamp} ${msg}`);
-//   renderLogHistory();
-// }
-
+// Renderiza o histórico de logs no DOM.
 function renderLogHistory() {
   const list = document.getElementById("logHistory");
   if (!list) return;
 
-  // Limpa e reconstrói para garantir que o estado visual condiz com o state.logHistory
   list.innerHTML = "";
   state.logHistory.forEach((msg) => {
     const li = document.createElement("li");
@@ -583,19 +529,33 @@ function renderLogHistory() {
   list.scrollTop = list.scrollHeight;
 }
 
+// Limpa o histórico de logs.
 function clearLogs() {
   state.logHistory = [];
   const list = document.getElementById("logHistory");
   if (list) list.innerHTML = "";
 }
 
+// Envia comando de texto digitado no console via WS.
+function sendTelnetCmd() {
+  const input = document.getElementById("telnetInput");
+  if (!input) return;
+  const line = input.value.trim();
+  if (!line) return;
+  wsSend({ cmd: "telnetCmd", line });
+  input.value = "";
+}
+
+/* =========================================================
+   12. GERENCIAMENTO DE ARQUIVOS (config.json / remotes.json)
+========================================================= */
+
 function exportConfig() {
   window.location.href = "/download?file=/config.json";
 }
 
 async function importConfig() {
-  if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?"))
-    return;
+  if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?")) return;
 
   const pass = prompt("Digite a senha para confirmar:");
   if (!pass) return;
@@ -603,10 +563,9 @@ async function importConfig() {
   const file = document.getElementById("configFile")?.files[0];
   if (!file) return alert("Selecione um arquivo .json");
 
-  // Valida JSON antes de enviar
+  // Valida JSON antes de enviar.
   try {
-    const text = await file.text();
-    JSON.parse(text);
+    JSON.parse(await file.text());
   } catch {
     showConfigStatus("❌ Arquivo JSON inválido.", "#ef4444");
     return;
@@ -618,13 +577,8 @@ async function importConfig() {
   const xhr = new XMLHttpRequest();
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
-
-  xhr.onload = () => {
-    showConfigStatus("✅ Importado com sucesso!", "#22c55e");
-  };
-
+  xhr.onload = () => showConfigStatus("✅ Importado com sucesso!", "#22c55e");
   xhr.onerror = () => showConfigStatus("❌ Erro no upload.", "#ef4444");
-
   xhr.send(formData);
 }
 
@@ -644,10 +598,9 @@ async function importRemotes() {
   const file = document.getElementById("remotesFile")?.files[0];
   if (!file) return alert("Selecione um arquivo .json");
 
-  // Valida JSON antes de enviar
+  // Valida JSON antes de enviar.
   try {
-    const text = await file.text();
-    JSON.parse(text);
+    JSON.parse(await file.text());
   } catch {
     showRemotesStatus("❌ Arquivo JSON inválido.", "#ef4444");
     return;
@@ -659,14 +612,11 @@ async function importRemotes() {
   const xhr = new XMLHttpRequest();
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
-
   xhr.onload = () => {
     showRemotesStatus("✅ Importado com sucesso!", "#22c55e");
-    loadRemotes(); // recarrega imediatamente na UI
+    loadRemotes(); // Recarrega os botões na UI imediatamente.
   };
-
   xhr.onerror = () => showRemotesStatus("❌ Erro no upload.", "#ef4444");
-
   xhr.send(formData);
 }
 
@@ -678,17 +628,8 @@ function showRemotesStatus(msg, color) {
   setTimeout(() => (el.textContent = ""), 3000);
 }
 
-function sendTelnetCmd() {
-  const input = document.getElementById("telnetInput");
-  if (!input) return;
-  const line = input.value.trim();
-  if (!line) return;
-  wsSend({ cmd: "telnetCmd", line });
-  input.value = "";
-}
-
 /* =========================================================
-   10. CONTROLES DE REDE (settings)
+   13. CONTROLES DE REDE (settings)
 ========================================================= */
 
 // Exibe/oculta campos de IP fixo conforme o modo selecionado.
@@ -705,7 +646,7 @@ function toggleMQTTFields() {
   if (fields) fields.style.display = enabled === "yes" ? "block" : "none";
 }
 
-// Valida formato de endereço IP (aceita vazio = DHCP).
+// Valida formato de endereço IP (string vazia = DHCP, aceito).
 function validarIP(ip) {
   if (ip === "") return true;
   const partes = ip.split(".");
@@ -717,37 +658,30 @@ function validarIP(ip) {
 }
 
 /* =========================================================
-   11. CONTROLES REMOTOS (remotes.json)
+   14. CONTROLES REMOTOS (remotes.json)
    Carrega lista de modelos e renderiza botões dinamicamente.
 ========================================================= */
 
-// Carrega remotes.json e popula o select de modelos.
+// Busca remotes.json do dispositivo e popula o select de modelos.
 async function loadRemotes() {
   try {
     const response = await fetch("/remotes.json");
     if (!response.ok) throw new Error("Erro ao baixar remotes.json");
-
-    const data = await response.json();
-    state.remotesData = data; // Salva no estado global
-
-    console.log("Remotes carregados com sucesso");
-
-    // Só agora que temos os dados, populamos o Select e os Botões
+    state.remotesData = await response.json();
     populateRemoteSelect();
   } catch (err) {
     console.error("Erro ao carregar remotes:", err);
   }
 }
 
+// Popula o <select> com os modelos disponíveis e carrega o último selecionado.
 function populateRemoteSelect() {
   const select = document.getElementById("remoteSelect");
   if (!select || !state.remotesData) return;
 
-  select.innerHTML = ""; // Limpa atual
+  select.innerHTML = "";
 
-  // Pega as chaves (LG, TCL, etc)
   const models = Object.keys(state.remotesData);
-
   models.forEach((model) => {
     const opt = document.createElement("option");
     opt.value = model;
@@ -755,7 +689,6 @@ function populateRemoteSelect() {
     select.appendChild(opt);
   });
 
-  // Define qual modelo carregar inicialmente
   const initialModel = state.selectedRemote || models[0];
   if (initialModel && state.remotesData[initialModel]) {
     select.value = initialModel;
@@ -763,9 +696,8 @@ function populateRemoteSelect() {
   }
 }
 
-// Renderiza os botões do modelo selecionado.
+// Renderiza os botões do modelo selecionado no grid.
 function loadButtons(model) {
-  // Se o estado ainda não tem os dados, sai da função silenciosamente
   if (!state.remotesData || !state.remotesData[model]) {
     console.warn(`Dados para o modelo ${model} ainda não disponíveis.`);
     return;
@@ -776,14 +708,11 @@ function loadButtons(model) {
 
   container.innerHTML = "";
 
-  const remote = state.remotesData[model];
-
-  const buttons = remote.buttons || remote.button || [];
+  const buttons = state.remotesData[model].buttons || state.remotesData[model].button || [];
 
   buttons.forEach((btn) => {
     if (btn.type === "space") {
       const space = document.createElement("div");
-      // Se o espaço também tiver span, aplica
       if (btn.span) space.className = `span-${btn.span}`;
       container.appendChild(space);
       return;
@@ -791,33 +720,21 @@ function loadButtons(model) {
 
     const b = document.createElement("button");
     b.textContent = btn.name;
-    b.className = "btn-ir-remote"; // Sua classe base de botão
+    b.className = "btn-ir-remote";
 
-    if (btn.fontSize) {
-      b.style.fontSize = btn.fontSize;
-    }
-    // --- LÓGICA DE SPAN ---
-    if (btn.span) {
-      b.classList.add(`span-${btn.span}`);
-    }
-
-    // Se quiser suporte a span vertical (linhas)
-    if (btn.rowSpan) {
-      b.classList.add(`row-span-${btn.rowSpan}`);
-    }
-    // ---------------------------
-
+    if (btn.fontSize) b.style.fontSize = btn.fontSize;
+    if (btn.span)     b.classList.add(`span-${btn.span}`);
+    if (btn.rowSpan)  b.classList.add(`row-span-${btn.rowSpan}`);
     if (btn.background) b.style.background = `#${btn.background}`;
-    if (btn.color) b.style.color = `#${btn.color}`;
+    if (btn.color)      b.style.color = `#${btn.color}`;
 
     b.onclick = () => sendIR(btn.protocol, btn.code, btn.bits, b);
-
     container.appendChild(b);
   });
 }
 
 /* =========================================================
-   12. IR — ENVIO
+   15. IR — ENVIO
 ========================================================= */
 
 // Envia código IR de um botão do controle remoto.
@@ -829,34 +746,25 @@ function sendIR(protocol, code, bits, element = null) {
 
   if (!code) {
     console.warn("Botão sem campo code:", code);
-    showIrToast(`Erro: Código ausente!`, true); // <--- Feedback em vermelho
+    showIrToast("Erro: Código ausente!", true);
     return;
   }
 
-  showIrToast(`Enviando ${protocol}...`); // <--- Feedback normal (roxo)
-
-  const msg = {
-    cmd: "sendIR",
-    code: code,
-    protocol: protocol,
-    bits: parseInt(bits) || 32,
-  };
-
-  wsSend(msg);
+  showIrToast(`Enviando ${protocol}...`);
+  wsSend({ cmd: "sendIR", code, protocol, bits: parseInt(bits) || 32 });
 }
 
-// Função auxiliar para o Toast
+// Exibe toast de feedback de envio IR (roxo = ok, vermelho = erro).
 function showIrToast(message, isError = false) {
   const existing = document.querySelector(".ir-sending-toast");
   if (existing) existing.remove();
 
   const toast = document.createElement("div");
   toast.className = "ir-sending-toast";
-  if (isError) toast.classList.add("error"); // Adiciona classe de erro
+  if (isError) toast.classList.add("error");
 
   toast.textContent = message;
   document.body.appendChild(toast);
-
   setTimeout(() => toast.remove(), 1000);
 }
 
@@ -867,12 +775,11 @@ function sendIRManual() {
   const bits = parseInt(document.getElementById("irBits")?.value) || 32;
 
   if (!code) return alert("Digite um código IR.");
-
   wsSend({ cmd: "sendIR", code, protocol: proto, bits });
 }
 
 /* =========================================================
-   13. IR — CONTROLES DO RECEPTOR E EMISSOR
+   16. IR — CONTROLES DO RECEPTOR E EMISSOR
 ========================================================= */
 
 // Alterna o modo de teste do emissor IR.
@@ -888,14 +795,15 @@ function setIRReceptor() {
 }
 
 /* =========================================================
-   14. LED
+   17. LED
 ========================================================= */
+
 function toggleLED() {
   wsSend({ cmd: "toggleLED" });
 }
 
 /* =========================================================
-   15. COMANDOS DO DISPOSITIVO
+   18. COMANDOS DO DISPOSITIVO
    Todos os comandos destrutivos pedem confirmação e senha.
 ========================================================= */
 
@@ -919,34 +827,33 @@ function resetWifi() {
 }
 
 function resetConfig() {
-  if (!confirm("Apagar config.json? Isso apagará todas as configurações!"))
-    return;
+  if (!confirm("Apagar config.json? Isso apagará todas as configurações!")) return;
   const pass = prompt("Digite a senha para confirmar:");
   if (!pass) return;
   wsSend({ cmd: "resetConfig", password: pass });
 }
 
 /* =========================================================
-   16. CONFIGURAÇÃO DO DISPOSITIVO
+   19. CONFIGURAÇÃO DO DISPOSITIVO
 ========================================================= */
 
 // Popula o form de configurações com os dados recebidos do backend.
-// Chamado uma vez por conexão WS via updateSystemWS.
+// Chamado uma vez por conexão WS (via updateSystemWS).
 function populateConfig(data) {
   const fields = {
-    cfg_hostname: data.hostname,
-    cfg_mqtt_id: data.mqtt_id,
-    cfg_grupo: data.grupo,
-    cfg_ip: data.ip,
-    cfg_gw: data.gw,
-    cfg_sn: data.sn,
-    cfg_mqtt_server: data.mqtt_server,
-    cfg_mqtt_port: data.mqtt_port,
-    cfg_mqtt_user: data.mqtt_user,
+    cfg_hostname:     data.hostname,
+    cfg_mqtt_id:      data.mqtt_id,
+    cfg_grupo:        data.grupo,
+    cfg_ip:           data.ip,
+    cfg_gw:           data.gw,
+    cfg_sn:           data.sn,
+    cfg_mqtt_server:  data.mqtt_server,
+    cfg_mqtt_port:    data.mqtt_port,
+    cfg_mqtt_user:    data.mqtt_user,
     cfg_mqtt_enabled: data.mqtt_enabled,
     cfg_aht10_enabled: data.aht10_enabled ? "true" : "false",
-    cfg_wifi_ssid: data.wifi_ssid,
-    // cfg_mqtt_password omitido intencionalmente — backend não envia a senha
+    cfg_wifi_ssid:    data.wifi_ssid,
+    // cfg_mqtt_password omitido — backend não envia a senha
   };
 
   Object.entries(fields).forEach(([id, val]) => {
@@ -954,18 +861,15 @@ function populateConfig(data) {
     if (el && val !== undefined) el.value = val;
   });
 
-  // Detecta modo IP (DHCP ou fixo) e exibe campos correspondentes
+  // Detecta modo IP (DHCP ou fixo) e exibe campos correspondentes.
   const modeEl = document.getElementById("cfg_ip_mode");
   if (modeEl) {
     modeEl.value = data.ip ? "static" : "dhcp";
     toggleIPFields();
   }
 
-  // Detecta estado MQTT e exibe campos correspondentes
-  const mqttEl = document.getElementById("cfg_mqtt_enabled");
-  if (mqttEl) {
-    toggleMQTTFields();
-  }
+  // Sincroniza visibilidade dos campos MQTT.
+  if (document.getElementById("cfg_mqtt_enabled")) toggleMQTTFields();
 }
 
 // Valida e envia o payload de configuração para o backend.
@@ -973,13 +877,11 @@ function saveDeviceConfig() {
   const get = (id) => document.getElementById(id)?.value ?? "";
   const password = get("cfg_mqtt_password");
 
-  // Lê campos de IP respeitando o modo selecionado
   const ipMode = document.getElementById("cfg_ip_mode")?.value;
   const ip = ipMode === "static" ? get("cfg_ip").trim() : "";
   const gw = ipMode === "static" ? get("cfg_gw").trim() : "";
   const sn = ipMode === "static" ? get("cfg_sn").trim() : "";
 
-  // Valida IP fixo: todos os campos devem ser preenchidos e válidos
   if (ipMode === "static") {
     if (!ip || !gw || !sn) {
       showCfgStatus("❌ Preencha IP, Gateway e Subnet.", "#ef4444");
@@ -991,33 +893,27 @@ function saveDeviceConfig() {
     }
   }
 
-  const payload = {
+  wsSend({
     cmd: "saveConfig",
-    hostname: get("cfg_hostname").trim(),
-    mqtt_id: get("cfg_mqtt_id").trim(),
-    grupo: get("cfg_grupo").trim(),
-    ip,
-    gw,
-    sn,
-    mqtt_server: get("cfg_mqtt_server").trim(),
-    mqtt_user: get("cfg_mqtt_user").trim(),
-    mqtt_password: password.length > 0 ? password : "__keep__",
-    mqtt_enabled: get("cfg_mqtt_enabled"),
-    mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
-    aht10_enabled: get("cfg_aht10_enabled") === "true",
-  };
+    hostname:       get("cfg_hostname").trim(),
+    mqtt_id:        get("cfg_mqtt_id").trim(),
+    grupo:          get("cfg_grupo").trim(),
+    ip, gw, sn,
+    mqtt_server:    get("cfg_mqtt_server").trim(),
+    mqtt_user:      get("cfg_mqtt_user").trim(),
+    mqtt_password:  password.length > 0 ? password : "__keep__",
+    mqtt_enabled:   get("cfg_mqtt_enabled"),
+    mqtt_port:      parseInt(get("cfg_mqtt_port")) || 1883,
+    aht10_enabled:  get("cfg_aht10_enabled") === "true",
+  });
 
-  wsSend(payload);
   showCfgStatus("⏳ Salvando...", "#facc15");
 
-  // Timeout de confirmação — avisa se não receber configSaved em 5s
+  // Timeout de confirmação — avisa se não receber configSaved em 5s.
   if (state.saveConfigTimer) clearTimeout(state.saveConfigTimer);
   state.saveConfigTimer = setTimeout(() => {
     state.saveConfigTimer = null;
-    showCfgStatus(
-      "⚠️ Sem confirmação do dispositivo. Verifique a conexão.",
-      "#f59e0b",
-    );
+    showCfgStatus("⚠️ Sem confirmação do dispositivo. Verifique a conexão.", "#f59e0b");
   }, 5000);
 }
 
@@ -1031,11 +927,12 @@ function showCfgStatus(msg, color) {
 }
 
 /* =========================================================
-   17. INICIALIZAÇÃO
-   Executado uma vez ao carregar cada página.
+   20. INICIALIZAÇÃO
+   Executado uma vez ao carregar a página.
 ========================================================= */
+
 document.addEventListener("DOMContentLoaded", () => {
-  // Cancela timer de dot que pode ter sobrado da página anterior
+  // Cancela timer de dot que pode ter sobrado de navegação anterior.
   if (state.irDotTimer) {
     clearTimeout(state.irDotTimer);
     state.irDotTimer = null;
@@ -1045,19 +942,11 @@ document.addEventListener("DOMContentLoaded", () => {
   renderIRHistory();
   renderLogHistory();
 
-  // Verifica se o caminho atual exige carregamento de outra "página"
   const currentPath = window.location.pathname;
-  if (currentPath !== "/" && routes[currentPath]) {
-    navigateTo(currentPath);
-  } else {
-    // Na home: injeta o conteúdo e depois inicializa scripts
-    navigateTo("/");
-  }
+  navigateTo(routes[currentPath] ? currentPath : "/");
 
   connectWS();
 
-  // Se WS já estava aberto ao navegar, atualiza badge e título imediatamente
-  if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-    updateWSStatus(true);
-  }
+  // Se WS já estava aberto (navegação SPA), atualiza badge imediatamente.
+  if (state.ws && state.ws.readyState === WebSocket.OPEN) updateWSStatus(true);
 });
