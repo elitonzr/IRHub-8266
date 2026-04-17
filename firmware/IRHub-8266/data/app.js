@@ -193,8 +193,8 @@ function handleWSMessage(event) {
     case "system":
       updateSystemWS(data);
       break;
-    case "outputs":
-      updateOutputsWS(data);
+    case "ledb":
+      updateLEDBWS(data);
       break;
     case "sensor":
       updateSensorWS(data);
@@ -326,11 +326,11 @@ function updateSystemWS(data) {
     cardAHT10.style.display = data.config.aht10_enabled ? "" : "none";
 }
 
-// Atualiza estado do LED (dot + texto).
-function updateOutputsWS(data) {
-  setText("ledState", data.led ? "Ligado" : "Desligado");
-  const dot = document.getElementById("ledDot");
-  if (dot) dot.className = "dot " + (data.led ? "green" : "red");
+// Atualiza estado do LED B (dot + texto).
+function updateLEDBWS(data) {
+  setText("ledbState", data.state ? "Ligado" : "Desligado");
+  const dot = document.getElementById("ledbDot");
+  if (dot) dot.className = "dot " + (data.state ? "yellow" : "gray");
 }
 
 // Mapa de nome de protocolo IR para índice numérico (espelhado no backend).
@@ -458,7 +458,7 @@ function updateMQTTWS(data) {
 function replayLastPayloads() {
   const updaters = {
     system: updateSystemWS,
-    outputs: updateOutputsWS,
+    outputs: updateLEDBWS,
     sensor: updateSensorWS,
     ir: updateIRWS,
     // ir_receptor: updateIRReceptorWS,
@@ -877,8 +877,8 @@ function setIRReceptor() {
    17. LED
 ========================================================= */
 
-function toggleLED() {
-  wsSend({ cmd: "toggleLED" });
+function toggleLEDB() {
+  wsSend({ cmd: "toggleLEDB" });
 }
 
 /* =========================================================

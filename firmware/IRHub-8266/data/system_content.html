@@ -86,15 +86,15 @@
       </div>
     </section>
 
-    <!-- LED -->
+    <!-- LED-->
     <section class="card">
-      <header>LED</header>
+      <header>LED B</header>
       <div class="item">
-        <span id="ledDot" class="dot red"></span>
-        <span id="ledState" class="value">--</span>
+        <span id="ledbDot" class="dot red"></span>
+        <span id="ledbState" class="value">--</span>
       </div>
       <div class="item">
-        <button class="btn-led btn-block" onclick="toggleLED()">
+        <button class="btn-led btn-block" onclick="toggleLEDB()">
           Alternar LED
         </button>
       </div>
@@ -113,16 +113,17 @@
     <!-- GPIO -->
     <section class="card">
       <header>GPIO</header>
-      <div class="item"><span class="value">GPIO0</span> Botão Reset</div>
-      <div class="item"><span class="value">GPIO2</span> LED A</div>
-      <div class="item"><span class="value">GPIO4</span> Emissor IR (D2)</div>
-      <div class="item"><span class="value">GPIO12</span> SDA — AHT10</div>
-      <div class="item"><span class="value">GPIO13</span> SCL — AHT10</div>
-      <div class="item"><span class="value">GPIO14</span> Receptor IR (D5)</div>
+      <div class="item"><span class="value"> GPIO0 - D3</span> Botão Reset</div>
+      <div class="item"><span class="value"> GPIO2 - D4</span> LED A</div>
+      <div class="item"><span class="value"> GPIO5 - D1</span> LED B</div>
+      <div class="item"><span class="value"> GPIO4 - D2</span> Emissor IR</div>
+      <div class="item"><span class="value">GPIO12 - D6</span> SDA — AHT10</div>
+      <div class="item"><span class="value">GPIO13 - D7</span> SCL — AHT10</div>
+      <div class="item"><span class="value">GPIO14 - D5</span> Receptor IR</div>
     </section>
 
     <!-- CONSOLE -->
-    <section class="card" style="grid-column: 1 / -1">
+    <section class="card console">
       <header>Console</header>
       <ul
         id="logHistory"
@@ -138,6 +139,7 @@
           font-size: 12px;
           list-style: none;
           margin: 0;
+          min-height: 400px;
         "
       ></ul>
       <div class="item" style="display: flex; gap: 8px; margin-top: 8px">
