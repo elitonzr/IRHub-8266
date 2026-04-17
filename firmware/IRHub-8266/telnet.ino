@@ -136,7 +136,7 @@ void processTelnetCommand(char* cmd) {
 
   else if (strcmp(cmd, "heap") == 0) {
 
-    debugPrintf("Heap livre: %u bytes\n", ESP.getFreeHeap());
+    debugPrintf("Heap livre: %lu bytes\n", (unsigned long)ESP.getFreeHeap());
   }
 
   else if (strcmp(cmd, "help") == 0) {
@@ -197,12 +197,17 @@ void debugPrintln(const char* msg) {
 //   (frontend interpreta como nova linha)
 // ------------------------------------------------------------
 void debugPrintconsole(const char* msg, bool newline) {
-  char buffer[256];
-
+  char buffer[384];
   size_t j = 0;
-  for (size_t i = 0; msg[i] && j < sizeof(buffer) - 1; i++) {
+  for (size_t i = 0; msg[i] && j < sizeof(buffer) - 2; i++) {
     if (msg[i] == '\n' || msg[i] == '\r') continue;
-
+    if (msg[i] == '\\') {
+      if (j < sizeof(buffer) - 2) {
+        buffer[j++] = '\\';
+        buffer[j++] = '\\';
+      }
+      continue;
+    }
     if (msg[i] == '"') {
       if (j < sizeof(buffer) - 2) {
         buffer[j++] = '\\';
@@ -213,12 +218,9 @@ void debugPrintconsole(const char* msg, bool newline) {
     }
   }
   buffer[j] = '\0';
-
-  char json[320];
+  char json[440];
   snprintf(json, sizeof(json), "{\"type\":\"log\",\"msg\":\"%s\"}", buffer);
-
   webSocket.broadcastTXT(json);
-
   if (newline) {
     webSocket.broadcastTXT("{\"type\":\"log\",\"msg\":\"\"}");
   }
@@ -313,7 +315,7 @@ void debugHelp() {
   debugPrintln("========= COMANDOS DISPONIVEIS =========");
   debugPrintln("");
   debugPrintln("  status              -> Mostra estado geral");
-  debugPrintln("  led                 -> Inverte estado do LED A");
+  debugPrintln("  led                 -> Inverte estado do LED B");
   debugPrintln("  IR                  -> Sensores IR");
   debugPrintln("  ir receptor [modo]  -> Define protocolo do receptor IR");
   debugPrintln("  AHT10               -> Sensor AHT10");
@@ -372,8 +374,8 @@ void debugAHT10() {
     return;
   }
 
-  debugPrintfln("  Temperatura : %.1f °C\n", temperatura);
-  debugPrintfln("  Umidade     : %.1f %%\n", umidade);
+  debugPrintfln("  Temperatura : %.1f °C", temperatura);
+  debugPrintfln("  Umidade     : %.1f %%", umidade);
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
@@ -382,11 +384,11 @@ void debugAHT10() {
 void debugsendInfoIR() {
   debugPrintln("=============== IR Info ================");
   debugPrintln("");
-  debugPrintfln("  Receptor   : GPIO %d\n", kRecvPin);
+  debugPrintfln("  Receptor   : GPIO %d", kRecvPin);
   debugPrint("  Modo       : ");
   debugPrintln(EstadoIRReceptor());
   debugPrintln("");
-  debugPrintfln("  Emissor    : GPIO %d\n", kIrLed);
+  debugPrintfln("  Emissor    : GPIO %d", kIrLed);
   debugPrint("  Teste      : ");
   debugPrintln(IR_EmissorTeste ? "Ativo" : "Desligado");
   debugPrintln("========================================");
@@ -406,11 +408,11 @@ void debugIR() {
     return;
   }
 
-  debugPrintf("  Protocol  : %s (%d)\n", lastIR.protocolo, lastIR.decode_type);
-  debugPrintf("  Bits      : %d\n", lastIR.bits);
-  debugPrintf("  DEC       : %u\n", lastIR.dec);
-  debugPrintf("  HEX       : %s\n", lastIR.hexStr);
-  debugPrintf("  RAW Len   : %d\n", lastIR.rawlen);
+  debugPrintfln("  Protocol  : %s (%d)", lastIR.protocolo, lastIR.decode_type);
+  debugPrintfln("  Bits      : %d", lastIR.bits);
+  debugPrintfln("  DEC       : %llu", (unsigned long long)lastIR.dec);
+  debugPrintfln("  HEX       : %s", lastIR.hexStr);
+  debugPrintfln("  RAW Len   : %d", lastIR.rawlen);
   debugPrintln("");
 
   debugPrintln("--- Human Readable ---");
