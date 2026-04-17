@@ -647,7 +647,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 }
 
 void wsSendSystem() {
-  StaticJsonDocument<1536> doc;
+  StaticJsonDocument<048> doc;
 
   doc["type"] = "system";
   doc["name"] = mqtt_id_buf;
@@ -671,7 +671,7 @@ void wsSendSystem() {
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
   cfg["aht10_enabled"] = aht10_enabled;
 
-  char buffer[1600];
+  char buffer[2176];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
     debugPrintln("[WS] Erro: JSON system truncado");

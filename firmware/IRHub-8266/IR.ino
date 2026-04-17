@@ -258,7 +258,7 @@ bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits, const char*
 
   yield();
 
-  startFeedbackLED(1, 200);
+  startFeedbackLED(2, 200);
   return true;
 }
 

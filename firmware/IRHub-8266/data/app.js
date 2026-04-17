@@ -322,7 +322,8 @@ function updateSystemWS(data) {
 
   // Mostra/oculta card AHT10 conforme configuração.
   const cardAHT10 = document.getElementById("cardAHT10");
-  if (cardAHT10) cardAHT10.style.display = data.config.aht10_enabled ? "" : "none";
+  if (cardAHT10)
+    cardAHT10.style.display = data.config.aht10_enabled ? "" : "none";
 }
 
 // Atualiza estado do LED (dot + texto).
@@ -460,7 +461,7 @@ function replayLastPayloads() {
     outputs: updateOutputsWS,
     sensor: updateSensorWS,
     ir: updateIRWS,
-    ir_receptor: updateIRReceptorWS,
+    // ir_receptor: updateIRReceptorWS,
     network: updateNetworkWS,
     mqtt: updateMQTTWS,
   };
@@ -641,7 +642,14 @@ async function importConfig() {
   const xhr = new XMLHttpRequest();
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
-  xhr.onload = () => showConfigStatus("✅ Importado com sucesso!", "#22c55e");
+  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + pass));
+  xhr.onload = () => {
+    if (xhr.status === 401) {
+      showConfigStatus("❌ Senha incorreta.", "#ef4444");
+      return;
+    }
+    showConfigStatus("✅ Importado com sucesso!", "#22c55e");
+  };
   xhr.onerror = () => showConfigStatus("❌ Erro no upload.", "#ef4444");
   xhr.send(formData);
 }
@@ -816,7 +824,13 @@ function sendIR(protocol, code, bits, element = null) {
   }
 
   showIrToast(`Enviando ${protocol}...`);
-  wsSend({ cmd: "sendIR", code, protocol, bits: parseInt(bits) || 32 });
+  // wsSend({ cmd: "sendIR", code, protocol, bits: parseInt(bits) || 32 });
+  wsSend({
+    cmd: "sendIR",
+    code: String(code),
+    protocol,
+    bits: parseInt(bits) || 32,
+  });
 }
 
 // Exibe toast de feedback de envio IR (roxo = ok, vermelho = erro).
