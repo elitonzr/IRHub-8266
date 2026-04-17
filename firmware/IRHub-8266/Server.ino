@@ -444,28 +444,28 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
   switch (type) {
 
     case WStype_CONNECTED:
-      debugPrintf("[WS] cliente %u conectado\n", num);
+      debugPrintf("[WS] cliente %u conectado", num);
+      debugPrintln("");
 
       wsSendSystem();
-      wsSendOutputs();
       wsSendNetwork();
       wsSendMQTT();
       wsSendInfoIR();
       wsSendInfoIR_Receptor();
+      wsSendLEDB();
 
       break;
 
     case WStype_DISCONNECTED:
-      debugPrintf("[WS] cliente %u desconectado\n", num);
+      debugPrintf("[WS] cliente %u desconectado", num);
+      debugPrintln("");
 
       break;
 
     case WStype_TEXT:
       {
         String msg = String((char*)payload).substring(0, length);
-        debugPrintln("");
-        debugPrint("[WS] ");
-        debugPrintln(msg);
+        debugPrintf("[WS] - Recebido:%.*s", length, (const char*)payload);
         debugPrintln("");
 
         /* ---------- COMANDOS JSON ---------- */
@@ -479,13 +479,31 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         if (!cmd) return;
 
-        if (strcmp(cmd, "toggleLED") == 0) {
+        // if (strcmp(cmd, "toggleLED") == 0) {
 
-          setLed(!ledCtrl.estado);
+        //   setLed(!ledCtrl.estado);
 
-          wsSendOutputs();
-          MQTTsendLED();
-          debugLED();
+        //   wsSendOutputs();
+        //   MQTTsendLED();
+        //   debugLED();
+        //   return;
+        // }
+
+        if (strcmp(cmd, "toggleLEDB") == 0) {
+          ledB_state = !ledB_state;
+          digitalWrite(LEDB, ledB_state ? LOW : HIGH);
+          wsSendLEDB();
+          MQTTsendLEDB();
+          debugLEDB();
+          return;
+        }
+
+        if (strcmp(cmd, "setLEDB") == 0) {
+          bool state = doc["state"] | false;
+          ledB_state = state;
+          digitalWrite(LEDB, ledB_state ? LOW : HIGH);
+          wsSendLEDB();
+          MQTTsendLEDB();
           return;
         }
 
@@ -647,7 +665,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 }
 
 void wsSendSystem() {
-  StaticJsonDocument<048> doc;
+  StaticJsonDocument<2048> doc;
 
   doc["type"] = "system";
   doc["name"] = mqtt_id_buf;
@@ -680,14 +698,27 @@ void wsSendSystem() {
   webSocket.broadcastTXT(buffer, len);
 }
 
-void wsSendOutputs() {
+// void wsSendOutputs() {
+//   StaticJsonDocument<64> doc;
+//   doc["type"] = "outputs";
+//   doc["led"] = ledCtrl.estado;
+//   char buffer[64];
+//   size_t len = serializeJson(doc, buffer, sizeof(buffer));
+//   if (len == 0 || len >= sizeof(buffer)) {
+//     debugPrintln("[WS] Erro: JSON outputs truncado");
+//     return;
+//   }
+//   webSocket.broadcastTXT(buffer, len);
+// }
+
+void wsSendLEDB() {
   StaticJsonDocument<64> doc;
-  doc["type"] = "outputs";
-  doc["led"] = ledCtrl.estado;
+  doc["type"] = "ledb";
+  doc["state"] = ledB_state;
   char buffer[64];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintln("[WS] Erro: JSON outputs truncado");
+    debugPrintln("[WS] Erro: JSON ledb truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -774,8 +805,12 @@ void wsSendInfoIR_Receptor() {
   doc["type"] = "ir_receptor";
   doc["protocol"] = lastIR.protocolo;
   doc["bits"] = lastIR.bits;
+
+  char decStr[21];
+  snprintf(decStr, sizeof(decStr), "%llu", (unsigned long long)lastIR.dec);
   doc["dec"] = lastIR.dec;
   doc["hex"] = lastIR.hexStr;
+
   char buffer[192];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {

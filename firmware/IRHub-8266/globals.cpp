@@ -43,8 +43,11 @@ void initPassword() {
 // -------- IR --------
 IR_ReceptorMode IR_ReceptorEstado = IR_PROTOCOL_KNOWN;
 
-// -------- Controle do LED sem delay --------
+// -------- Controle do LED A sem delay --------
 LedControl ledCtrl = {0};
+
+// -------- Estado do LED B --------
+bool ledB_state = false;
 
 // -------- FEEDBACK MODE --------
 const char* getLedModeString() {
@@ -144,8 +147,8 @@ void handleFeedbackLED() {
   }
 }
 
-void setLed(bool on) {
-  ledCtrl.modo = LED_IDLE;
-  ledCtrl.estado = on;
-  digitalWrite(LEDA, on ? LOW : HIGH);
-}
+// void setLed(bool on) {
+//   ledCtrl.modo = LED_IDLE;
+//   ledCtrl.estado = on;
+//   digitalWrite(LEDA, on ? LOW : HIGH);
+// }

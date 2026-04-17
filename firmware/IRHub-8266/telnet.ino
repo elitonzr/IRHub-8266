@@ -45,7 +45,10 @@ void processTelnetCommand(char* cmd) {
   }
 
   else if (strcmp(cmd, "led") == 0) {
-    setLed(!ledCtrl.estado);
+    ledB_state = !ledB_state;
+    digitalWrite(LEDB, ledB_state ? LOW : HIGH);
+    wsSendLEDB();
+    MQTTsendLEDB();
     debugLED();
   }
 
@@ -150,54 +153,133 @@ void processTelnetCommand(char* cmd) {
 }
 
 //================= Funções Telnet =================
-void debugPrint(const String& msg) {
+const char* onOff(bool v) {
+  return v ? "Ligado" : "Desligado";
+}
+
+// ------------------------------------------------------------
+// Envia mensagem sem quebra de linha
+// - Serial
+// - Telnet (se conectado)
+// - WebSocket (via debugPrintconsole)
+// ------------------------------------------------------------
+void debugPrint(const char* msg) {
   Serial.print(msg);
+
   if (telnetClient && telnetClient.connected()) {
     telnetClient.print(msg);
   }
 
-  // Remove \n e \r antes de montar o JSON
-  String clean = msg;
-  clean.replace("\n", " ");
-  clean.replace("\r", "");
-  clean.replace("\"", "\\\"");
-  clean.replace("{", "|");
-  clean.replace("}", "|");
-
-  String json = "{\"type\":\"log\",\"msg\":\"" + clean + "\"}";
-  webSocket.broadcastTXT(json);
+  debugPrintconsole(msg, false);
 }
 
-void debugPrintln(const String& msg) {
+// ------------------------------------------------------------
+// Envia mensagem com quebra de linha (\n)
+// - Serial
+// - Telnet (se conectado)
+// - WebSocket (simulando quebra de linha)
+// ------------------------------------------------------------
+void debugPrintln(const char* msg) {
   Serial.println(msg);
+
   if (telnetClient && telnetClient.connected()) {
     telnetClient.println(msg);
   }
 
-  // Remove \n e \r antes de montar o JSON
-  String clean = msg;
-  clean.replace("\n", " ");
-  clean.replace("\r", "");
-  clean.replace("\"", "\\\"");
-  clean.replace("{", "|");
-  clean.replace("}", "|");
-
-  String json = "{\"type\":\"log\",\"msg\":\"" + clean + "\"}";
-  webSocket.broadcastTXT(json);
+  debugPrintconsole(msg, true);
 }
 
-void debugPrintf(const char* format, ...) {
+// ------------------------------------------------------------
+// Envia mensagem para o WebSocket em formato JSON
+// - Sanitiza a string (remove \n, \r e escapa aspas)
+// - Evita quebrar o JSON no frontend
+// - Simula quebra de linha no frontend enviando uma mensagem vazia
+//   (frontend interpreta como nova linha)
+// ------------------------------------------------------------
+void debugPrintconsole(const char* msg, bool newline) {
+  char buffer[256];
 
-  char buffer[128];
+  size_t j = 0;
+  for (size_t i = 0; msg[i] && j < sizeof(buffer) - 1; i++) {
+    if (msg[i] == '\n' || msg[i] == '\r') continue;
+
+    if (msg[i] == '"') {
+      if (j < sizeof(buffer) - 2) {
+        buffer[j++] = '\\';
+        buffer[j++] = '"';
+      }
+    } else {
+      buffer[j++] = msg[i];
+    }
+  }
+  buffer[j] = '\0';
+
+  char json[320];
+  snprintf(json, sizeof(json), "{\"type\":\"log\",\"msg\":\"%s\"}", buffer);
+
+  webSocket.broadcastTXT(json);
+
+  if (newline) {
+    webSocket.broadcastTXT("{\"type\":\"log\",\"msg\":\"\"}");
+  }
+}
+
+// ------------------------------------------------------------
+// printf SEM quebra de linha (equivalente a print)
+// Ex:
+//   debugPrintf("Valor: %d", x);
+// ------------------------------------------------------------
+void debugPrintf(const char* format, ...) {
+  char buffer[256];
 
   va_list args;
   va_start(args, format);
 
-  vsnprintf(buffer, sizeof(buffer), format, args);
+  int len = vsnprintf(buffer, sizeof(buffer), format, args);
 
   va_end(args);
 
+  buffer[sizeof(buffer) - 1] = '\0';
+
+  if (len < 0) {
+    Serial.println("[debug] Erro de formatação");
+    return;
+  }
+
+  if ((size_t)len >= sizeof(buffer)) {
+    Serial.println("[debug] Aviso: log truncado");
+  }
+
   debugPrint(buffer);
+}
+
+// ------------------------------------------------------------
+// printf COM quebra de linha (equivalente a println)
+// Ex:
+//   debugPrintfln("Carregando...");
+// ------------------------------------------------------------
+void debugPrintfln(const char* format, ...) {
+  char buffer[256];
+
+  va_list args;
+  va_start(args, format);
+
+  int len = vsnprintf(buffer, sizeof(buffer), format, args);
+
+  va_end(args);
+
+  buffer[sizeof(buffer) - 1] = '\0';
+
+  if (len < 0) {
+    Serial.println("[debug] Erro de formatação");
+    return;
+  }
+
+  if ((size_t)len >= sizeof(buffer)) {
+    Serial.println("[debug] Aviso: log truncado");
+  }
+
+  debugPrintln(buffer);
 }
 
 void debugPassword() {
@@ -218,9 +300,9 @@ void debugBuild() {
   debugPrintln("============== BUILD INFO ==============");
   debugPrintln(" ");
   debugPrint("  Data e hora   : ");
-  debugPrintln(buildDateTime);
+  debugPrintln(buildDateTime.c_str());
   debugPrint("  Versão        : ");
-  debugPrintln(buildVersion);
+  debugPrintln(buildVersion.c_str());
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
@@ -251,20 +333,25 @@ void debugUptime() {
   debugPrintln("================ UPTIME ================");
   debugPrintln(" ");
   debugPrint("  Uptime: ");
-  debugPrintln(getFormattedUptime());
+  debugPrintln(getFormattedUptime().c_str());
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
 }
 
-void debugLED() {
-  debugPrintln("================ LED A =================");
-  debugPrintln("");
-  debugPrint("  Modo: ");
-  debugPrintln(getLedModeString());
+void debugLEDA() {
+  debugPrintfln("[LED A] - Estado:%s Modo:%s", onOff(ledCtrl.estado), getLedModeString());
+}
 
-  debugPrint("  Estado: ");
-  debugPrintln(ledCtrl.estado ? "Ligado" : "Desligado");
+void debugLEDB() {
+  debugPrintfln("[LED B] - Estado:%s", onOff(ledB_state));
+}
+
+void debugLED() {
+  debugPrintln("");
+  debugPrintln("================ LEDs ==================");
+  debugLEDA();
+  debugLEDB();
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
@@ -285,8 +372,8 @@ void debugAHT10() {
     return;
   }
 
-  debugPrintf("  Temperatura : %.1f °C\n", temperatura);
-  debugPrintf("  Umidade     : %.1f %%\n", umidade);
+  debugPrintfln("  Temperatura : %.1f °C\n", temperatura);
+  debugPrintfln("  Umidade     : %.1f %%\n", umidade);
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
@@ -295,11 +382,11 @@ void debugAHT10() {
 void debugsendInfoIR() {
   debugPrintln("=============== IR Info ================");
   debugPrintln("");
-  debugPrintf("  Receptor   : GPIO %d\n", kRecvPin);
+  debugPrintfln("  Receptor   : GPIO %d\n", kRecvPin);
   debugPrint("  Modo       : ");
   debugPrintln(EstadoIRReceptor());
   debugPrintln("");
-  debugPrintf("  Emissor    : GPIO %d\n", kIrLed);
+  debugPrintfln("  Emissor    : GPIO %d\n", kIrLed);
   debugPrint("  Teste      : ");
   debugPrintln(IR_EmissorTeste ? "Ativo" : "Desligado");
   debugPrintln("========================================");
@@ -325,10 +412,13 @@ void debugIR() {
   debugPrintf("  HEX       : %s\n", lastIR.hexStr);
   debugPrintf("  RAW Len   : %d\n", lastIR.rawlen);
   debugPrintln("");
+
   debugPrintln("--- Human Readable ---");
   debugPrintln(lastIR.resultToHumanReadableBasic);
+  debugPrintln("");
+
   debugPrintln("--- Source Code ---");
-  debugPrintln(lastIR.resultToSourceCode);
+  debugPrintln(resultToSourceCode(&results).c_str());
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
@@ -337,12 +427,12 @@ void debugIR() {
 void debugNetwork() {
   debugPrintln("================ NETWORK ===============");
   debugPrintln("");
-  debugPrintf("  SSID      : %s\n", WiFi.SSID().c_str());
-  debugPrintf("  IP        : %s\n", WiFi.localIP().toString().c_str());
-  debugPrintf("  Gateway   : %s\n", WiFi.gatewayIP().toString().c_str());
-  debugPrintf("  Subnet    : %s\n", WiFi.subnetMask().toString().c_str());
-  debugPrintf("  RSSI      : %d dBm\n", WiFi.RSSI());
-  debugPrintf("  mDNS      : http://%s.local\n", hostname_buf);
+  debugPrintfln("  SSID      : %s", WiFi.SSID().c_str());
+  debugPrintfln("  IP        : %s", WiFi.localIP().toString().c_str());
+  debugPrintfln("  Gateway   : %s", WiFi.gatewayIP().toString().c_str());
+  debugPrintfln("  Subnet    : %s", WiFi.subnetMask().toString().c_str());
+  debugPrintfln("  RSSI      : %d dBm", WiFi.RSSI());
+  debugPrintfln("  mDNS      : http://%s.local", hostname_buf);
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
@@ -351,44 +441,30 @@ void debugNetwork() {
 void debugMQTT() {
   debugPrintln("================= MQTT =================");
   debugPrintln(" ");
-  debugPrint("  Status        : ");
-  debugPrintln(mqtt_client.connected() ? "online" : "offline");
-  debugPrint("  Server        : ");
-  debugPrintln(mqtt_server);
-  debugPrint("  Client ID     : ");
-  debugPrintln(clientID);
-  debugPrint("  Tópico        : ");
-  debugPrintln(myTopic + "/#");
-  debugPrintf("  Sucessos      : %d\n", mqttOK);
-  debugPrintf("  Erros         : %d\n", mqttErro);
-
+  debugPrintfln("  Status    : %s", mqtt_client.connected() ? "online" : "offline");
+  debugPrintfln("  Server    : %s", mqtt_server);
+  debugPrintfln("  Client ID : %s", clientID.c_str());
+  debugPrintfln("  Tópico    : %s/#", myTopic.c_str());
+  debugPrintfln("  Sucessos  : %d", mqttOK);
+  debugPrintfln("  Erros     : %d", mqttErro);
+  debugPrintln(" ");
   debugPrintln("  Subscriptions:");
-  debugPrint("    ");
-  debugPrintln(topic_command);
+  debugPrintfln("            : %s", topic_command);
+
+  debugPrintln(" ");
 
   debugPrintln("  Publishers:");
-  debugPrint("    ");
-  debugPrintln(topic_status);
-  debugPrint("    ");
-  debugPrintln(topic_info_device);
-  debugPrint("    ");
-  debugPrintln(topic_info_network);
-  debugPrint("    ");
-  debugPrintln(topic_info_mqtt);
-  debugPrint("    ");
-  debugPrintln(topic_info_uptime);
-  debugPrint("    ");
-  debugPrintln(topic_switch_led_state);
-  debugPrint("    ");
-  debugPrintln(topic_sensor_aht10);
-  debugPrint("    ");
-  debugPrintln(topic_sensor_aht10_status);
-  debugPrint("    ");
-  debugPrintln(topic_sensor_ir_config);
-  debugPrint("    ");
-  debugPrintln(topic_sensor_ir_received);
-  debugPrint("    ");
-  debugPrintln(topic_sensor_ir_sent);
+  debugPrintfln("            : %s", topic_status);
+  debugPrintfln("            : %s", topic_info_device);
+  debugPrintfln("            : %s", topic_info_network);
+  debugPrintfln("            : %s", topic_info_mqtt);
+  debugPrintfln("            : %s", topic_info_uptime);
+  debugPrintfln("            : %s", topic_switch_ledb_state);
+  debugPrintfln("            : %s", topic_sensor_aht10);
+  debugPrintfln("            : %s", topic_sensor_aht10_status);
+  debugPrintfln("            : %s", topic_sensor_ir_config);
+  debugPrintfln("            : %s", topic_sensor_ir_received);
+  debugPrintfln("            : %s", topic_sensor_ir_sent);
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");

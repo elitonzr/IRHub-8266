@@ -39,6 +39,9 @@ void setup_IR() {
 // Verifica se o protocolo recebido deve ser aceito
 // com base no modo de recepção configurado.
 bool irAceitar(decode_type_t tipo) {
+
+  if (IR_ReceptorEstado == IR_PROTOCOL_DISABLED) return false;
+
   if (IR_ReceptorEstado == IR_PROTOCOL_ALL) return true;
 
   // Modo KNOWN: aceita todos os protocolos conhecidos (não-UNKNOWN)
@@ -157,7 +160,8 @@ void lastIR_Receptor() {
   lastIR.decode_type = results.decode_type;
   lastIR.rawlen = results.rawlen;
 
-  snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "0x%08X", (unsigned int)lastIR.dec);
+  // snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "0x%08X", (unsigned int)lastIR.dec);
+  snprintf(lastIR.hexStr, sizeof(lastIR.hexStr), "0x%08llX", (unsigned long long)lastIR.dec);
 
   strncpy(
     lastIR.resultToHumanReadableBasic,
@@ -165,11 +169,11 @@ void lastIR_Receptor() {
     sizeof(lastIR.resultToHumanReadableBasic) - 1);
   lastIR.resultToHumanReadableBasic[sizeof(lastIR.resultToHumanReadableBasic) - 1] = '\0';
 
-  strncpy(
-    lastIR.resultToSourceCode,
-    resultToSourceCode(&results).c_str(),
-    sizeof(lastIR.resultToSourceCode) - 1);
-  lastIR.resultToSourceCode[sizeof(lastIR.resultToSourceCode) - 1] = '\0';
+  // strncpy(
+  //   lastIR.resultToSourceCode,
+  //   resultToSourceCode(&results).c_str(),
+  //   sizeof(lastIR.resultToSourceCode) - 1);
+  // lastIR.resultToSourceCode[sizeof(lastIR.resultToSourceCode) - 1] = '\0';
 
   lastIR.valido = true;
 
@@ -254,10 +258,10 @@ bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits, const char*
       return false;
   }
 
-  enviandoCod = false;  // reativa receptor antes do yield
-
-  yield();
-
+  delay(200);           // aguarda eco dissipar
+  enviandoCod = false;  // reativa receptor
+  irrecv.resume();      // descarta qualquer eco acumulado no buffer
+  yield();              // cede controle ao SDK do ESP8266 — processa WiFi e reseta o watchdog
   startFeedbackLED(2, 200);
   return true;
 }

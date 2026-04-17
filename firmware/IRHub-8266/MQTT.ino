@@ -1,22 +1,39 @@
 /************************************************************
   Subscriptions:
-    IRHub-8266-Sala/command
+            IRHub-8266-Sala/command
+
   Publishers:
-    IRHub-8266-Sala/status
-    IRHub-8266-Sala/info/device
-    IRHub-8266-Sala/info/network
-    IRHub-8266-Sala/info/mqtt
-    IRHub-8266-Sala/info/uptime
-    IRHub-8266-Sala/switch/led/state
-    IRHub-8266-Sala/sensor/aht10/state
-    IRHub-8266-Sala/sensor/aht10/status
-    IRHub-8266-Sala/sensor/ir/config/state
-    IRHub-8266-Sala/sensor/ir/received/state
-    IRHub-8266-Sala/sensor/ir/sent/state
+            IRHub-8266-Sala/status
+            IRHub-8266-Sala/info/device
+            IRHub-8266-Sala/info/network
+            IRHub-8266-Sala/info/mqtt
+            IRHub-8266-Sala/info/uptime
+            IRHub-8266-Sala/switch/ledb/state
+            IRHub-8266-Sala/sensor/aht10/state
+            IRHub-8266-Sala/sensor/aht10/status
+            IRHub-8266-Sala/sensor/ir/config/state
+            IRHub-8266-Sala/sensor/ir/received/state
+            IRHub-8266-Sala/sensor/ir/sent/state
 ************************************************************/
 
 bool mqttEnabled() {
   return strcmp(mqtt_enabled_buf, "yes") == 0;
+}
+
+const char* mqttStateStr(int state) {
+  switch (state) {
+    case -4: return "MQTT_CONNECTION_TIMEOUT";
+    case -3: return "MQTT_CONNECTION_LOST";
+    case -2: return "MQTT_CONNECT_FAILED";
+    case -1: return "MQTT_DISCONNECTED";
+    case 0: return "MQTT_CONNECTED";
+    case 1: return "MQTT_CONNECT_BAD_PROTOCOL";
+    case 2: return "MQTT_CONNECT_BAD_CLIENT_ID";
+    case 3: return "MQTT_CONNECT_UNAVAILABLE";
+    case 4: return "MQTT_CONNECT_BAD_CREDENTIALS";
+    case 5: return "MQTT_CONNECT_UNAUTHORIZED";
+    default: return "MQTT_UNKNOWN";
+  }
 }
 
 void setup_mqtt() {
@@ -40,7 +57,8 @@ void setup_mqtt() {
   snprintf(topic_info_mqtt, sizeof(topic_info_mqtt), "%s/info/mqtt", myTopic.c_str());
   snprintf(topic_info_uptime, sizeof(topic_info_uptime), "%s/info/uptime", myTopic.c_str());
 
-  snprintf(topic_switch_led_state, sizeof(topic_switch_led_state), "%s/switch/led/state", myTopic.c_str());
+  // snprintf(topic_switch_led_state, sizeof(topic_switch_led_state), "%s/switch/led/state", myTopic.c_str());
+  snprintf(topic_switch_ledb_state, sizeof(topic_switch_ledb_state), "%s/switch/ledb/state", myTopic.c_str());
 
   snprintf(topic_sensor_aht10, sizeof(topic_sensor_aht10), "%s/sensor/aht10/state", myTopic.c_str());
   snprintf(topic_sensor_aht10_status, sizeof(topic_sensor_aht10_status), "%s/sensor/aht10/status", myTopic.c_str());
@@ -116,7 +134,7 @@ void mqtt_reconnect() {
     MQTTsendUptime();
     MQTTsendIRConfig();
     if (aht10_enabled) MQTTsendAHT10();
-    MQTTsendLED();
+    MQTTsendLEDB();
 
     debugPrintln("    Feito!");
     debugPrintln("");
@@ -125,7 +143,7 @@ void mqtt_reconnect() {
   } else {
     mqttErro++;
     debugPrint("    Falha MQTT. rc=");
-    debugPrintln(String(mqtt_client.state()));
+    debugPrintf("[MQTT] State: %d (%s)", mqtt_client.state(), mqttStateStr(mqtt_client.state()));
   }
 }
 
@@ -214,17 +232,25 @@ void MQTTsendUptime() {
 }
 
 /************************************************************
-* LED
+* LED B
 ************************************************************/
-void MQTTsendLED() {
+void MQTTsendLEDB() {
   StaticJsonDocument<64> doc;
-  doc["state"] = ledCtrl.estado ? "ON" : "OFF";
-
+  doc["state"] = ledB_state ? "ON" : "OFF";
   char msg[64];
   size_t len = serializeJson(doc, msg, sizeof(msg));
   if (!mqtt_client.connected()) return;
-  mqtt_client.publish(topic_switch_led_state, msg, len);
+  mqtt_client.publish(topic_switch_ledb_state, msg, len);
 }
+// void MQTTsendLED() {
+//   StaticJsonDocument<64> doc;
+//   doc["state"] = ledCtrl.estado ? "ON" : "OFF";
+
+//   char msg[64];
+//   size_t len = serializeJson(doc, msg, sizeof(msg));
+//   if (!mqtt_client.connected()) return;
+//   mqtt_client.publish(topic_switch_led_state, msg, len);
+// }
 
 /************************************************************
 * AHT10
@@ -283,7 +309,10 @@ void MQTTsendIR_Received() {
   doc["protocol"] = lastIR.protocolo;
   doc["decode_type"] = lastIR.decode_type;
   doc["bits"] = lastIR.bits;
-  doc["dec"] = lastIR.dec;
+
+  char decStr[21];
+  snprintf(decStr, sizeof(decStr), "%llu", (unsigned long long)lastIR.dec);
+  doc["dec"] = decStr;
   doc["hex"] = lastIR.hexStr;
 
   char msg[128];
@@ -371,45 +400,66 @@ void processaComando(byte* payload, unsigned int length) {
     } else if (strcmp(type, "aht10") == 0) {
       MQTTsendAHT10();
     } else if (strcmp(type, "led") == 0) {
-      MQTTsendLED();
+      // MQTTsendLED();
+      MQTTsendLEDB();
     }
   }
 
   // =========================
-  // 💡 CONTROLE DO LED
+  // 💡 CONTROLE DO LED B
   // =========================
-  else if (strcmp(cmd, "led") == 0) {
-
+  else if (strcmp(cmd, "ledb") == 0) {
     const char* action = doc["action"];
-
-    if (!action) {
-      debugPrintln("[processaComando] Campo 'action' ausente");
-      return;
-    }
+    if (!action) return;
 
     if (strcasecmp(action, "toggle") == 0) {
-      setLed(!ledCtrl.estado);
-
+      ledB_state = !ledB_state;
     } else if (strcasecmp(action, "on") == 0) {
-      setLed(true);
-
+      ledB_state = true;
     } else if (strcasecmp(action, "off") == 0) {
-      setLed(false);
-
+      ledB_state = false;
     } else {
-      debugPrint("[processaComando] Comando LED inválido: ");
+      debugPrint("[processaComando] Comando LEDB inválido: ");
       debugPrintln(action);
-      wsSendOutputs();
-      MQTTsendLED();
-      debugLED();
       return;
     }
 
-    wsSendOutputs();
-    MQTTsendLED();
-    debugLED();
-
+    digitalWrite(LEDB, ledB_state ? LOW : HIGH);
+    wsSendLEDB();
+    MQTTsendLEDB();
   }
+  // else if (strcmp(cmd, "led") == 0) {
+
+  //   const char* action = doc["action"];
+
+  //   if (!action) {
+  //     debugPrintln("[processaComando] Campo 'action' ausente");
+  //     return;
+  //   }
+
+  //   if (strcasecmp(action, "toggle") == 0) {
+  //     setLed(!ledCtrl.estado);
+
+  //   } else if (strcasecmp(action, "on") == 0) {
+  //     setLed(true);
+
+  //   } else if (strcasecmp(action, "off") == 0) {
+  //     setLed(false);
+
+  //   } else {
+  //     debugPrint("[processaComando] Comando LED inválido: ");
+  //     debugPrintln(action);
+  //     wsSendOutputs();
+  //     MQTTsendLED();
+  //     debugLED();
+  //     return;
+  //   }
+
+  //   wsSendOutputs();
+  //   MQTTsendLED();
+  //   debugLED();
+
+  // }
 
   // =========================
   // CONTROLE DO RECEPTOR IR

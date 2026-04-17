@@ -458,7 +458,7 @@ function updateMQTTWS(data) {
 function replayLastPayloads() {
   const updaters = {
     system: updateSystemWS,
-    outputs: updateLEDBWS,
+    ledb: updateLEDBWS,
     sensor: updateSensorWS,
     ir: updateIRWS,
     // ir_receptor: updateIRReceptorWS,

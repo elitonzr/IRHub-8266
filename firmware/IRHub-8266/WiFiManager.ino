@@ -92,7 +92,7 @@ void startWiFiManagerPortal() {
 
   debugPrintln("");
   debugPrintln("[WiFi] 🌐 Acesse o portal em:");
-  debugPrintln("       http://" + apIP.toString());
+  debugPrintf("       http://%s", apIP.toString().c_str());
   debugPrintln("");
 
   // ---------- WIFI MANAGER ----------
@@ -127,7 +127,7 @@ void startWiFiManagerPortal() {
 
   debugPrintln("");
   debugPrintln("[WiFi] ✅ Portal finalizado");
-  debugPrintln("[WiFi] 📶 Rede selecionada: " + WiFi.SSID());
+  debugPrintf("[WiFi] 📶 Rede selecionada: %s", WiFi.SSID().c_str());
 
   // ---------- SALVA CONFIG ----------
   atualizaConfig(
@@ -147,8 +147,8 @@ void startWiFiManagerPortal() {
 
     debugPrintln("");
     debugPrintln("[WiFi] 🔧 Reconfigurando rede com IP fixo...");
-    debugPrintln("[WiFi] SSID: " + ssid);
-    debugPrintln("[WiFi] IP configurado: " + String(ipStr));
+    debugPrintf("[WiFi] SSID: %s", ssid.c_str());
+    debugPrintf("[WiFi] IP configurado: %s", ipStr);
 
     WiFi.disconnect(true);
     delay(200);
@@ -169,14 +169,14 @@ void startWiFiManagerPortal() {
     if (WiFi.status() == WL_CONNECTED) {
       setLedMode(LED_IDLE);
       debugPrintln("[WiFi] ✅ Reconectado com sucesso!");
-      debugPrintln("[WiFi] 🌐 IP: " + WiFi.localIP().toString());
+      debugPrintf("[WiFi] 🌐 IP: %s", WiFi.localIP().toString().c_str());
     } else {
       debugPrintln("[WiFi] ❌ Falha ao reconectar");
     }
 
   } else {
     debugPrintln("[WiFi] 📡 DHCP ativo");
-    debugPrintln("[WiFi] 🌐 IP: " + WiFi.localIP().toString());
+    debugPrintf("[WiFi] 🌐 IP: %s", WiFi.localIP().toString().c_str());
   }
 
   debugPrintln("========================================");
@@ -355,7 +355,7 @@ void wifi_watchdog() {
       reconnecting = false;
       setLedMode(LED_IDLE);
       debugPrintln("[WiFi] Reconectado!");
-      debugPrintln("IP: " + WiFi.localIP().toString());
+      debugPrintf("[WiFi] 🌐 IP: %s", WiFi.localIP().toString().c_str());
     }
     return;
   }
@@ -524,8 +524,8 @@ void resetConfig() {
 void printPortalCredentials() {
   debugPrintln("=============== Portal AUTH ===============");
   debugPrintln(" ");
-  debugPrintln(String("  SSID: ") + hostname_buf);
-  debugPrintln(String("  Senha: ") + PasswordPortal);
+  debugPrintf("   SSID: %s", hostname_buf);
+  debugPrintf("  Senha: %s", PasswordPortal);
   debugPrintln(" ");
   debugPrintln("========================================");
 }

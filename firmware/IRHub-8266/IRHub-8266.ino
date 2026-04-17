@@ -68,7 +68,8 @@ char topic_info_network[128];
 char topic_info_mqtt[128];
 char topic_info_uptime[128];
 
-char topic_switch_led_state[128];
+// char topic_switch_led_state[128];
+char topic_switch_ledb_state[128];
 
 char topic_sensor_aht10[128];
 char topic_sensor_aht10_status[128];
@@ -103,7 +104,7 @@ struct IRLastData {
   char protocolo[16];
 
   uint32_t dec;
-  char hexStr[12];
+  char hexStr[20];  // "0x" + 16 hex + '\0'
 
   uint16_t bits;
   uint8_t decode_type;
@@ -111,20 +112,20 @@ struct IRLastData {
   uint16_t rawlen;
 
   char resultToHumanReadableBasic[64];
-  char resultToSourceCode[640];
+  // char resultToSourceCode[640];
 
   bool valido;
 };
 
 IRLastData lastIR = {
-  "",    // protocolo
-  0,     // dec
-  "",    // hexStr
-  0,     // bits
-  0,     // decode_type
-  0,     // rawlen
-  "",    // resultToHumanReadableBasic
-  "",    // resultToSourceCode
+  "",  // protocolo
+  0,   // dec
+  "",  // hexStr
+  0,   // bits
+  0,   // decode_type
+  0,   // rawlen
+  "",  // resultToHumanReadableBasic
+  // "",    // resultToSourceCode
   false  // valido
 };
 
@@ -175,8 +176,11 @@ void setup() {
   setup_AHT10();   // Inicializa AHT10
 
   pinMode(BTN_RESET, INPUT_PULLUP);
-  pinMode(LEDA, OUTPUT);     // LED A GPIO02
-  digitalWrite(LEDA, HIGH);  // LED apagado
+
+  pinMode(LEDA, OUTPUT);     // LED A GPIO02 — feedback
+  pinMode(LEDB, OUTPUT);     // LED B GPIO05 — controle
+  digitalWrite(LEDA, HIGH);  // LED A apagado
+  digitalWrite(LEDB, HIGH);  // LED B apagado
 
   ledCtrl.modo = LED_IDLE;
 
@@ -271,15 +275,15 @@ void loop() {
   // ---- LED ----
   handleFeedbackLED();
 
-  static bool lastState = false;
+  // static bool lastState = false;
   // estado lógico do LED (invertido por causa do LOW = ligado)
 
-  bool currentLedState = ledCtrl.estado;
+  // bool currentLedState = ledCtrl.estado;
 
   // WS + MQTT somente se mudar
-  if (currentLedState != lastState) {
-    lastState = currentLedState;
-  }
+  // if (currentLedState != lastState) {
+  //   lastState = currentLedState;
+  // }
 
   // ---- WS NETWORK ----
   static unsigned long tNetwork = 0;

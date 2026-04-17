@@ -53,8 +53,10 @@ enum IR_ReceptorMode {
 
 extern IR_ReceptorMode IR_ReceptorEstado;
 
-// -------- LED --------
+// -------- LEDs --------
 #define LEDA 2
+#define LEDB 5
+extern bool ledB_state;
 
 // -------- Controle do LED sem delay --------
 
@@ -85,5 +87,5 @@ extern LedControl ledCtrl;
 void startFeedbackLED(int vezes, int intervalo);
 void handleFeedbackLED();
 void setLedMode(LedMode modo);
-void setLed(bool on);
+// void setLed(bool on);
 const char* getLedModeString();
