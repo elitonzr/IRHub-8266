@@ -89,12 +89,12 @@ void debugPrintf(const char* format, ...) {
   buffer[sizeof(buffer) - 1] = '\0';
 
   if (len < 0) {
-    Serial.println("[debug] Erro de formatação");
+    Serial.println("[debug]   - Erro de formatação");
     return;
   }
 
   if ((size_t)len >= sizeof(buffer)) {
-    Serial.println("[debug] Aviso: log truncado");
+    Serial.println("[debug]   - Aviso: log truncado");
   }
 
   debugPrint(buffer);
@@ -118,12 +118,12 @@ void debugPrintfln(const char* format, ...) {
   buffer[sizeof(buffer) - 1] = '\0';
 
   if (len < 0) {
-    Serial.println("[debug] Erro de formatação");
+    Serial.println("[debug]   - Erro de formatação");
     return;
   }
 
   if ((size_t)len >= sizeof(buffer)) {
-    Serial.println("[debug] Aviso: log truncado");
+    Serial.println("[debug]   - Aviso: log truncado");
   }
 
   debugPrintln(buffer);
@@ -179,8 +179,8 @@ void debugHelp() {
 void debugUptime() {
   debugPrintln("================ UPTIME ================");
   debugPrintln(" ");
-  debugPrint("  Uptime: ");
-  debugPrintln(getFormattedUptime().c_str());
+  debugPrintfln("  Uptime: : %s", getFormattedUptime().c_str());
+  debugPrintln(" ");
   debugPrintln("========================================");
   debugPrintln("");
   debugPrintln("");
@@ -227,18 +227,8 @@ void debugAHT10() {
 }
 
 void debugsendInfoIR() {
-  debugPrintln("=============== IR Info ================");
-  debugPrintln("");
-  debugPrintfln("  Receptor   : GPIO %d", kRecvPin);
-  debugPrint("  Modo       : ");
-  debugPrintln(EstadoIRReceptor());
-  debugPrintln("");
-  debugPrintfln("  Emissor    : GPIO %d", kIrLed);
-  debugPrint("  Teste      : ");
-  debugPrintln(IR_EmissorTeste ? "Ativo" : "Desligado");
-  debugPrintln("========================================");
-  debugPrintln("");
-  debugPrintln("");
+  debugPrintfln("[IR]      - Receptor: GPIO %d Modo :%s", kRecvPin, EstadoIRReceptor());
+  debugPrintfln("[IR]      - Emissor : GPIO  %d Teste:%s", kIrLed, debugOnOff(IR_EmissorTeste));
 }
 
 void debugIR() {
@@ -253,17 +243,15 @@ void debugIR() {
     return;
   }
 
-  debugPrintfln("  Protocol  : %s (%d)", lastIR.protocolo, lastIR.decode_type);
-  debugPrintfln("  Bits      : %d", lastIR.bits);
-  debugPrintfln("  DEC       : %llu", (unsigned long long)lastIR.dec);
-  debugPrintfln("  HEX       : %s", lastIR.hexStr);
-  debugPrintfln("  RAW Len   : %d", lastIR.rawlen);
-  debugPrintln("");
+  debugPrintfln("[IR]      - Receptor {\"Protocol\":\"%s\", \"type\":%d, \"bits\":%d, \"RAW_Len\":%d, \"DEC\":%llu, \"HEX\":\"%s\"}",
+                lastIR.protocolo,
+                lastIR.decode_type,
+                lastIR.bits,
+                lastIR.rawlen,
+                (unsigned long long)lastIR.dec,
+                lastIR.hexStr);
 
-  debugPrintln("--- Human Readable ---");
-  debugPrintln(lastIR.resultToHumanReadableBasic);
   debugPrintln("");
-
   debugPrintln("--- Source Code ---");
   debugPrintln(resultToSourceCode(&results).c_str());
   debugPrintln("========================================");

@@ -26,8 +26,8 @@ void printHttpCredentials() {
 
   debugPrintln("==============  HTTP AUTH ==============");
   debugPrintln(" ");
-  debugPrintf("  Usuario: %s\n", user);
-  debugPrintf("  Senha  : %s\n", pass);
+  debugPrintf("  Usuario: %s", user);
+  debugPrintf("  Senha  : %s", pass);
   debugPrintln("========================================");
 }
 
@@ -331,8 +331,7 @@ void handleUpload() {
         String filename = upload.filename;
 
         if (!filename.startsWith("/")) filename = "/" + filename;
-
-        Serial.printf("Upload START: %s\n", filename.c_str());
+        debugPrintfln("[FS]      - Upload START: %s\n", filename.c_str());
 
         // Remove se já existir (evita lixo)
         if (LittleFS.exists(filename)) {
@@ -355,14 +354,14 @@ void handleUpload() {
       {
         if (fsUploadFile) {
           fsUploadFile.close();
-          Serial.printf("Upload END: %u bytes\n", upload.totalSize);
+          debugPrintfln("[FS]      - Upload END: %u bytes\n", upload.totalSize);
         }
         break;
       }
 
     case UPLOAD_FILE_ABORTED:
       {
-        Serial.println("Upload ABORTADO");
+        debugPrintln("[FS]      - Upload ABORTADO");
         if (fsUploadFile) fsUploadFile.close();
         break;
       }
@@ -551,7 +550,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           if (mqttEnabled()) {
             mqtt_client.disconnect();
             mqtt_client.setServer(mqtt_server, mqtt_port);
-            debugPrintln("[MQTT]   - Reconectando com novas configurações...");
+            debugPrintln("[MQTT]    - Reconectando com novas configurações...");
           } else {
             mqtt_client.disconnect();
             debugPrintln("[MQTT]   - Desabilitado, desconectando.");

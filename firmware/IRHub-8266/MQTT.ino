@@ -365,7 +365,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   memcpy(mensagem, payload, copyLen);
   mensagem[copyLen] = '\0';
 
-  debugPrint("[Callback] - topic [");
+  debugPrint("[MQTT]    - topic [");
   debugPrint(topic);
   debugPrint("] payload [");
   debugPrint(mensagem);
@@ -416,7 +416,7 @@ void processaComando(byte* payload, unsigned int length) {
       MQTTsendIRConfig();
     } else if (strcmp(type, "aht10") == 0) {
       MQTTsendAHT10();
-    } else if (strcmp(type, "led") == 0) {
+    } else if (strcmp(type, "ledb") == 0) {
       MQTTsendLEDB();
     }
   }
@@ -441,6 +441,7 @@ void processaComando(byte* payload, unsigned int length) {
     }
 
     digitalWrite(LEDB, ledB_state ? LOW : HIGH);
+    debugLEDB();
     wsSendLEDB();
     MQTTsendLEDB();
   }
@@ -474,12 +475,6 @@ void processaComando(byte* payload, unsigned int length) {
 
     if (modo != -1) {
       IR_ReceptorSET(modo);
-
-      // 🔄 já publica o novo estado
-      MQTTsendIRConfig();
-      debugsendInfoIR();
-      wsSendInfoIR();
-
     } else {
       debugPrintln("[processaComando] - Modo IR inválido");
     }

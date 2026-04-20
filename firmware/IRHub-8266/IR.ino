@@ -305,16 +305,16 @@ void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, co
 }
 
 void debugSendIREmissor(uint32_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
-  debugPrintf("[IR]      - status:%s origem:%s Protocol:%s | Bits:%d | Code:0x%08X (%u)\n",
+  debugPrintfln("[IR]      - status:%s origem:%s Protocol:%s | Bits:%d | Code:0x%08X (%u)",
               status, origem, getIRProtocol(protocol), bits,
               (unsigned int)code, (unsigned int)code);
 }
 
 // Notifica WS, MQTT e telnet com o resultado de um envio IR.
 void sendIRFeedback(uint32_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
+  debugSendIREmissor(code, protocol, bits, status, origem);
   wsSendIREmissor(code, protocol, bits, status, origem);
   MQTTSendIREmissor(code, protocol, bits, status, origem);
-  debugSendIREmissor(code, protocol, bits, status, origem);
 }
 
 // ============================================================

@@ -47,7 +47,7 @@ void setup_WiFiManager() {
     ESP.restart();
   }
 
-  Serial.println("\n[WiFi]    - Conectado!");
+  Serial.println("[WiFi]    - Conectado!");
 
   // ---------- mDNS ----------
   if (WiFi.status() == WL_CONNECTED && MDNS.begin(hostname_buf)) {

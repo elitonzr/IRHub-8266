@@ -136,7 +136,7 @@ void processTelnetCommand(char* cmd) {
 
   else if (strcmp(cmd, "heap") == 0) {
 
-    debugPrintf("Heap livre: %lu bytes\n", (unsigned long)ESP.getFreeHeap());
+    debugPrintf("Heap livre: %lu bytes", (unsigned long)ESP.getFreeHeap());
   }
 
   else if (strcmp(cmd, "help") == 0) {

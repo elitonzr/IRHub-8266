@@ -137,7 +137,7 @@ Valores de `type`:
 | `uptime` | `info/uptime`            |
 | `ir`     | `sensor/ir/config/state` |
 | `aht10`  | `sensor/aht10/state` (somente se habilitado) |
-| `led`    | `switch/ledb/state`       |
+| `ledb`    | `switch/ledb/state`       |
 
 ---
 
