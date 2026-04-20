@@ -2,35 +2,49 @@
 #include <ESP8266WiFi.h>
 #include "globals.h"
 
-// -------- Identificação --------
+// ================================================================
+// IDENTIFICAÇÃO
+// ================================================================
 char hostname_buf[32] = "irhub8266";
-char mqtt_id_buf[32] = "IRHub-8266";
-char grupo_buf[32] = "Sala";
+char mqtt_id_buf[32]  = "IRHub-8266";
+char grupo_buf[32]    = "Sala";
 
-// -------- Rede --------
+// ================================================================
+// REDE
+// ================================================================
 char ipStr[16] = "";
 char gwStr[16] = "";
 char snStr[16] = "";
 
-// -------- MQTT --------
-char mqtt_server[64] = "mqtt.local";
-uint16_t mqtt_port = 1883;
-char mqtt_user_buf[64] = "";
-char mqtt_password_buf[64] = "";
-char mqtt_enabled_buf[4] = "no";
+// ================================================================
+// MQTT
+// ================================================================
+char     mqtt_server[64]       = "mqtt.local";
+uint16_t mqtt_port             = 1883;
+char     mqtt_user_buf[64]     = "";
+char     mqtt_password_buf[64] = "";
+char     mqtt_enabled_buf[4]   = "no";
 
-// -------- Features --------
-bool aht10_enabled = false;
-
-// -------- Tópicos --------
+// ================================================================
+// TÓPICOS MQTT
+// ================================================================
 String myTopic = "";
 String clientID = "";
 
-// -------- Build --------
-const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
-const String buildVersion = "0.5.7";
+// ================================================================
+// FEATURES
+// ================================================================
+bool aht10_enabled = false;
 
-// -------- Password --------
+// ================================================================
+// BUILD
+// ================================================================
+const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
+const String buildVersion  = "0.5.7";
+
+// ================================================================
+// PASSWORD
+// ================================================================
 char PasswordPortal[16] = "12345678";
 char Password[16];
 
@@ -38,101 +52,96 @@ void initPassword() {
   snprintf(Password, sizeof(Password), "%08X", ESP.getChipId());
 }
 
-
-
-// -------- IR --------
+// ================================================================
+// IR — RECEPTOR
+// ================================================================
 IR_ReceptorMode IR_ReceptorEstado = IR_PROTOCOL_KNOWN;
 
-// -------- Controle do LED A sem delay --------
-LedControl ledCtrl = {0};
+// ================================================================
+// LED A — CONTROLE DE FEEDBACK
+// ================================================================
+LedControl ledCtrl = {
+  .modo         = LED_IDLE,
+  .estado       = false,
+  .ativo        = false,
+  .vezes        = 0,
+  .intervalo    = 0,
+  .contador     = 0,
+  .ultimoMillis = 0,
+};
 
-// -------- Estado do LED B --------
+// ================================================================
+// LED B — ESTADO
+// ================================================================
 bool ledB_state = false;
 
-// -------- FEEDBACK MODE --------
+// ================================================================
+// LED A — IMPLEMENTAÇÃO
+// ================================================================
+
 const char* getLedModeString() {
   switch (ledCtrl.modo) {
-    case LED_IR: return "LED_IR";
-    case LED_IDLE: return "LED_IDLE";
-    case LED_WIFI_DISCONNECTED: return "LED_WIFI_DISCONNECTED";
-    case LED_WIFI_CONNECTING: return "LED_WIFI_CONNECTING";
-    case LED_MQTT_DISCONNECTED: return "LED_MQTT_DISCONNECTED";
-    case LED_OTA: return "LED_OTA";
-    case LED_FEEDBACK: return "LED_FEEDBACK";
-    default: return "DESCONHECIDO";
+    case LED_IDLE:             return "LED_IDLE";
+    case LED_FEEDBACK:         return "LED_FEEDBACK";
+    case LED_IR:               return "LED_IR";
+    case LED_WIFI_CONNECTING:  return "LED_WIFI_CONNECTING";
+    case LED_WIFI_DISCONNECTED:return "LED_WIFI_DISCONNECTED";
+    case LED_MQTT_DISCONNECTED:return "LED_MQTT_DISCONNECTED";
+    case LED_OTA:              return "LED_OTA";
+    case LED_ERROR_FS:         return "LED_ERROR_FS";
+    default:                   return "DESCONHECIDO";
   }
 }
 
-// -------- SET MODE --------
+// Muda o modo do LED A — não sobrescreve feedback em andamento.
 void setLedMode(LedMode modo) {
-  if (ledCtrl.modo == LED_FEEDBACK) return;  // não sobrescreve feedback
+  if (ledCtrl.modo == LED_FEEDBACK) return;
   ledCtrl.modo = modo;
 }
 
-// -------- FEEDBACK --------
+// Inicia sequência de N piscadas manuais.
 void startFeedbackLED(int vezes, int intervalo) {
-  ledCtrl.vezes = vezes * 2;
-  ledCtrl.intervalo = intervalo;
-  ledCtrl.contador = 0;
-  ledCtrl.estado = false;
+  ledCtrl.vezes        = vezes * 2;
+  ledCtrl.intervalo    = intervalo;
+  ledCtrl.contador     = 0;
+  ledCtrl.estado       = false;
   ledCtrl.ultimoMillis = millis();
-  ledCtrl.ativo = true;
-  ledCtrl.modo = LED_FEEDBACK;
+  ledCtrl.ativo        = true;
+  ledCtrl.modo         = LED_FEEDBACK;
 }
 
-// -------- LOOP --------
+// Chamado a cada iteração do loop() — controla o LED A sem delay.
 void handleFeedbackLED() {
   unsigned long agora = millis();
 
-  // 🔴 PRIORIDADE: feedback manual
+  // --- PRIORIDADE: feedback manual (N piscadas) ---
   if (ledCtrl.modo == LED_FEEDBACK) {
-
     if (!ledCtrl.ativo) {
       ledCtrl.modo = LED_IDLE;
       digitalWrite(LEDA, HIGH);
       return;
     }
-
-    if (agora - ledCtrl.ultimoMillis >= ledCtrl.intervalo) {
+    if (agora - ledCtrl.ultimoMillis >= (unsigned long)ledCtrl.intervalo) {
       ledCtrl.ultimoMillis = agora;
-
       ledCtrl.estado = !ledCtrl.estado;
       digitalWrite(LEDA, ledCtrl.estado ? LOW : HIGH);
-
-      ledCtrl.contador++;
-
-      if (ledCtrl.contador >= ledCtrl.vezes) {
+      if (++ledCtrl.contador >= ledCtrl.vezes) {
         ledCtrl.ativo = false;
       }
     }
     return;
   }
 
-  // 🟡 MODOS AUTOMÁTICOS
-  int intervalo = 1000;
+  // --- MODOS AUTOMÁTICOS (pisca contínuo) ---
+  unsigned long intervalo;
 
   switch (ledCtrl.modo) {
-
-    case LED_IR:
-      intervalo = 200;
-      break;
-
-    case LED_WIFI_DISCONNECTED:
-      intervalo = 300;  // lento
-      break;
-
-    case LED_WIFI_CONNECTING:
-      intervalo = 1000;  // mais rápido
-      break;
-
-    case LED_MQTT_DISCONNECTED:
-      intervalo = 200;
-      break;
-
-    case LED_OTA:
-      intervalo = 100;
-      break;
-
+    case LED_IR:               intervalo = 200;  break;
+    case LED_WIFI_CONNECTING:  intervalo = 1000; break;
+    case LED_WIFI_DISCONNECTED:intervalo = 300;  break;
+    case LED_MQTT_DISCONNECTED:intervalo = 200;  break;
+    case LED_OTA:              intervalo = 100;  break;
+    case LED_ERROR_FS:         intervalo = 100;  break;  // pisca rápido — erro crítico
     case LED_IDLE:
     default:
       digitalWrite(LEDA, HIGH);
@@ -141,14 +150,7 @@ void handleFeedbackLED() {
 
   if (agora - ledCtrl.ultimoMillis >= intervalo) {
     ledCtrl.ultimoMillis = agora;
-
     ledCtrl.estado = !ledCtrl.estado;
     digitalWrite(LEDA, ledCtrl.estado ? LOW : HIGH);
   }
 }
-
-// void setLed(bool on) {
-//   ledCtrl.modo = LED_IDLE;
-//   ledCtrl.estado = on;
-//   digitalWrite(LEDA, on ? LOW : HIGH);
-// }

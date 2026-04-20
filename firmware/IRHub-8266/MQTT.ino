@@ -175,6 +175,7 @@ void MQTTsendInfoDevice() {
   doc["grupo"] = grupo_buf;
   doc["topic_main"] = myTopic;
   doc["client_id"] = clientID;
+  doc["aht10_enabled"] = aht10_enabled;
 
   char msg[384];
   size_t len = serializeJson(doc, msg, sizeof(msg));
@@ -242,15 +243,6 @@ void MQTTsendLEDB() {
   if (!mqtt_client.connected()) return;
   mqtt_client.publish(topic_switch_ledb_state, msg, len);
 }
-// void MQTTsendLED() {
-//   StaticJsonDocument<64> doc;
-//   doc["state"] = ledCtrl.estado ? "ON" : "OFF";
-
-//   char msg[64];
-//   size_t len = serializeJson(doc, msg, sizeof(msg));
-//   if (!mqtt_client.connected()) return;
-//   mqtt_client.publish(topic_switch_led_state, msg, len);
-// }
 
 /************************************************************
 * AHT10
@@ -305,7 +297,7 @@ void MQTTsendIRConfig() {
 * IR RECEIVED — último código recebido
 ************************************************************/
 void MQTTsendIR_Received() {
-  StaticJsonDocument<128> doc;
+  StaticJsonDocument<192> doc;
   doc["protocol"] = lastIR.protocolo;
   doc["decode_type"] = lastIR.decode_type;
   doc["bits"] = lastIR.bits;
@@ -315,7 +307,7 @@ void MQTTsendIR_Received() {
   doc["dec"] = decStr;
   doc["hex"] = lastIR.hexStr;
 
-  char msg[128];
+  char msg[192];
   size_t len = serializeJson(doc, msg, sizeof(msg));
   if (len == 0 || len >= sizeof(msg)) {
     debugPrintln("[MQTT] Erro: JSON ir_received truncado");
@@ -400,7 +392,6 @@ void processaComando(byte* payload, unsigned int length) {
     } else if (strcmp(type, "aht10") == 0) {
       MQTTsendAHT10();
     } else if (strcmp(type, "led") == 0) {
-      // MQTTsendLED();
       MQTTsendLEDB();
     }
   }
@@ -428,38 +419,6 @@ void processaComando(byte* payload, unsigned int length) {
     wsSendLEDB();
     MQTTsendLEDB();
   }
-  // else if (strcmp(cmd, "led") == 0) {
-
-  //   const char* action = doc["action"];
-
-  //   if (!action) {
-  //     debugPrintln("[processaComando] Campo 'action' ausente");
-  //     return;
-  //   }
-
-  //   if (strcasecmp(action, "toggle") == 0) {
-  //     setLed(!ledCtrl.estado);
-
-  //   } else if (strcasecmp(action, "on") == 0) {
-  //     setLed(true);
-
-  //   } else if (strcasecmp(action, "off") == 0) {
-  //     setLed(false);
-
-  //   } else {
-  //     debugPrint("[processaComando] Comando LED inválido: ");
-  //     debugPrintln(action);
-  //     wsSendOutputs();
-  //     MQTTsendLED();
-  //     debugLED();
-  //     return;
-  //   }
-
-  //   wsSendOutputs();
-  //   MQTTsendLED();
-  //   debugLED();
-
-  // }
 
   // =========================
   // CONTROLE DO RECEPTOR IR

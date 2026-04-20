@@ -148,60 +148,6 @@ void setup_server() {
     }
   });
 
-  // Rota System
-  // server.on("/system", HTTP_GET, []() {
-  //   if (LittleFS.exists("/system.html")) {
-  //     File f = LittleFS.open("/system.html", "r");
-  //     server.streamFile(f, "text/html");
-  //     f.close();
-  //   } else {
-  //     if (LittleFS.exists("/index.html")) {
-  //       File f = LittleFS.open("/index.html", "r");
-  //       server.streamFile(f, "text/html");
-  //       f.close();
-  //     } else {
-  //       redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
-  //       ;
-  //     }
-  //   }
-  // });
-
-  // Rota settings
-  // server.on("/settings", HTTP_GET, []() {
-  //   if (LittleFS.exists("/settings.html")) {
-  //     File f = LittleFS.open("/settings.html", "r");
-  //     server.streamFile(f, "text/html");
-  //     f.close();
-  //   } else {
-  //     if (LittleFS.exists("/index.html")) {
-  //       File f = LittleFS.open("/index.html", "r");
-  //       server.streamFile(f, "text/html");
-  //       f.close();
-  //     } else {
-  //       redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
-  //       ;
-  //     }
-  //   }
-  // });
-
-  // Rota IR
-  // server.on("/ir", HTTP_GET, []() {
-  //   if (LittleFS.exists("/ir.html")) {
-  //     File f = LittleFS.open("/ir.html", "r");
-  //     server.streamFile(f, "text/html");
-  //     f.close();
-  //   } else {
-  //     if (LittleFS.exists("/index.html")) {
-  //       File f = LittleFS.open("/index.html", "r");
-  //       server.streamFile(f, "text/html");
-  //       f.close();
-  //     } else {
-  //       redirectToFiles("Arquivos não encontrados. Faça o upload dos arquivos do frontend.");
-  //       ;
-  //     }
-  //   }
-  // });
-
   // Rotas explícitas para assets estáticos
   server.on("/app.js", HTTP_GET, []() {
     if (!LittleFS.exists("/app.js")) {
@@ -479,16 +425,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         if (!cmd) return;
 
-        // if (strcmp(cmd, "toggleLED") == 0) {
-
-        //   setLed(!ledCtrl.estado);
-
-        //   wsSendOutputs();
-        //   MQTTsendLED();
-        //   debugLED();
-        //   return;
-        // }
-
         if (strcmp(cmd, "toggleLEDB") == 0) {
           ledB_state = !ledB_state;
           digitalWrite(LEDB, ledB_state ? LOW : HIGH);
@@ -697,19 +633,6 @@ void wsSendSystem() {
   }
   webSocket.broadcastTXT(buffer, len);
 }
-
-// void wsSendOutputs() {
-//   StaticJsonDocument<64> doc;
-//   doc["type"] = "outputs";
-//   doc["led"] = ledCtrl.estado;
-//   char buffer[64];
-//   size_t len = serializeJson(doc, buffer, sizeof(buffer));
-//   if (len == 0 || len >= sizeof(buffer)) {
-//     debugPrintln("[WS] Erro: JSON outputs truncado");
-//     return;
-//   }
-//   webSocket.broadcastTXT(buffer, len);
-// }
 
 void wsSendLEDB() {
   StaticJsonDocument<64> doc;

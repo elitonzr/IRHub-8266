@@ -42,7 +42,7 @@ IRHub-8266-Sala
 | `cmd`         | Descrição                              |
 |---------------|----------------------------------------|
 | `info`        | Solicita publicação de informações     |
-| `led`         | Controla o LED                         |
+| `ledb`        | Controla o LED B                       |
 | `ir_send`     | Envia código IR                        |
 | `ir_receptor` | Define modo do receptor IR             |
 | `ir_test`     | Ativa/desativa modo de teste do emissor|
@@ -55,7 +55,7 @@ IRHub-8266-Sala
 ### 💡 LED
 
 ```json
-{ "cmd": "led", "action": "on" }
+{ "cmd": "ledb", "action": "on" }
 ```
 
 Valores de `action`: `on`, `off`, `toggle`
@@ -137,7 +137,7 @@ Valores de `type`:
 | `uptime` | `info/uptime`            |
 | `ir`     | `sensor/ir/config/state` |
 | `aht10`  | `sensor/aht10/state` (somente se habilitado) |
-| `led`    | `switch/led/state`       |
+| `led`    | `switch/ledb/state`       |
 
 ---
 
@@ -248,7 +248,7 @@ Publicado sob demanda e a cada 5 minutos.
 
 ---
 
-### `IRHub-8266-Sala/switch/led/state`
+### `IRHub-8266-Sala/switch/ledb/state`
 
 Publicado sempre que o estado do LED muda.
 
@@ -311,7 +311,7 @@ Publicado a cada sinal IR recebido e aceito pelo receptor.
   "protocol": "NEC",
   "decode_type": 3,
   "bits": 32,
-  "dec": 551489775,
+  "dec": "551489775",
   "hex": "0x20DF10EF"
 }
 ```
@@ -375,7 +375,7 @@ IRHub-8266-Sala/
 │   ├── mqtt
 │   └── uptime
 ├── switch/
-│   └── led/
+│   └── ledb/
 │       └── state
 └── sensor/
     ├── aht10/

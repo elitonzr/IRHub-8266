@@ -103,7 +103,7 @@ const unsigned long IR_DEBOUNCE_MS = 300;
 struct IRLastData {
   char protocolo[16];
 
-  uint32_t dec;
+  uint64_t dec;
   char hexStr[20];  // "0x" + 16 hex + '\0'
 
   uint16_t bits;
@@ -162,19 +162,6 @@ void setup() {
 
   initPassword();
 
-  if (!LittleFS.begin()) {
-    Serial.println("[FS] Erro ao montar LittleFS");
-    return;
-  }
-  Serial.println("[FS] LittleFS pronto");
-
-  setup_WiFiManager();
-  setup_server();  // inicializa webSocket
-  setup_ota();     // inicializa OTA
-  setup_mqtt();    // inicializa MQTT
-  setup_IR();      // inicializa IR
-  setup_AHT10();   // Inicializa AHT10
-
   pinMode(BTN_RESET, INPUT_PULLUP);
 
   pinMode(LEDA, OUTPUT);     // LED A GPIO02 — feedback
@@ -183,6 +170,26 @@ void setup() {
   digitalWrite(LEDB, HIGH);  // LED B apagado
 
   ledCtrl.modo = LED_IDLE;
+
+  if (!LittleFS.begin()) {
+    Serial.println("[FS] Erro ao montar LittleFS");
+    ledCtrl.modo = LED_ERROR_FS;
+    unsigned long tReboot = millis();
+    while (millis() - tReboot < 5000) {
+      handleFeedbackLED();
+      yield();
+    }
+    ESP.restart();
+  }
+
+  Serial.println("[FS] LittleFS pronto");
+
+  setup_WiFiManager();
+  setup_server();  // inicializa webSocket
+  setup_ota();     // inicializa OTA
+  setup_mqtt();    // inicializa MQTT
+  setup_IR();      // inicializa IR
+  setup_AHT10();   // Inicializa AHT10
 
   startFeedbackLED(5, 200);  // boot rápido
 
@@ -214,7 +221,6 @@ void loop() {
     // ==========================
     // 1s → abre portal
     // ==========================
-    // DEPOIS
     if (pressTime > 1000 && pressTime < 3000 && !portalOpened) {
       debugPrintln("[BTN] Abrindo portal WiFi...");
       portalOpened = true;
@@ -274,16 +280,6 @@ void loop() {
 
   // ---- LED ----
   handleFeedbackLED();
-
-  // static bool lastState = false;
-  // estado lógico do LED (invertido por causa do LOW = ligado)
-
-  // bool currentLedState = ledCtrl.estado;
-
-  // WS + MQTT somente se mudar
-  // if (currentLedState != lastState) {
-  //   lastState = currentLedState;
-  // }
 
   // ---- WS NETWORK ----
   static unsigned long tNetwork = 0;
