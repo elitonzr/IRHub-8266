@@ -390,7 +390,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
   switch (type) {
 
     case WStype_CONNECTED:
-      debugPrintf("[WS] cliente %u conectado", num);
+      debugPrintf("[WS]      - cliente %u conectado", num);
       debugPrintln("");
 
       wsSendSystem();
@@ -403,7 +403,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
       break;
 
     case WStype_DISCONNECTED:
-      debugPrintf("[WS] cliente %u desconectado", num);
+      debugPrintf("[WS]      - cliente %u desconectado", num);
       debugPrintln("");
 
       break;
@@ -411,8 +411,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
     case WStype_TEXT:
       {
         String msg = String((char*)payload).substring(0, length);
-        debugPrintf("[WS] - Recebido:%.*s", length, (const char*)payload);
-        debugPrintln("");
+        debugPrintfln("[WS]      - Recebido:%.*s", length, (const char*)payload);
 
         /* ---------- COMANDOS JSON ---------- */
 
@@ -476,7 +475,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           uint8_t bits = doc["bits"] | 32;
 
           if (!codeStr || strlen(codeStr) == 0) {
-            debugPrintln("[WS] code vazio");
+            debugPrintln("[WS]      - code vazio");
             sendIRFeedback(0, UNKNOWN, 0, "code vazio", "[WS]");
             return;
           }
@@ -506,14 +505,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
           }
-          debugPrintln("[WS] Reset Wifi solicitado via WebSocket");
+          debugPrintln("[WS]      - Reset Wifi solicitado via WebSocket");
           webSocket.broadcastTXT("{\"type\":\"resetWifi\"}");
           delay(500);
           resetWifi();
         }
 
         else if (strcmp(cmd, "saveConfig") == 0) {
-          debugPrintln("[WS] saveConfig recebido");
+          debugPrintln("[WS]      - saveConfig recebido");
 
           const char* v_hostname = doc["hostname"] | hostname_buf;
           const char* v_mqtt_id = doc["mqtt_id"] | mqtt_id_buf;
@@ -552,10 +551,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           if (mqttEnabled()) {
             mqtt_client.disconnect();
             mqtt_client.setServer(mqtt_server, mqtt_port);
-            debugPrintln("[MQTT] Reconectando com novas configurações...");
+            debugPrintln("[MQTT]   - Reconectando com novas configurações...");
           } else {
             mqtt_client.disconnect();
-            debugPrintln("[MQTT] Desabilitado, desconectando.");
+            debugPrintln("[MQTT]   - Desabilitado, desconectando.");
           }
 
           webSocket.broadcastTXT("{\"type\":\"configSaved\"}");
@@ -569,14 +568,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
           }
-          debugPrintln("[WS] Reset Configuração solicitado via WebSocket");
+          debugPrintln("[WS]      - Reset Configuração solicitado via WebSocket");
           webSocket.broadcastTXT("{\"type\":\"resetConfig\"}");
           delay(500);
           resetConfig();
         }
 
         else if (strcmp(cmd, "reboot") == 0) {
-          debugPrintln("[WS] Reboot solicitado via WebSocket");
+          debugPrintln("[WS]      - Reboot solicitado via WebSocket");
           webSocket.broadcastTXT("{\"type\":\"reboot\"}");
           delay(500);
           ESP.restart();
@@ -628,7 +627,7 @@ void wsSendSystem() {
   char buffer[2176];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintln("[WS] Erro: JSON system truncado");
+    debugPrintln("[WS]      - Erro: JSON system truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -641,7 +640,7 @@ void wsSendLEDB() {
   char buffer[64];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintln("[WS] Erro: JSON ledb truncado");
+    debugPrintln("[WS]      - Erro: JSON ledb truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -662,7 +661,7 @@ void wsSendAHT10() {
   char buffer[128];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintln("[WS] Erro: JSON sensor truncado");
+    debugPrintln("[WS]      - Erro: JSON sensor truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -681,7 +680,7 @@ void wsSendNetwork() {
   char buffer[256];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintln("[WS] Erro: JSON network truncado");
+    debugPrintln("[WS]      - Erro: JSON network truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -702,7 +701,7 @@ void wsSendMQTT() {
   char buffer[384];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintln("[WS] Erro: JSON mqtt truncado");
+    debugPrintln("[WS]      - Erro: JSON mqtt truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -716,7 +715,7 @@ void wsSendInfoIR() {
   char buffer[128];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintln("[WS] Erro: JSON ir truncado");
+    debugPrintln("[WS]      - Erro: JSON ir truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -731,13 +730,13 @@ void wsSendInfoIR_Receptor() {
 
   char decStr[21];
   snprintf(decStr, sizeof(decStr), "%llu", (unsigned long long)lastIR.dec);
-  doc["dec"] = lastIR.dec;
+  doc["dec"] = decStr;
   doc["hex"] = lastIR.hexStr;
 
   char buffer[192];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintln("[WS] Erro: JSON ir_receptor truncado");
+    debugPrintln("[WS]      - Erro: JSON ir_receptor truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -747,7 +746,7 @@ void wsSendIREmissor(uint32_t code, decode_type_t protocol, uint8_t bits, const 
   char payload[256];
   size_t len = buildIRJson(payload, sizeof(payload), code, protocol, bits, status, origem);
   if (len == 0 || len >= sizeof(payload)) {
-    debugPrintln("[WS] Erro JSON IR");
+    debugPrintln("[WS]      - Erro JSON IR");
     return;
   }
   webSocket.broadcastTXT(payload, len);

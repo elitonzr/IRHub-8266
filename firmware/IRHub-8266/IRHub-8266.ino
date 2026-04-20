@@ -13,19 +13,7 @@
 #include <ArduinoOTA.h>
 
 /************ COMUNICAÇÃO ************/
-#include <PubSubClient.h>  // For MQTT git clone git@github.com:knolleary/pubsubclient.git
 #include <WebSocketsServer.h>
-
-/************ IR ************/
-#include <IRremoteESP8266.h>  // Biblioteca para funcionamento do IR, git clone git@github.com:sebastienwarin/IRremoteESP8266.git Verificar essa versão https://github.com/crankyoldgit/IRremoteESP8266
-#include <IRrecv.h>
-#include <IRsend.h>
-#include <IRutils.h>
-#include <IRac.h>
-#include <IRtext.h>
-
-/************ SENSORES ************/
-#include <Adafruit_AHTX0.h>
 
 /************ SISTEMA ************/
 #include <LittleFS.h>
@@ -37,8 +25,6 @@ File fsUploadFile;
 
 /************ ARQUIVOS AUXILIARES ************/
 #include "globals.h"
-
-bool shouldSaveConfig = false;
 
 /************ Telnet ************/
 #define TELNET_BUFFER 128
@@ -52,99 +38,6 @@ WiFiClient telnetClient;
 /************ Web Server ************/
 ESP8266WebServer server(80);  // server na porta 80
 WebSocketsServer webSocket = WebSocketsServer(81);
-
-// MQTT cliente
-WiFiClient espClient;
-PubSubClient mqtt_client(espClient);
-
-int mqttErro = 0;  // Variável para armazenar erro de conexão do MQTT.
-int mqttOK = 0;    // Variável para armazenar número de conexãos do MQTT.
-
-// -- TOPICS MQTT PUBLISHERS --
-char topic_status[96];  // birth/will
-
-char topic_info_device[128];
-char topic_info_network[128];
-char topic_info_mqtt[128];
-char topic_info_uptime[128];
-
-// char topic_switch_led_state[128];
-char topic_switch_ledb_state[128];
-
-char topic_sensor_aht10[128];
-char topic_sensor_aht10_status[128];
-
-char topic_sensor_ir_config[128];
-char topic_sensor_ir_received[128];
-char topic_sensor_ir_sent[128];
-
-// -- TOPICS MQTT SUBSCRIPTIONS --
-char topic_command[96];
-
-// BUFFERS
-#define MAX_PAYLOAD 250
-
-/************ Botão de Reset ************/
-#define BTN_RESET 0  // GPIO0
-
-/************ IR ************/
-// Configuração
-const uint16_t kIrLed = 4;     // Emissor IR - GPIO4 (D2)
-const uint16_t kRecvPin = 14;  // Receptor IR - GPIO14 (D5)
-
-IRsend irsend(kIrLed);
-IRrecv irrecv(kRecvPin);
-decode_results results;
-
-unsigned long lastIRTime = 0;
-const unsigned long IR_DEBOUNCE_MS = 300;
-
-// Último IR recebido
-struct IRLastData {
-  char protocolo[16];
-
-  uint64_t dec;
-  char hexStr[20];  // "0x" + 16 hex + '\0'
-
-  uint16_t bits;
-  uint8_t decode_type;
-
-  uint16_t rawlen;
-
-  char resultToHumanReadableBasic[64];
-  // char resultToSourceCode[640];
-
-  bool valido;
-};
-
-IRLastData lastIR = {
-  "",  // protocolo
-  0,   // dec
-  "",  // hexStr
-  0,   // bits
-  0,   // decode_type
-  0,   // rawlen
-  "",  // resultToHumanReadableBasic
-  // "",    // resultToSourceCode
-  false  // valido
-};
-
-// Auxiliares
-boolean enviandoCod = false;      // Sinalizador para evitar recepção de IR durante transmissão.
-boolean IR_EmissorTeste = false;  // executa teste do emissor
-
-/************ AHT10 ************/
-Adafruit_AHTX0 aht;  // Endereço I2C 0x38
-float umidade;       // Variável para armazenar a umidade
-float temperatura;   // Variável para armazenar a temperatura
-
-enum AHT10State {
-  AHT10_OFFLINE,
-  AHT10_ONLINE,
-  AHT10_ERROR
-};
-
-AHT10State estadoAHT10 = AHT10_OFFLINE;  // Flag para indicar que sensor está AHT10 conectado
 
 /************ SETUP ************/
 void setup() {
@@ -172,7 +65,7 @@ void setup() {
   ledCtrl.modo = LED_IDLE;
 
   if (!LittleFS.begin()) {
-    Serial.println("[FS] Erro ao montar LittleFS");
+    Serial.println("[FS]      - Erro ao montar LittleFS");
     ledCtrl.modo = LED_ERROR_FS;
     unsigned long tReboot = millis();
     while (millis() - tReboot < 5000) {
@@ -182,7 +75,7 @@ void setup() {
     ESP.restart();
   }
 
-  Serial.println("[FS] LittleFS pronto");
+  Serial.println("[FS]      - LittleFS pronto");
 
   setup_WiFiManager();
   setup_server();  // inicializa webSocket
@@ -222,7 +115,7 @@ void loop() {
     // 1s → abre portal
     // ==========================
     if (pressTime > 1000 && pressTime < 3000 && !portalOpened) {
-      debugPrintln("[BTN] Abrindo portal WiFi...");
+      debugPrintln("[BTN]     - Abrindo portal WiFi...");
       portalOpened = true;
       startWiFiManagerPortal();
     }
@@ -231,7 +124,7 @@ void loop() {
     // 5s → reset total
     // ==========================
     if (pressTime > 5000) {
-      debugPrintln("[BTN] Reset total solicitado via botão");
+      debugPrintln("[BTN]     - Reset total solicitado via botão");
       resetConfig();
     }
 
@@ -339,7 +232,7 @@ void loop() {
       telnetClient = telnetServer.available();
 
       debugPrint("");
-      debugPrintln("\n[Telnet] Cliente conectado!");
+      debugPrintln("[Telnet]  - Cliente conectado!");
       debugHelp();
 
     } else {

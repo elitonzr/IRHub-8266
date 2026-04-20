@@ -19,6 +19,7 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 ## 📦 Funcionalidades
 
 ### MQTT
+
 - Publicação de status online/offline via Last Will (retain)
 - Publicação periódica de uptime, rede e sensores (a cada 5 minutos)
 - Publicação event-driven de IR recebido/enviado e estado do LED
@@ -26,6 +27,7 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 - Reconexão automática com intervalo de 60 segundos
 
 ### IR
+
 - **Envio** de códigos pelos protocolos: NEC, SONY, RC5, RC6, SAMSUNG, NIKAI, LG, JVC, WHYNTER
 - Aceita código em decimal ou hexadecimal
 - **Recepção** configurável com 12 modos: ALL, KNOWN, DISABLED, e cada protocolo individualmente
@@ -34,6 +36,7 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 - Debounce de 300ms na recepção
 
 ### Sensor AHT10
+
 - Temperatura e umidade via I2C (SDA: GPIO12, SCL: GPIO13)
 - Habilitação configurável em runtime via `/settings` (sem necessidade de reboot)
 - Quando desabilitado: nenhuma leitura I2C, nenhuma publicação MQTT/WS, card oculto na UI
@@ -41,6 +44,7 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 - Publicação periódica via MQTT e WebSocket (somente quando habilitado)
 
 ### Web Server / Frontend
+
 - Frontend servido do LittleFS (HTML/CSS/JS separados)
 - Páginas: `/` (controle IR), `/system` (status), `/settings` (configuração), `/files` (file manager)
 - Comunicação em tempo real via WebSocket (porta 81)
@@ -50,6 +54,7 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 - Autenticação HTTP Basic nas rotas destrutivas (`/files`, `/delete`, `/download`, `/upload`)
 
 ### WiFiManager
+
 - Portal de configuração automático na primeira inicialização
 - Parâmetros configuráveis pelo portal: hostname, MQTT ID, grupo, IP fixo/DHCP, MQTT
 - Botão físico (GPIO0): pressão 1–3s abre portal, pressão >5s faz reset total
@@ -57,11 +62,13 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 - Suporte a IP fixo com reaplique automático após reconexão
 
 ### OTA
+
 - Atualização remota via ArduinoOTA
 - Hostname: `clientID` (ex: `IRHub-8266-Sala-<chipID>`)
 - Senha: ChipID em hexadecimal (8 dígitos)
 
 ### Telnet
+
 - Porta 8266
 - Comandos: `status`, `led`, `ir`, `ir receptor <modo>`, `irteste [on/off]`, `aht10`, `mqtt`, `network`, `info`, `heap`, `reboot`, `help`
 
@@ -164,17 +171,18 @@ Durante o boot o dispositivo executa na ordem:
 
 ```
 IRHub-8266/
-├── IRHub-8266.ino     — setup(), loop(), estruturas de dados
+├── IRHub-8266.ino     — setup/loop
 ├── globals.h          — declarações externas e enums
 ├── globals.cpp        — variáveis globais, LED, senhas
-├── Server.ino         — HTTP server, WebSocket, rotas, wsSend*
-├── Callback.ino       — processamento de comandos MQTT
+├── Network.ino        — WiFi e watchdog
+├── Config.ino         — load/save/reset config
+├── ServerWS.ino       — HTTP + WebSocket
 ├── MQTT.ino           — conexão MQTT, publishers
 ├── IR.ino             — emissor, receptor, parser, feedback
-├── WiFiManager.ino    — WiFi, loadConfig, saveConfig, watchdog
 ├── AHT10.ino          — sensor AHT10
-├── OTA.ino            — atualização Over-The-Air
-└── telnet.ino         — CLI Telnet, debug helpers
+├── OTA.ino            — atualização OTA
+├── Telnet.ino         — servidor telnet + comandos
+├── Debug.ino          — funções de debug
 ```
 
 ### Frontend (LittleFS)

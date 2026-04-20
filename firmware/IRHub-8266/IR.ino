@@ -1,3 +1,33 @@
+// ================================================================
+// IR — HARDWARE
+// ================================================================
+const uint16_t kIrLed = 4;     // Emissor  — GPIO4  (D2)
+const uint16_t kRecvPin = 14;  // Receptor — GPIO14 (D5)
+
+IRsend irsend(kIrLed);
+IRrecv irrecv(kRecvPin);
+decode_results results;
+
+unsigned long lastIRTime = 0;
+const unsigned long IR_DEBOUNCE_MS = 300;
+
+boolean enviandoCod = false;      // bloqueia recepção durante transmissão
+boolean IR_EmissorTeste = false;  // ativa ciclo de teste do emissor
+
+// ================================================================
+// IR — ÚLTIMO SINAL RECEBIDO
+// ================================================================
+IRLastData lastIR = {
+  "",    // protocolo
+  0,     // dec
+  "",    // hexStr
+  0,     // bits
+  0,     // decode_type
+  0,     // rawlen
+  "",    // resultToHumanReadableBasic
+  false  // valido
+};
+
 // ============================================================
 // IR.ino — Controle de Emissão e Recepção IR
 //
@@ -91,8 +121,6 @@ void myIRdecoder() {
     lastIR_Receptor();
   }
 
-  setLedMode(LED_IDLE);
-
   irrecv.resume();
 }
 
@@ -169,12 +197,6 @@ void lastIR_Receptor() {
     sizeof(lastIR.resultToHumanReadableBasic) - 1);
   lastIR.resultToHumanReadableBasic[sizeof(lastIR.resultToHumanReadableBasic) - 1] = '\0';
 
-  // strncpy(
-  //   lastIR.resultToSourceCode,
-  //   resultToSourceCode(&results).c_str(),
-  //   sizeof(lastIR.resultToSourceCode) - 1);
-  // lastIR.resultToSourceCode[sizeof(lastIR.resultToSourceCode) - 1] = '\0';
-
   lastIR.valido = true;
 
   debugIR();
@@ -231,11 +253,28 @@ decode_type_t parseProtocol(const char* protoStr) {
   return UNKNOWN;
 }
 
+// Ponto de entrada unificado para envio IR via WS ou MQTT.
+// Valida, parseia e envia o código, depois dispara o feedback.
 // Envia um código IR pelo protocolo e bits especificados.
 // Desativa o receptor durante o envio para evitar eco.
 // Retorna true em caso de sucesso, false se protocolo não suportado.
-bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits, const char* origem) {
-  enviandoCod = true;
+void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, const char* origem) {
+  if (!codeStr || strlen(codeStr) == 0 || bits > 64) {
+    sendIRFeedback(0, UNKNOWN, 0, "JSON inválido", origem);
+    return;
+  }
+
+  decode_type_t protocol = parseProtocol(protoStr);
+  if (protocol == UNKNOWN) {
+    sendIRFeedback(0, UNKNOWN, 0, "protocol desconhecido", origem);
+    return;
+  }
+
+  uint32_t code = 0;
+  if (!parseIRCode(codeStr, code) || code == 0) {
+    sendIRFeedback(0, protocol, bits, "código inválido", origem);
+    return;
+  }
 
   if (bits == 0) bits = 32;
 
@@ -253,45 +292,20 @@ bool sendIRCode(uint32_t code, decode_type_t protocol, uint8_t bits, const char*
       else irsend.sendSAMSUNG(code, bits);
       break;
     default:
-      debugPrintf("Protocolo IR não suportado (%d)\n", protocol);
-      enviandoCod = false;
-      return false;
+      sendIRFeedback(code, protocol, bits, "Protocolo não suportado", origem);
+      return;
   }
 
-  delay(200);           // aguarda eco dissipar
-  enviandoCod = false;  // reativa receptor
-  irrecv.resume();      // descarta qualquer eco acumulado no buffer
-  yield();              // cede controle ao SDK do ESP8266 — processa WiFi e reseta o watchdog
-  startFeedbackLED(2, 200);
-  return true;
-}
-
-// Ponto de entrada unificado para envio IR via WS ou MQTT.
-// Valida, parseia e envia o código, depois dispara o feedback.
-void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, const char* origem) {
-  if (!codeStr || strlen(codeStr) == 0 || bits > 64) {
-    sendIRFeedback(0, UNKNOWN, 0, "JSON inválido", origem);
-    return;
-  }
-
-  decode_type_t proto = parseProtocol(protoStr);
-  if (proto == UNKNOWN) {
-    sendIRFeedback(0, UNKNOWN, 0, "protocol desconhecido", origem);
-    return;
-  }
-
-  uint32_t code = 0;
-  if (!parseIRCode(codeStr, code) || code == 0) {
-    sendIRFeedback(0, proto, bits, "código inválido", origem);
-    return;
-  }
-
-  bool ok = sendIRCode(code, proto, bits, origem);
-  sendIRFeedback(code, proto, bits, ok ? "ok" : "fail", origem);
+  startFeedbackLED(1, 200);  // pisca o led A 1x
+  delay(200);                // aguarda eco dissipar
+  enviandoCod = false;       // reativa receptor
+  irrecv.resume();           // descarta qualquer eco acumulado no buffer
+  yield();                   // cede controle ao SDK do ESP8266 — processa WiFi e reseta o watchdog
+  sendIRFeedback(code, protocol, bits, "ok", origem);
 }
 
 void debugSendIREmissor(uint32_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
-  debugPrintf("[IR] - status:%s origem:%s Protocol:%s | Bits:%d | Code:0x%08X (%u)\n",
+  debugPrintf("[IR]      - status:%s origem:%s Protocol:%s | Bits:%d | Code:0x%08X (%u)\n",
               status, origem, getIRProtocol(protocol), bits,
               (unsigned int)code, (unsigned int)code);
 }
@@ -354,38 +368,38 @@ void desligamentoUniversal() {
       debugPrintln("=====================================================");
       debugPrintln("      Iniciando teste universal de desligamento      ");
       debugPrintln("=====================================================");
-      debugPrintln("    Enviando: NEC LG...");
-      sendIRCode(0x20DF10EF, NEC, 32, "[Teste]");  // LG Power
+      debugPrintln("[Teste]   - Enviando: NEC LG...");
+      handleIRCommand("0x20DF10EF", "NEC", 32, "[Teste]");  // LG Power
       testN++;
       break;
 
     case 1:
-      debugPrintln("    Enviando: NEC Samsung...");
-      sendIRCode(0xE0E040BF, NEC, 32, "[Teste]");  // Samsung Power
+      debugPrintln("[Teste]   - Enviando: NEC Samsung...");
+      handleIRCommand("0xE0E040BF", "NEC", 32, "[Teste]");  // Samsung Power
       testN++;
       break;
 
     case 2:
-      debugPrintln("    Enviando: NEC Genérico...");
-      sendIRCode(0x00FF02FD, NEC, 32, "[Teste]");  // NEC genérico
+      debugPrintln("[Teste]   - Enviando: NEC Genérico...");
+      handleIRCommand("0x00FF02FD", "NEC", 32, "[Teste]");  // NEC genérico
       testN++;
       break;
 
     case 3:
-      debugPrintln("    Enviando: NIKAI TCL...");
-      sendIRCode(0xD5F2A, NIKAI, 24, "[Teste]");  // Código NIKAI TCL
+      debugPrintln("[Teste]   - Enviando: NIKAI TCL...");
+      handleIRCommand("0xD5F2A", "NIKAI", 24, "[Teste]");  // Código NIKAI TCL
       testN++;
       break;
 
     case 4:
-      debugPrintln("    Enviando: Sony SIRC...");
-      sendIRCode(0xA90, SONY, 12, "[Teste]");  // Sony Power (12 bits)
+      debugPrintln("[Teste]   - Enviando: Sony SIRC...");
+      handleIRCommand("0xA90", "SONY", 12, "[Teste]");  // Sony Power (12 bits)
       testN++;
       break;
 
     case 5:
-      debugPrintln("    Enviando: RC5...");
-      sendIRCode(0x0C, RC5, 12, "[Teste]");  // RC5 Power (Philips)
+      debugPrintln("[Teste]   - Enviando: RC5...");
+      handleIRCommand("0x0C", "RC5", 12, "[Teste]");  // RC5 Power (Philips)
       testN++;
       break;
 

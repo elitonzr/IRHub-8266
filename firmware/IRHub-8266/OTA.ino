@@ -6,7 +6,7 @@ void setup_ota() {
   Serial.println("=================================");
 
   if (clientID.length() == 0) {
-    Serial.println("[OTA] AVISO: clientID vazio, recalculando topicos...");
+    Serial.println("[OTA]     - AVISO: clientID vazio, recalculando topicos...");
     recalcularTopicos();
   }
 
@@ -17,14 +17,14 @@ void setup_ota() {
   printOTACredentials();
 
   ArduinoOTA.onStart([]() {
-    Serial.println("   OTA iniciando...");
+    Serial.println("[OTA]     - iniciando...");
   });
   ArduinoOTA.onEnd([]() {
-    Serial.println("Atualização OTA concluída!");
-    Serial.println("Reinicializando...");
+    Serial.println("[OTA]     - Atualização OTA concluída!");
+    Serial.println("[OTA]     - Reinicializando...");
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("OTA em andamento: %u%%\r\n", (progress / (total / 100)));
+    Serial.printf("[OTA]     - em andamento: %u%%\r\n", (progress / (total / 100)));
   });
   ArduinoOTA.onError([](ota_error_t error) {
     Serial.printf("Erro[%u]: ", error);
@@ -35,7 +35,7 @@ void setup_ota() {
     else if (error == OTA_END_ERROR) Serial.println("Falha no término");
   });
   ArduinoOTA.begin();
-  Serial.println("   OTA Configurado");
+  Serial.println("[OTA]     - Configurado");
 }
 
 void printOTACredentials() {

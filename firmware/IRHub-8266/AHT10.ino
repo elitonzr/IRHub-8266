@@ -1,15 +1,17 @@
-/************ AHT10 ************/
-// Adafruit_AHTX0 aht;           // Endereço I2C 0x38
-// float umidade;                // Variável para armazenar a umidade
-// float temperatura;            // Variável para armazenar a temperatura
-// boolean estadoAHT10 = false;  // Flag para indicar que sensor está AHT10 conectado
-// SDA = GPIO12
-// SCL = GPIO13
+// ================================================================
+// AHT10 — HARDWARE E ESTADO
+// ================================================================
+Adafruit_AHTX0 aht;  // Endereço I2C 0x38 — SDA GPIO12, SCL GPIO13
+
+float umidade = 0.0f;// Variável para armazenar a umidade
+float temperatura = 0.0f;// Variável para armazenar a temperatura
+
+AHT10State estadoAHT10 = AHT10_OFFLINE;
 
 void setup_AHT10() {
 
   if (!aht10_enabled) {
-    Serial.println("[AHT10] Desabilitado.");
+    Serial.println("[AHT10]   - Desabilitado.");
     return;
   }
 
@@ -40,12 +42,12 @@ void lerSensorAHT10() {
     if (millis() - lastRetry < retryInterval) return;
     lastRetry = millis();
 
-    debugPrintln("[AHT10] Tentando reinicializar sensor...");
+    debugPrintln("[AHT10]   - Tentando reinicializar sensor...");
     if (aht.begin(&Wire)) {
       estadoAHT10 = AHT10_ONLINE;
-      debugPrintln("[AHT10] Sensor recuperado!");
+      debugPrintln("[AHT10]   - Sensor recuperado!");
     } else {
-      debugPrintln("[AHT10] Falha na reinicialização.");
+      debugPrintln("[AHT10]   - Falha na reinicialização.");
     }
     return;
   }

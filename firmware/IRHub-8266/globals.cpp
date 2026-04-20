@@ -40,7 +40,7 @@ bool aht10_enabled = false;
 // BUILD
 // ================================================================
 const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
-const String buildVersion  = "0.5.7";
+const String buildVersion  = "0.6.0";
 
 // ================================================================
 // PASSWORD

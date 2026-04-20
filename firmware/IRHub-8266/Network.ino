@@ -1,3 +1,5 @@
+bool shouldSaveConfig = false;
+
 void setup_WiFiManager() {
 
   setLedMode(LED_WIFI_DISCONNECTED);
@@ -31,7 +33,7 @@ void setup_WiFiManager() {
   if (strlen(ipStr) > 6 && ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
 
     WiFi.config(ip, gw, sn, dns);
-    Serial.println("[WiFi] IP fixo aplicado (pré-conn)");
+    Serial.println("[WiFi]    - IP fixo aplicado (pré-conn)");
   }
 
   WiFi.hostname(hostname_buf);
@@ -40,12 +42,12 @@ void setup_WiFiManager() {
 
   // ---------- CONEXÃO ----------
   if (!wifiManager.autoConnect(hostname_buf, PasswordPortal)) {
-    Serial.println("[WiFi] Falha. Reiniciando...");
+    Serial.println("[WiFi]    - Falha. Reiniciando...");
     delay(1000);
     ESP.restart();
   }
 
-  Serial.println("\n[WiFi] Conectado!");
+  Serial.println("\n[WiFi]    - Conectado!");
 
   // ---------- mDNS ----------
   if (WiFi.status() == WL_CONNECTED && MDNS.begin(hostname_buf)) {
@@ -72,7 +74,7 @@ void startWiFiManagerPortal() {
 
   debugPrintln("");
   debugPrintln("========================================");
-  debugPrintln("[WiFi] 🚀 Portal de configuração iniciado");
+  debugPrintln("[WiFi]    - 🚀 Portal de configuração iniciado");
   debugPrintln("========================================");
 
   // ---------- GARANTE ESTADO LIMPO ----------
@@ -87,11 +89,11 @@ void startWiFiManagerPortal() {
   IPAddress apIP = WiFi.softAPIP();
 
   debugPrintln("");
-  debugPrintln("[WiFi] 📡 Conecte-se na rede Wi-Fi:");
+  debugPrintln("[WiFi]    - 📡 Conecte-se na rede Wi-Fi:");
   printPortalCredentials();
 
   debugPrintln("");
-  debugPrintln("[WiFi] 🌐 Acesse o portal em:");
+  debugPrintln("[WiFi]    - 🌐 Acesse o portal em:");
   debugPrintf("       http://%s", apIP.toString().c_str());
   debugPrintln("");
 
@@ -121,13 +123,13 @@ void startWiFiManagerPortal() {
 
   // ---------- ABRE PORTAL ----------
   if (!wifiManager.startConfigPortal(hostname_buf, PasswordPortal)) {
-    debugPrintln("[WiFi] ⚠️ Portal fechado ou timeout");
+    debugPrintln("[WiFi]    - ⚠️ Portal fechado ou timeout");
     return;
   }
 
   debugPrintln("");
-  debugPrintln("[WiFi] ✅ Portal finalizado");
-  debugPrintf("[WiFi] 📶 Rede selecionada: %s", WiFi.SSID().c_str());
+  debugPrintln("[WiFi]    - ✅ Portal finalizado");
+  debugPrintf("[WiFi]    - 📶 Rede selecionada: %s", WiFi.SSID().c_str());
 
   // ---------- SALVA CONFIG ----------
   atualizaConfig(
@@ -146,9 +148,9 @@ void startWiFiManagerPortal() {
     String pass = WiFi.psk();
 
     debugPrintln("");
-    debugPrintln("[WiFi] 🔧 Reconfigurando rede com IP fixo...");
-    debugPrintf("[WiFi] SSID: %s", ssid.c_str());
-    debugPrintf("[WiFi] IP configurado: %s", ipStr);
+    debugPrintln("[WiFi]    - 🔧 Reconfigurando rede com IP fixo...");
+    debugPrintf("[WiFi]    - SSID: %s", ssid.c_str());
+    debugPrintf("[WiFi]    - IP configurado: %s", ipStr);
 
     WiFi.disconnect(true);
     delay(200);
@@ -168,15 +170,15 @@ void startWiFiManagerPortal() {
 
     if (WiFi.status() == WL_CONNECTED) {
       setLedMode(LED_IDLE);
-      debugPrintln("[WiFi] ✅ Reconectado com sucesso!");
-      debugPrintf("[WiFi] 🌐 IP: %s", WiFi.localIP().toString().c_str());
+      debugPrintln("[WiFi]    - ✅ Reconectado com sucesso!");
+      debugPrintf("[WiFi]    - 🌐 IP: %s", WiFi.localIP().toString().c_str());
     } else {
-      debugPrintln("[WiFi] ❌ Falha ao reconectar");
+      debugPrintln("[WiFi]    - ❌ Falha ao reconectar");
     }
 
   } else {
-    debugPrintln("[WiFi] 📡 DHCP ativo");
-    debugPrintf("[WiFi] 🌐 IP: %s", WiFi.localIP().toString().c_str());
+    debugPrintln("[WiFi]    - 📡 DHCP ativo");
+    debugPrintf("[WiFi]    - 🌐 IP: %s", WiFi.localIP().toString().c_str());
   }
 
   debugPrintln("========================================");
@@ -281,7 +283,7 @@ void atualizaConfig(
   bool validIP = ipOk && gwOk && snOk;
 
   if (!(validIP || dhcp)) {
-    Serial.println("[WiFi] IP inválido digitado no portal, configuração ignorada.");
+    Serial.println("[WiFi]    - IP inválido digitado no portal, configuração ignorada.");
     startFeedbackLED(6, 50);
     return;
   }
@@ -330,7 +332,7 @@ void atualizaConfig(
   recalcularTopicos();
   saveConfig();
 
-  Serial.println("[WiFi] Config válida salva. Reiniciando...");
+  Serial.println("[WiFi]    - Config válida salva. Reiniciando...");
   startFeedbackLED(3, 100);
 
   while (ledCtrl.ativo) {
@@ -354,8 +356,8 @@ void wifi_watchdog() {
     if (reconnecting) {
       reconnecting = false;
       setLedMode(LED_IDLE);
-      debugPrintln("[WiFi] Reconectado!");
-      debugPrintf("[WiFi] 🌐 IP: %s", WiFi.localIP().toString().c_str());
+      debugPrintln("[WiFi]    - Reconectado!");
+      debugPrintf("[WiFi]    - 🌐 IP: %s", WiFi.localIP().toString().c_str());
     }
     return;
   }
@@ -365,7 +367,7 @@ void wifi_watchdog() {
 
     setLedMode(LED_WIFI_CONNECTING);
 
-    debugPrintln("[WiFi] Conexão perdida! Tentando reconectar...");
+    debugPrintln("[WiFi]    - Conexão perdida! Tentando reconectar...");
 
     String ssid = WiFi.SSID();
     String pass = WiFi.psk();
@@ -378,7 +380,7 @@ void wifi_watchdog() {
     if (strlen(ipStr) > 6 && ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
 
       WiFi.config(ip, gw, sn, dns);
-      debugPrintln("[WiFi] IP fixo reaplicado");
+      debugPrintln("[WiFi]    - IP fixo reaplicado");
     }
 
     if (ssid.length() > 0) {
@@ -398,7 +400,7 @@ void wifi_watchdog() {
     reconnecting = false;
     setLedMode(LED_WIFI_DISCONNECTED);
 
-    debugPrintln("[WiFi] Falha ao reconectar");
+    debugPrintln("[WiFi]    - Falha ao reconectar");
   }
 }
 
@@ -416,109 +418,6 @@ void saveConfigCallback() {
 void recalcularTopicos() {
   myTopic = String(mqtt_id_buf) + "-" + String(grupo_buf);
   clientID = String(myTopic) + "-" + String(ESP.getChipId());
-}
-
-// ==========================
-// CARREGA CONFIG DO FS
-// ==========================
-void loadConfig() {
-
-  if (!LittleFS.exists("/config.json")) {
-    debugPrintln("[FS] Arquivo não existe");
-    recalcularTopicos();
-    return;
-  }
-  File file = LittleFS.open("/config.json", "r");
-  if (!file) {
-    recalcularTopicos();
-    return;
-  }
-
-  StaticJsonDocument<512> doc;
-  DeserializationError err = deserializeJson(doc, file);
-  if (err) {
-    debugPrint("[FS] Erro ao parsear config.json: ");
-    debugPrintln(err.c_str());
-  } else {
-    strlcpy(hostname_buf, doc["hostname"] | hostname_buf, sizeof(hostname_buf));
-    strlcpy(mqtt_id_buf, doc["mqtt_id"] | mqtt_id_buf, sizeof(mqtt_id_buf));
-    strlcpy(grupo_buf, doc["grupo"] | grupo_buf, sizeof(grupo_buf));
-    strlcpy(ipStr, doc["ip"] | ipStr, sizeof(ipStr));
-    strlcpy(gwStr, doc["gw"] | gwStr, sizeof(gwStr));
-    strlcpy(snStr, doc["sn"] | snStr, sizeof(snStr));
-    strlcpy(mqtt_server, doc["mqtt_server"] | mqtt_server, sizeof(mqtt_server));
-    mqtt_port = doc["mqtt_port"] | 1883;
-    strlcpy(mqtt_user_buf, doc["mqtt_user"] | mqtt_user_buf, sizeof(mqtt_user_buf));
-    strlcpy(mqtt_password_buf, doc["mqtt_password"] | mqtt_password_buf, sizeof(mqtt_password_buf));
-    strlcpy(mqtt_enabled_buf, doc["mqtt_enabled"] | mqtt_enabled_buf, sizeof(mqtt_enabled_buf));
-
-    aht10_enabled = doc["aht10_enabled"] | false;
-
-    int ir_receptor = doc["ir_receptor"] | (int)IR_PROTOCOL_KNOWN;
-    if (ir_receptor >= 0 && ir_receptor <= 11) {
-      IR_ReceptorEstado = static_cast<IR_ReceptorMode>(ir_receptor);
-    }
-
-    debugPrintln("[FS] Config carregada");
-  }
-  file.close();
-  recalcularTopicos();
-}
-
-// ==========================
-// SALVA CONFIG NO FS
-// ==========================
-void saveConfig() {
-  StaticJsonDocument<512> doc;
-  doc["hostname"] = hostname_buf;
-  doc["mqtt_id"] = mqtt_id_buf;
-  doc["grupo"] = grupo_buf;
-  doc["ip"] = ipStr;
-  doc["gw"] = gwStr;
-  doc["sn"] = snStr;
-  doc["mqtt_server"] = mqtt_server;
-  doc["mqtt_port"] = mqtt_port;
-  doc["mqtt_user"] = mqtt_user_buf;
-  doc["mqtt_password"] = mqtt_password_buf;
-  doc["mqtt_enabled"] = mqtt_enabled_buf;
-  doc["aht10_enabled"] = aht10_enabled;
-  doc["ir_receptor"] = (int)IR_ReceptorEstado;
-  File file = LittleFS.open("/config.json", "w");
-  if (!file) return;
-  serializeJson(doc, file);
-  file.close();
-  debugPrintln("[FS] Config salva!");
-}
-
-// ==========================
-// RESET WIFI NO FS
-// ==========================
-void resetWifi() {
-  WiFiManager wifiManager;
-  wifiManager.resetSettings();
-  delay(1000);
-  ESP.restart();
-}
-
-// ==========================
-// RESET CONFIG NO FS
-// ==========================
-void resetConfig() {
-  WiFiManager wifiManager;
-  wifiManager.resetSettings();
-
-  if (LittleFS.exists("/config.json")) {
-    if (LittleFS.remove("/config.json")) {
-      debugPrintln("[FS] config.json removido.");
-    } else {
-      debugPrintln("[FS] Erro ao remover config.json.");
-    }
-  } else {
-    debugPrintln("[FS] config.json nao encontrado.");
-  }
-
-  delay(1000);
-  ESP.restart();
 }
 
 void printPortalCredentials() {
