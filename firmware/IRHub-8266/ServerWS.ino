@@ -331,7 +331,7 @@ void handleUpload() {
         String filename = upload.filename;
 
         if (!filename.startsWith("/")) filename = "/" + filename;
-        debugPrintfln("[FS]      - Upload START: %s\n", filename.c_str());
+        debugPrintfln("[FS]      - Upload START: %s", filename.c_str());
 
         // Remove se já existir (evita lixo)
         if (LittleFS.exists(filename)) {
@@ -354,7 +354,7 @@ void handleUpload() {
       {
         if (fsUploadFile) {
           fsUploadFile.close();
-          debugPrintfln("[FS]      - Upload END: %u bytes\n", upload.totalSize);
+          debugPrintfln("[FS]      - Upload END: %u bytes", upload.totalSize);
         }
         break;
       }
@@ -490,7 +490,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
           }
-          debugPrintln("[WS] Abrindo portal WiFi via WebSocket");
+          debugPrintln("[WS]      - Abrindo portal WiFi via WebSocket");
           webSocket.broadcastTXT("{\"type\":\"wifiPortal\"}");
           delay(500);
           startWiFiManagerPortal();

@@ -278,6 +278,8 @@ void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, co
 
   if (bits == 0) bits = 32;
 
+  enviandoCod = true;  // bloqueia receptor durante transmissão
+
   switch (protocol) {
     case NEC: irsend.sendNEC(code, bits); break;
     case SONY: irsend.sendSony(code, bits); break;

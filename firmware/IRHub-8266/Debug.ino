@@ -179,7 +179,7 @@ void debugHelp() {
 void debugUptime() {
   debugPrintln("================ UPTIME ================");
   debugPrintln(" ");
-  debugPrintfln("  Uptime: : %s", getFormattedUptime().c_str());
+  debugPrintfln("  Uptime: %s", getFormattedUptime().c_str());
   debugPrintln(" ");
   debugPrintln("========================================");
   debugPrintln("");
