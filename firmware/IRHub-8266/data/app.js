@@ -45,7 +45,6 @@ function connectWS() {
   state.ws.onopen = () => {
     updateWSStatus(true);
     flushQueue();
-    state.configPopulated = false;
     if (state.reconnectTimer) {
       clearTimeout(state.reconnectTimer);
       state.reconnectTimer = null;
@@ -147,7 +146,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           localStorage.setItem("selectedRemote", e.target.value);
-        } catch (_) {}
+        } catch (_) { }
         loadButtons(e.target.value);
       });
     }
@@ -322,7 +321,7 @@ function updateSystemWS(data) {
 
   // Mostra/oculta card AHT10 conforme configuração.
   const cardAHT10 = document.getElementById("cardAHT10");
-  if (cardAHT10)
+  if (cardAHT10 && data.config)
     cardAHT10.style.display = data.config.aht10_enabled ? "" : "none";
 }
 
@@ -369,7 +368,7 @@ function updateIRWS(data) {
     if (dot)
       dot.className =
         "dot " +
-        (data.receptor_protocol && data.receptor_protocol !== "DESABILITADO"
+        (data.receptor_protocol && data.receptor_protocol !== "DISABLED"
           ? "green"
           : "yellow");
   }
@@ -457,7 +456,7 @@ function updateMQTTWS(data) {
 // Reaplica o último estado conhecido de cada tipo ao navegar entre páginas.
 function replayLastPayloads() {
   const updaters = {
-    system: updateSystemWS,
+    system: (data) => updateSystemWS(state.configPopulated ? { ...data, config: undefined } : data),
     ledb: updateLEDBWS,
     sensor: updateSensorWS,
     ir: updateIRWS,
@@ -501,7 +500,7 @@ if (!state.uptimeInterval) {
 
 // Adiciona entrada ao histórico, ignorando duplicatas consecutivas.
 function saveIRToHistory(payload) {
-  if (!payload.dec) return;
+  if (payload.dec === undefined || payload.dec === null) return;
   if (state.irHistory[0]?.dec === payload.dec) return;
   state.irHistory.unshift(payload);
   if (state.irHistory.length > 10) state.irHistory.pop();
@@ -528,7 +527,7 @@ function renderIRHistory() {
     // Click simples: copia hex para clipboard.
     li.onclick = () => {
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(d.hex).catch(() => {});
+        navigator.clipboard.writeText(d.hex).catch(() => { });
       } else {
         // Fallback para browsers sem Clipboard API.
         const ta = document.createElement("textarea");
@@ -685,8 +684,12 @@ async function importRemotes() {
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
   xhr.onload = () => {
+    if (xhr.status === 401) {
+      showRemotesStatus("❌ Senha incorreta.", "#ef4444");
+      return;
+    }
     showRemotesStatus("✅ Importado com sucesso!", "#22c55e");
-    loadRemotes(); // Recarrega os botões na UI imediatamente.
+    loadRemotes();
   };
   xhr.onerror = () => showRemotesStatus("❌ Erro no upload.", "#ef4444");
   xhr.send(formData);
@@ -790,6 +793,8 @@ function loadButtons(model) {
       container.appendChild(space);
       return;
     }
+
+    if (btn.type && btn.type !== "button") return;
 
     const b = document.createElement("button");
     b.textContent = btn.name;
@@ -944,7 +949,7 @@ function populateConfig(data) {
   // Detecta modo IP (DHCP ou fixo) e exibe campos correspondentes.
   const modeEl = document.getElementById("cfg_ip_mode");
   if (modeEl) {
-    modeEl.value = data.ip ? "static" : "dhcp";
+    modeEl.value = (data.ip && data.ip !== "0.0.0.0") ? "static" : "dhcp";
     toggleIPFields();
   }
 

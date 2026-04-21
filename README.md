@@ -9,7 +9,7 @@ IRHub-8266 é um hub de automação baseado em **ESP8266 (NodeMCU)** com suporte
 - 🔌 WebSocket para comunicação em tempo real com o frontend
 - 🔄 Atualização OTA (Over-The-Air)
 - 🖥 Debug via Telnet (porta 8266)
-- 💡 Controle de saída digital (LED)
+- 💡 Controle de saída digital (LED B)
 - ⚙️ Configuração via portal WiFiManager + página de settings
 
 O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e sistemas de automação como Home Assistant, Node-RED e outros clientes MQTT.
@@ -29,15 +29,16 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 ### IR
 
 - **Envio** de códigos pelos protocolos: NEC, SONY, RC5, RC6, SAMSUNG, NIKAI, LG, JVC, WHYNTER
-- Aceita código em decimal ou hexadecimal
-- **Recepção** configurável com 12 modos: ALL, KNOWN, DISABLED, e cada protocolo individualmente
+- Aceita código em decimal ou hexadecimal (com ou sem prefixo `0x`)
+- Suporte a códigos de até 64 bits
+- **Recepção** configurável com 12 modos: ALL, KNOWN, DISABLED e cada protocolo individualmente
 - Modo de recepção persistido em `config.json`
 - Modo de teste do emissor: ciclo de desligamento universal automático
 - Debounce de 300ms na recepção
 
 ### Sensor AHT10
 
-- Temperatura e umidade via I2C (SDA: GPIO12, SCL: GPIO13)
+- Temperatura e umidade via I2C (SDA: GPIO12/D6, SCL: GPIO13/D7)
 - Habilitação configurável em runtime via `/settings` (sem necessidade de reboot)
 - Quando desabilitado: nenhuma leitura I2C, nenhuma publicação MQTT/WS, card oculto na UI
 - Quando habilitado: tentativa de reinicialização automática a cada 60s em caso de falha
@@ -45,8 +46,8 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 
 ### Web Server / Frontend
 
-- Frontend servido do LittleFS (HTML/CSS/JS separados)
-- Páginas: `/` (controle IR), `/system` (status), `/settings` (configuração), `/files` (file manager)
+- Frontend SPA (Single Page Application) servido do LittleFS
+- Páginas: `/` (controle IR), `/ir` (receptor/emissor), `/system` (status), `/settings` (configuração), `/files` (file manager)
 - Comunicação em tempo real via WebSocket (porta 81)
 - Reconexão automática do WebSocket com overlay visual
 - Controle remoto virtual com modelos configuráveis via `remotes.json`
@@ -57,7 +58,7 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 
 - Portal de configuração automático na primeira inicialização
 - Parâmetros configuráveis pelo portal: hostname, MQTT ID, grupo, IP fixo/DHCP, MQTT
-- Botão físico (GPIO0): pressão 1–3s abre portal, pressão >5s faz reset total
+- Botão físico (GPIO0/D3): pressão 1–3s abre portal, pressão >5s faz reset total
 - Watchdog de reconexão WiFi a cada 30s
 - Suporte a IP fixo com reaplique automático após reconexão
 
@@ -78,14 +79,15 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 
 ### Pinos utilizados
 
-| Função         | GPIO    | NodeMCU |
-|----------------|---------|---------|
-| Botão Reset    | GPIO0   | D3      |
-| LED            | GPIO2   | —       |
-| IR Emissor     | GPIO4   | D2      |
-| AHT10 SDA      | GPIO12  | D6      |
-| AHT10 SCL      | GPIO13  | D7      |
-| IR Receptor    | GPIO14  | D5      |
+| Função         | GPIO    | NodeMCU | Observações                        |
+|----------------|---------|---------|------------------------------------|
+| Botão Reset    | GPIO0   | D3      | INPUT_PULLUP — afeta boot          |
+| LED A          | GPIO2   | D4      | Feedback do sistema (onboard)      |
+| LED B          | GPIO5   | D1      | Saída digital controlável          |
+| IR Emissor     | GPIO4   | D2      | Recomendado transistor NPN         |
+| AHT10 SDA      | GPIO12  | D6      | I2C — sensor AHT10                 |
+| AHT10 SCL      | GPIO13  | D7      | I2C — sensor AHT10                 |
+| IR Receptor    | GPIO14  | D5      | VS1838B ou equivalente (38kHz)     |
 
 ---
 
@@ -110,11 +112,11 @@ A configuração é feita pelo portal WiFiManager (primeira inicialização ou p
 
 ### Senhas padrão
 
-| Acesso           | Usuário  | Senha                    |
-|------------------|----------|--------------------------|
-| HTTP Basic Auth  | `admin`  | ChipID em hex (8 dígitos)|
-| OTA              | —        | ChipID em hex (8 dígitos)|
-| Portal WiFi      | —        | `12345678`               |
+| Acesso           | Usuário  | Senha                     |
+|------------------|----------|---------------------------|
+| HTTP Basic Auth  | `admin`  | ChipID em hex (8 dígitos) |
+| OTA              | —        | ChipID em hex (8 dígitos) |
+| Portal WiFi      | —        | `12345678`                |
 
 > A senha HTTP e OTA pode ser consultada via Telnet com o comando `senha`.
 
@@ -134,10 +136,12 @@ IRHub-8266-Sala/
 │   ├── mqtt
 │   └── uptime
 ├── switch/
-│   └── led/state
+│   └── ledb/
+│       └── state
 └── sensor/
-    ├── aht10/state
-    ├── aht10/status
+    ├── aht10/
+    │   ├── state
+    │   └── status
     └── ir/
         ├── config/state
         ├── received/state
@@ -154,14 +158,12 @@ Durante o boot o dispositivo executa na ordem:
 
 1. Monta LittleFS e carrega `config.json`
 2. Conecta ao WiFi via WiFiManager (abre portal se necessário)
-3. Inicia mDNS
+3. Inicia servidor HTTP (porta 80) e WebSocket (porta 81)
 4. Configura OTA
 5. Configura e conecta ao MQTT (se habilitado)
-6. Inicia servidor HTTP (porta 80) e WebSocket (porta 81)
-7. Inicializa IR (emissor GPIO4, receptor GPIO14)
-8. Inicializa AHT10 (I2C GPIO12/13, somente se habilitado em `config.json`)
-9. Configura botão de reset (GPIO0)
-10. Pisca LED 5 vezes (feedback de boot)
+6. Inicializa IR (emissor GPIO4/D2, receptor GPIO14/D5)
+7. Inicializa AHT10 (I2C GPIO12/D6 — GPIO13/D7, somente se habilitado em `config.json`)
+8. Pisca LED A 5 vezes (feedback de boot)
 
 ---
 
@@ -174,27 +176,29 @@ IRHub-8266/
 ├── IRHub-8266.ino     — setup/loop
 ├── globals.h          — declarações externas e enums
 ├── globals.cpp        — variáveis globais, LED, senhas
-├── Network.ino        — WiFi e watchdog
+├── Network.ino        — WiFi, WiFiManager e watchdog
 ├── Config.ino         — load/save/reset config
 ├── ServerWS.ino       — HTTP + WebSocket
-├── MQTT.ino           — conexão MQTT, publishers
+├── MQTT.ino           — conexão MQTT, publishers e callback
 ├── IR.ino             — emissor, receptor, parser, feedback
 ├── AHT10.ino          — sensor AHT10
 ├── OTA.ino            — atualização OTA
 ├── Telnet.ino         — servidor telnet + comandos
-├── Debug.ino          — funções de debug
+└── Debug.ino          — funções de debug
 ```
 
 ### Frontend (LittleFS)
 
 ```
 data/
-├── index.html         — página principal (controle IR)
-├── system.html        — status do sistema
-├── settings.html      — configuração do dispositivo
-├── app.js             — lógica compartilhada (WebSocket, UI)
-├── style.css          — estilos globais
-└── remotes.json       — modelos de controle remoto
+├── index.html              — shell SPA (navbar, drawer, app-content)
+├── home_content.html       — partial: controle IR + remotes manager
+├── ir_content.html         — partial: emissor e receptor IR
+├── system_content.html     — partial: status do sistema e console
+├── settings_content.html   — partial: configuração do dispositivo
+├── app.js                  — lógica compartilhada (WebSocket, SPA, UI)
+├── style.css               — estilos globais
+└── remotes.json            — modelos de controle remoto
 ```
 
 ---
@@ -221,7 +225,7 @@ data/
 
 1. Grave o firmware via Arduino IDE
 2. Faça upload dos arquivos da pasta `data/` via LittleFS (Arduino IDE → Tools → ESP8266 LittleFS Data Upload)
-3. Na primeira inicialização, conecte-se à rede `irhub8266` e acesse `192.168.4.1` para configurar WiFi e MQTT
+3. Na primeira inicialização, conecte-se à rede `irhub8266` (senha: `12345678`) e acesse `192.168.4.1` para configurar WiFi e MQTT
 4. Após conectar, acesse `http://irhub8266.local` ou pelo IP atribuído
 5. Use a página `/settings` para ajustar configurações sem precisar do portal
 

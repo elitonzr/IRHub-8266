@@ -65,9 +65,11 @@ void debugPrintconsole(const char* msg, bool newline) {
   buffer[j] = '\0';
   char json[440];
   snprintf(json, sizeof(json), "{\"type\":\"log\",\"msg\":\"%s\"}", buffer);
-  webSocket.broadcastTXT(json);
-  if (newline) {
-    webSocket.broadcastTXT("{\"type\":\"log\",\"msg\":\"\"}");
+  if (webSocket.connectedClients() > 0) {
+    webSocket.broadcastTXT(json);
+    if (newline) {
+      webSocket.broadcastTXT("{\"type\":\"log\",\"msg\":\"\"}");
+    }
   }
 }
 

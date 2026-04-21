@@ -328,16 +328,16 @@ void handleUpload() {
 
     case UPLOAD_FILE_START:
       {
+        if (!checkAuth()) {
+          fsUploadFile = File();
+          break;
+        }
         String filename = upload.filename;
-
         if (!filename.startsWith("/")) filename = "/" + filename;
         debugPrintfln("[FS]      - Upload START: %s", filename.c_str());
-
-        // Remove se já existir (evita lixo)
         if (LittleFS.exists(filename)) {
           LittleFS.remove(filename);
         }
-
         fsUploadFile = LittleFS.open(filename, "w");
         break;
       }
@@ -520,9 +520,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           const char* v_gw = doc["gw"] | gwStr;
           const char* v_sn = doc["sn"] | snStr;
           const char* v_mqtt_server = doc["mqtt_server"] | mqtt_server;
-          const char* v_mqtt_port = doc["mqtt_port"] | "1883";
-          mqtt_port = atoi(v_mqtt_port);
+
+          mqtt_port = doc["mqtt_port"] | 1883;
           if (mqtt_port == 0) mqtt_port = 1883;
+
           const char* v_mqtt_user = doc["mqtt_user"] | mqtt_user_buf;
           const char* v_mqtt_password = doc["mqtt_password"] | "";
           const char* v_mqtt_enabled = doc["mqtt_enabled"] | mqtt_enabled_buf;
@@ -580,7 +581,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           ESP.restart();
         }
 
-        if (strcmp(cmd, "telnetCmd") == 0) {
+        else if (strcmp(cmd, "telnetCmd") == 0) {
           const char* line = doc["line"] | "";
           if (strlen(line) > 0) {
             char buf[TELNET_BUFFER];
@@ -599,7 +600,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 }
 
 void wsSendSystem() {
-  StaticJsonDocument<2048> doc;
+  StaticJsonDocument<2560> doc;
 
   doc["type"] = "system";
   doc["name"] = mqtt_id_buf;
@@ -623,7 +624,7 @@ void wsSendSystem() {
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
   cfg["aht10_enabled"] = aht10_enabled;
 
-  char buffer[2176];
+  char buffer[2560];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
     debugPrintln("[WS]      - Erro: JSON system truncado");
@@ -741,7 +742,7 @@ void wsSendInfoIR_Receptor() {
   webSocket.broadcastTXT(buffer, len);
 }
 
-void wsSendIREmissor(uint32_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
+void wsSendIREmissor(uint64_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
   char payload[256];
   size_t len = buildIRJson(payload, sizeof(payload), code, protocol, bits, status, origem);
   if (len == 0 || len >= sizeof(payload)) {

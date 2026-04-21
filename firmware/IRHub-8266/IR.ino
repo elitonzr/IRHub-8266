@@ -208,18 +208,18 @@ void lastIR_Receptor() {
 // 4. EMISSOR — parse, envio e feedback
 // ============================================================
 
-// Converte string para código IR uint32_t.
+// Converte string para código IR uint64_t.
 // Aceita:
 //   - HEX com prefixo:  "0x20DF10EF"
 //   - HEX sem prefixo:  "20DF10EF"  (detectado pela presença de A-F)
 //   - Decimal puro:     "551489775"
 // Entradas ambíguas devem sempre usar prefixo 0x.
-bool parseIRCode(const char* str, uint32_t& outCode) {
+bool parseIRCode(const char* str, uint64_t& outCode) {
   if (!str || strlen(str) == 0) return false;
 
   // HEX com 0x/0X explícito
   if (strstr(str, "0x") == str || strstr(str, "0X") == str) {
-    outCode = strtoul(str, NULL, 16);
+    outCode = strtoull(str, NULL, 16);
     return true;
   }
 
@@ -227,13 +227,13 @@ bool parseIRCode(const char* str, uint32_t& outCode) {
   size_t len = strlen(str);
   for (size_t i = 0; i < len; i++) {
     if ((str[i] >= 'A' && str[i] <= 'F') || (str[i] >= 'a' && str[i] <= 'f')) {
-      outCode = strtoul(str, NULL, 16);
+      outCode = strtoull(str, NULL, 16);
       return true;
     }
   }
 
   // Decimal puro
-  outCode = strtoul(str, NULL, 10);
+  outCode = strtoull(str, NULL, 10);
   return true;
 }
 
@@ -270,7 +270,7 @@ void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, co
     return;
   }
 
-  uint32_t code = 0;
+  uint64_t code = 0;
   if (!parseIRCode(codeStr, code) || code == 0) {
     sendIRFeedback(0, protocol, bits, "código inválido", origem);
     return;
@@ -306,14 +306,14 @@ void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, co
   sendIRFeedback(code, protocol, bits, "ok", origem);
 }
 
-void debugSendIREmissor(uint32_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
-  debugPrintfln("[IR]      - status:%s origem:%s Protocol:%s | Bits:%d | Code:0x%08X (%u)",
-              status, origem, getIRProtocol(protocol), bits,
-              (unsigned int)code, (unsigned int)code);
+void debugSendIREmissor(uint64_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
+  debugPrintfln("[IR]      - status:%s origem:%s Protocol:%s | Bits:%d | Code:0x%08llX (%llu)",
+                status, origem, getIRProtocol(protocol), bits,
+                (unsigned long long)code, (unsigned long long)code);
 }
 
 // Notifica WS, MQTT e telnet com o resultado de um envio IR.
-void sendIRFeedback(uint32_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
+void sendIRFeedback(uint64_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
   debugSendIREmissor(code, protocol, bits, status, origem);
   wsSendIREmissor(code, protocol, bits, status, origem);
   MQTTSendIREmissor(code, protocol, bits, status, origem);
@@ -328,7 +328,7 @@ void sendIRFeedback(uint32_t code, decode_type_t protocol, uint8_t bits, const c
 size_t buildIRJson(
   char* buffer,
   size_t size,
-  uint32_t code,
+  uint64_t code,
   decode_type_t proto,
   uint8_t bits,
   const char* status,
@@ -344,8 +344,8 @@ size_t buildIRJson(
 
   if (code != 0) {
     char hexStr[12];
-    snprintf(hexStr, sizeof(hexStr), "0x%08X", (unsigned int)code);
-    doc["dec"] = code;
+    snprintf(hexStr, sizeof(hexStr), "0x%08llX", (unsigned long long)code);
+    doc["dec"] = (unsigned long long)code;
     doc["hex"] = hexStr;
   }
 

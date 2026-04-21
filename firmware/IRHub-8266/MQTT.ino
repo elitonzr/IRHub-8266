@@ -345,7 +345,7 @@ void MQTTsendIR_Received() {
 /************************************************************
 * IR SENT — feedback do emissor
 ************************************************************/
-void MQTTSendIREmissor(uint32_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
+void MQTTSendIREmissor(uint64_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
   char payload[256];
   size_t len = buildIRJson(payload, sizeof(payload), code, protocol, bits, status, origem);
   if (len == 0 || len >= sizeof(payload)) return;

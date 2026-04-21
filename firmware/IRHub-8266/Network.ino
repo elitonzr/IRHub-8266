@@ -61,6 +61,19 @@ void setup_WiFiManager() {
     *p_ip, *p_gw, *p_sn,
     *p_mqtt_server, *p_mqtt_port, *p_mqtt_user, *p_mqtt_password, *p_mqtt_enabled);
 
+
+  delete p_hostname;
+  delete p_mqtt_id;
+  delete p_grupo;
+  delete p_ip;
+  delete p_gw;
+  delete p_sn;
+  delete p_mqtt_server;
+  delete p_mqtt_port;
+  delete p_mqtt_user;
+  delete p_mqtt_password;
+  delete p_mqtt_enabled;
+
   // ---------- INFO ----------
   Serial.println("SSID: " + WiFi.SSID());
   Serial.println("IP: " + WiFi.localIP().toString());
@@ -124,6 +137,17 @@ void startWiFiManagerPortal() {
   // ---------- ABRE PORTAL ----------
   if (!wifiManager.startConfigPortal(hostname_buf, PasswordPortal)) {
     debugPrintln("[WiFi]    - ⚠️ Portal fechado ou timeout");
+    delete p_hostname;
+    delete p_mqtt_id;
+    delete p_grupo;
+    delete p_ip;
+    delete p_gw;
+    delete p_sn;
+    delete p_mqtt_server;
+    delete p_mqtt_port;
+    delete p_mqtt_user;
+    delete p_mqtt_password;
+    delete p_mqtt_enabled;
     return;
   }
 
@@ -331,7 +355,6 @@ void atualizaConfig(
   // ==========================
   recalcularTopicos();
   saveConfig();
-
   Serial.println("[WiFi]    - Config válida salva. Reiniciando...");
   startFeedbackLED(3, 100);
 

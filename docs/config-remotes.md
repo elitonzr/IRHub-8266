@@ -1,18 +1,14 @@
-Este guia foi elaborado para que você possa criar seus próprios controles remotos personalizados para o **IRHub-8266**. O sistema utiliza um arquivo chamado `remotes.json` que define a aparência e os comandos de cada botão.
-
----
-
 # Manual de Criação de Controles (remotes.json)
 
 O arquivo de controle é um documento de texto no formato JSON. Ele funciona como um "mapa" que diz ao dispositivo qual cor o botão deve ter, qual o nome dele e qual sinal infravermelho (IR) ele deve disparar.
 
-### 1. Estrutura Básica do Arquivo
+---
+
+## 1. Estrutura Básica do Arquivo
 
 O arquivo é composto por **Modelos** (ex: "TV Sala", "Ar Condicionado") e, dentro de cada modelo, uma lista de **Botões**.
 
-JSON
-
-```
+```json
 {
   "NOME_DO_MODELO": {
     "buttons": [
@@ -32,58 +28,54 @@ JSON
 
 ---
 
-### 2. Propriedades dos Botões (Dicionário)
+## 2. Propriedades dos Botões
 
 Para cada botão, você pode configurar as seguintes propriedades:
 
-|Propriedade|Descrição|Exemplo|
-|---|---|---|
-|**name**|O texto que aparecerá dentro do botão.|`"POWER"`, `"VOL +"`|
-|**type**|Use `"button"` para comandos ou `"space"` para criar um vazio.|`"button"`|
-|**protocol**|O protocolo do sinal (NEC, SONY, LG, SAMSUNG, etc).|`"NEC"`|
-|**code**|O código hexadecimal do comando (obtido na aba "IR" do sistema).|`"0x20DF10EF"`|
-|**bits**|Tamanho do sinal em bits (geralmente 32 para NEC).|`32`|
-|**background**|Cor de fundo do botão (em hexadecimal, sem o #).|`"cf5656"` (Vermelho)|
-|**color**|Cor do texto do botão (opcional).|`"fff"` (Branco)|
+| Propriedade  | Descrição                                                              | Exemplo            |
+|--------------|------------------------------------------------------------------------|--------------------|
+| `name`       | Texto que aparecerá dentro do botão.                                   | `"POWER"`, `"VOL +"` |
+| `type`       | `"button"` para comandos, `"space"` para criar um vazio.               | `"button"`         |
+| `protocol`   | Protocolo do sinal IR.                                                 | `"NEC"`            |
+| `code`       | Código do comando (hex com ou sem `0x`, ou decimal).                   | `"0x20DF10EF"`     |
+| `bits`       | Tamanho do sinal em bits (geralmente 32 para NEC).                     | `32`               |
+| `span`       | Quantas colunas o botão ocupa (1, 2 ou 3). Padrão: `1`.               | `2`                |
+| `rowSpan`    | Quantas linhas o botão ocupa. Padrão: `1`.                             | `2`                |
+| `background` | Cor de fundo do botão em hexadecimal, sem `#`.                         | `"cf5656"`         |
+| `color`      | Cor do texto do botão em hexadecimal, sem `#` (opcional).              | `"ffffff"`         |
+| `fontSize`   | Tamanho da fonte do texto (opcional).                                  | `"10px"`           |
 
-Exportar para as Planilhas
-
----
-
-### 3. Opções de Layout (Dimensionamento)
-
-Para deixar o controle com uma aparência profissional, você pode usar o sistema de **Spans** (espaçamento). O grid do IRHub é dividido em **3 colunas**.
-
-- **span: 1** (Padrão): O botão ocupa 1/3 da largura da tela.
-    
-- **span: 2**: O botão ocupa 2/3 da largura (ideal para botões de Volume/Canal).
-    
-- **span: 3**: O botão ocupa a largura total da linha (ideal para o botão de Power no topo).
-    
-- **rowSpan: 2**: O botão ocupa duas linhas de altura (ideal para criar botões verticais).
-    
+**Protocolos suportados:** `NEC`, `SONY`, `RC5`, `RC6`, `SAMSUNG`, `NIKAI`, `LG`, `JVC`, `WHYNTER`
 
 ---
 
-### 4. Criando Espaçamentos
+## 3. Sistema de Layout (Grid)
 
-Se você quiser deixar um espaço vazio entre dois botões para organizar melhor o layout, use o tipo `space`:
+O grid do IRHub é dividido em **3 colunas**. Use `span` para controlar a largura dos botões:
 
-JSON
+| `span` | Largura ocupada         | Uso típico                  |
+|--------|-------------------------|-----------------------------|
+| `1`    | 1/3 da linha (padrão)   | Botões numéricos            |
+| `2`    | 2/3 da linha            | Vol+/Vol-, Canal+/Canal-    |
+| `3`    | Largura total da linha  | Botão de Power no topo      |
 
-```
-{ "name": "null", "type": "space", "span": 1 }
+Use `rowSpan: 2` para criar botões que ocupam duas linhas de altura (ideal para botões verticais laterais).
+
+---
+
+## 4. Criando Espaçamentos
+
+Para deixar um espaço vazio entre botões, use o tipo `space`:
+
+```json
+{ "type": "space", "span": 1 }
 ```
 
 ---
 
-### 5. Exemplo Completo (Controle de TV)
+## 5. Exemplo Completo
 
-Copie este código como base para começar o seu:
-
-JSON
-
-```
+```json
 {
   "Minha TV": {
     "buttons": [
@@ -122,19 +114,13 @@ JSON
 
 ---
 
-### 6. Como instalar o controle no dispositivo
+## 6. Como instalar o controle no dispositivo
 
 1. Crie o arquivo no seu computador e salve como `remotes.json`.
-    
 2. Acesse a página inicial (Home) do seu **IRHub-8266**.
-    
 3. Vá até a seção **"Controles Remotos"**.
-    
 4. Clique em **"Escolher arquivo"** e selecione o seu `remotes.json`.
-    
 5. Clique em **"📤 Importar"**.
-    
 6. O novo modelo aparecerá instantaneamente no menu de seleção.
-    
 
-**Dica:** Use a aba **"IR"** do sistema para capturar os códigos do seu controle físico original. Basta apontar o controle para o IRHub, apertar a tecla e copiar o `Protocol`, `Code` e `Bits` que aparecerem no histórico.
+> **Dica:** Use a aba **IR** do sistema para capturar os códigos do seu controle físico original. Aponte o controle para o IRHub, pressione a tecla e copie o `Protocol`, `Code` e `Bits` que aparecerem no histórico.

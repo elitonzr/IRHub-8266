@@ -1,6 +1,6 @@
 # 📡 IRHub-8266 — Guia MQTT
 
-Este documento descreve a comunicação MQTT do projeto **IRHub-8266**, com base na implementação atual de `MQTT.ino` e `Callback.ino`.
+Este documento descreve a comunicação MQTT do projeto **IRHub-8266**, com base na implementação atual de `MQTT.ino`.
 
 ---
 
@@ -39,20 +39,20 @@ IRHub-8266-Sala
 
 ## 🔧 Comandos disponíveis
 
-| `cmd`         | Descrição                              |
-|---------------|----------------------------------------|
-| `info`        | Solicita publicação de informações     |
-| `ledb`        | Controla o LED B                       |
-| `ir_send`     | Envia código IR                        |
-| `ir_receptor` | Define modo do receptor IR             |
-| `ir_test`     | Ativa/desativa modo de teste do emissor|
-| `reboot`      | Reinicia o dispositivo                 |
-| `wifi_reset`  | Reseta WiFi e reinicia                 |
-| `config`      | Altera configurações                   |
+| `cmd`         | Descrição                               |
+|---------------|-----------------------------------------|
+| `info`        | Solicita publicação de informações      |
+| `ledb`        | Controla o LED B                        |
+| `ir_send`     | Envia código IR                         |
+| `ir_receptor` | Define modo do receptor IR              |
+| `ir_test`     | Ativa/desativa modo de teste do emissor |
+| `reboot`      | Reinicia o dispositivo                  |
+| `wifi_reset`  | Reseta WiFi e reinicia                  |
+| `config`      | Altera configurações em runtime         |
 
 ---
 
-### 💡 LED
+### 💡 LED B
 
 ```json
 { "cmd": "ledb", "action": "on" }
@@ -73,8 +73,8 @@ Valores de `action`: `on`, `off`, `toggle`
 }
 ```
 
-- `code`: aceita hex (`0x20DF10EF`) ou decimal (`551489775`)
-- `bits`: padrão `32` se omitido
+- `code`: aceita hex (`0x20DF10EF`), hex sem prefixo (`20DF10EF`) ou decimal (`551489775`)
+- `bits`: padrão `32` se omitido; suporta até 64 bits
 - `protocol`: veja protocolos suportados abaixo
 
 **Protocolos suportados:** `NEC`, `SONY`, `RC5`, `RC6`, `SAMSUNG`, `NIKAI`, `LG`, `JVC`, `WHYNTER`
@@ -92,20 +92,20 @@ Valores de `action`: `on`, `off`, `toggle`
 
 Valores de `mode`:
 
-| Valor      | Comportamento                                    |
-|------------|--------------------------------------------------|
-| `ALL`      | Aceita qualquer protocolo                        |
-| `KNOWN`    | Aceita qualquer protocolo conhecido (não-UNKNOWN)|
-| `DISABLED` | Recepção desabilitada                            |
-| `NEC`      | Apenas NEC                                       |
-| `SONY`     | Apenas SONY                                      |
-| `RC5`      | Apenas RC5                                       |
-| `RC6`      | Apenas RC6                                       |
-| `SAMSUNG`  | Apenas SAMSUNG                                   |
-| `NIKAI`    | Apenas NIKAI                                     |
-| `LG`       | Apenas LG                                        |
-| `JVC`      | Apenas JVC                                       |
-| `WHYNTER`  | Apenas WHYNTER                                   |
+| Valor      | Comportamento                                     |
+|------------|---------------------------------------------------|
+| `ALL`      | Aceita qualquer protocolo                         |
+| `KNOWN`    | Aceita qualquer protocolo conhecido (não-UNKNOWN) |
+| `DISABLED` | Recepção desabilitada                             |
+| `NEC`      | Apenas NEC                                        |
+| `SONY`     | Apenas SONY                                       |
+| `RC5`      | Apenas RC5                                        |
+| `RC6`      | Apenas RC6                                        |
+| `SAMSUNG`  | Apenas SAMSUNG                                    |
+| `NIKAI`    | Apenas NIKAI                                      |
+| `LG`       | Apenas LG                                         |
+| `JVC`      | Apenas JVC                                        |
+| `WHYNTER`  | Apenas WHYNTER                                    |
 
 > O modo selecionado é persistido em `config.json` e sobrevive a reboots.
 
@@ -131,13 +131,13 @@ Solicita publicação imediata de informações.
 
 Valores de `type`:
 
-| Valor    | Publica em               |
-|----------|--------------------------|
-| `all`    | device, network, mqtt, status |
-| `uptime` | `info/uptime`            |
-| `ir`     | `sensor/ir/config/state` |
+| Valor    | Publica em                        |
+|----------|-----------------------------------|
+| `all`    | device, network, mqtt, status     |
+| `uptime` | `info/uptime`                     |
+| `ir`     | `sensor/ir/config/state`          |
 | `aht10`  | `sensor/aht10/state` (somente se habilitado) |
-| `ledb`    | `switch/ledb/state`       |
+| `ledb`   | `switch/ledb/state`               |
 
 ---
 
@@ -190,7 +190,7 @@ Publicado na conexão e sob demanda (`info all`).
 ```json
 {
   "build_datetime": "Apr 10 2026 12:00:00",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "chip_id": 12345678,
   "hostname": "irhub8266",
   "mqtt_id": "IRHub-8266",
@@ -250,7 +250,7 @@ Publicado sob demanda e a cada 5 minutos.
 
 ### `IRHub-8266-Sala/switch/ledb/state`
 
-Publicado sempre que o estado do LED muda.
+Publicado sempre que o estado do LED B muda.
 
 ```json
 { "state": "ON" }
@@ -268,8 +268,8 @@ Publicado a cada 5 minutos quando o sensor está online e habilitado.
 
 ```json
 {
-  "temperature": 25.3,
-  "humidity": 60.2
+  "temperatura": 25.3,
+  "umidade": 60.2
 }
 ```
 
@@ -316,6 +316,8 @@ Publicado a cada sinal IR recebido e aceito pelo receptor.
 }
 ```
 
+> `dec` é enviado como string para suportar valores de 64 bits sem perda de precisão.
+
 ---
 
 ### `IRHub-8266-Sala/sensor/ir/sent/state`
@@ -336,7 +338,7 @@ Publicado após cada tentativa de envio IR.
 }
 ```
 
-Valores de `status`: `ok`, `fail`, `code vazio`, `protocol desconhecido`, `código inválido`, `JSON inválido`
+Valores de `status`: `ok`, `code vazio`, `protocol desconhecido`, `código inválido`, `JSON inválido`, `Protocolo não suportado`
 
 ---
 
