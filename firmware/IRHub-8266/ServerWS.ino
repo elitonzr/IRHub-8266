@@ -389,14 +389,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
   switch (type) {
 
     case WStype_CONNECTED:
-      debugPrintf("[WS]      - cliente %u conectado", num);
-      debugPrintln("");
-
+      debugPrintfln("[WS]      - cliente %u conectado", num);
+      debugPrintln("wsSendSystem");
       wsSendSystem();
+      debugPrintln("wsSendNetwork");
       wsSendNetwork();
+      debugPrintln("wsSendMQTT");
       wsSendMQTT();
+      debugPrintln("wsSendInfoIR");
       wsSendInfoIR();
+      debugPrintln("wsSendInfoIR_Receptor");
       wsSendInfoIR_Receptor();
+      debugPrintln("wsSendLEDB");
       wsSendLEDB();
 
       break;
@@ -600,7 +604,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 }
 
 void wsSendSystem() {
-  StaticJsonDocument<2560> doc;
+  // StaticJsonDocument<2560> doc;
+  StaticJsonDocument<2148> doc;
 
   doc["type"] = "system";
   doc["name"] = mqtt_id_buf;
@@ -624,7 +629,7 @@ void wsSendSystem() {
   cfg["mqtt_enabled"] = mqtt_enabled_buf;
   cfg["aht10_enabled"] = aht10_enabled;
 
-  char buffer[2560];
+  char buffer[2148];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
     debugPrintln("[WS]      - Erro: JSON system truncado");
