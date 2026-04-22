@@ -115,7 +115,7 @@ void loop() {
     // 1s → abre portal
     // ==========================
     if (pressTime > 1000 && pressTime < 3000 && !portalOpened) {
-      debugPrintln("[BTN]     - Abrindo portal WiFi...");
+      debugPrintLog("[BTN]", "Abrindo portal WiFi...", false);
       portalOpened = true;
       startWiFiManagerPortal();
     }
@@ -124,7 +124,7 @@ void loop() {
     // 5s → reset total
     // ==========================
     if (pressTime > 5000) {
-      debugPrintln("[BTN]     - Reset total solicitado via botão");
+      debugPrintLog("[BTN]", "Reset total solicitado via botão", false);
       resetConfig();
     }
 

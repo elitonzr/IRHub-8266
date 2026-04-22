@@ -86,7 +86,7 @@ function showWSAuthModal() {
   if (pass === null) return;
   try {
     localStorage.setItem("wsPassword", pass);
-  } catch (_) {}
+  } catch (_) { }
   state.wsPassword = pass;
   wsSend({ cmd: "auth", password: pass });
 }
@@ -157,7 +157,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           localStorage.setItem("selectedRemote", e.target.value);
-        } catch (_) {}
+        } catch (_) { }
         loadButtons(e.target.value);
       });
     }
@@ -556,7 +556,7 @@ function renderIRHistory() {
     // Click simples: copia hex para clipboard.
     li.onclick = () => {
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(d.hex).catch(() => {});
+        navigator.clipboard.writeText(d.hex).catch(() => { });
       } else {
         // Fallback para browsers sem Clipboard API.
         const ta = document.createElement("textarea");
@@ -599,9 +599,6 @@ function renderIRHistory() {
 
 // Adiciona mensagem ao histórico e re-renderiza.
 function saveLogToHistory(data) {
-  console.log(
-    `type: ${data.type} log: ${data.log} msg: ${data.msg} newline: ${data.newline}`,
-  );
 
   if (!data.msg) return;
 

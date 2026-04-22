@@ -32,7 +32,7 @@ const char* debugOnOff(bool v) {
 //   debugPrintLog("[HTTP]", "Mensagem simples");
 //   debugPrintLog("[ERROR]", "Falha", true);
 // ------------------------------------------------------------
-void debugPrintLog(const char* type_log = "console", const char* msg = "", bool newline = false) {
+void debugPrintLog(const char* type_log, const char* msg, bool newline) {
 
   // fallback de segurança
   if (!type_log) type_log = "log";

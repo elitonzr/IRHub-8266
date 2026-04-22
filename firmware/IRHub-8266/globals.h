@@ -174,3 +174,12 @@ void startFeedbackLED(int vezes, int intervalo);
 void handleFeedbackLED();
 void setLedMode(LedMode modo);
 const char* getLedModeString();
+
+#pragma once
+
+// ================================================================
+// debugPrintLog
+// ================================================================
+void debugPrintLog(const char* type_log = "console", const char* msg = "", bool newline = false);
+void debugLogf(const char* type, const char* format, ...);
+void debugLogfln(const char* type, const char* format, ...);
