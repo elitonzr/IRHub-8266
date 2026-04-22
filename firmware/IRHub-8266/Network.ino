@@ -444,10 +444,5 @@ void recalcularTopicos() {
 }
 
 void printPortalCredentials() {
-  debugPrintln("=============== Portal AUTH ===============");
-  debugPrintln(" ");
-  debugPrintf("   SSID: %s", hostname_buf);
-  debugPrintf("  Senha: %s", PasswordPortal);
-  debugPrintln(" ");
-  debugPrintln("========================================");
+  debugPrintfln("[Portal]  - AUTH SSID: %s Senha  : %s", hostname_buf, PasswordPortal);
 }

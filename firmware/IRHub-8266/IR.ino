@@ -14,6 +14,13 @@ const unsigned long IR_DEBOUNCE_MS = 300;
 boolean enviandoCod = false;      // bloqueia recepção durante transmissão
 boolean IR_EmissorTeste = false;  // ativa ciclo de teste do emissor
 
+static unsigned long irPostSendMillis = 0;
+static bool irPostSendPending = false;
+static uint64_t irPostSendCode = 0;
+static decode_type_t irPostSendProtocol = UNKNOWN;
+static uint8_t irPostSendBits = 0;
+static char irPostSendOrigem[16] = "";
+
 // ================================================================
 // IR — ÚLTIMO SINAL RECEBIDO
 // ================================================================
@@ -299,17 +306,24 @@ void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, co
   }
 
   startFeedbackLED(1, 200);  // pisca o led A 1x
-  delay(200);                // aguarda eco dissipar
-  enviandoCod = false;       // reativa receptor
-  irrecv.resume();           // descarta qualquer eco acumulado no buffer
-  yield();                   // cede controle ao SDK do ESP8266 — processa WiFi e reseta o watchdog
-  sendIRFeedback(code, protocol, bits, "ok", origem);
+  irPostSendMillis = millis();
+  irPostSendPending = true;
+  irPostSendCode = code;
+  irPostSendProtocol = protocol;
+  irPostSendBits = bits;
+  strlcpy(irPostSendOrigem, origem, sizeof(irPostSendOrigem));
+
+  // delay(200);                // aguarda eco dissipar
+  // enviandoCod = false;       // reativa receptor
+  // irrecv.resume();           // descarta qualquer eco acumulado no buffer
+  // yield();                   // cede controle ao SDK do ESP8266 — processa WiFi e reseta o watchdog
+  // sendIRFeedback(code, protocol, bits, "ok", origem);
 }
 
 void debugSendIREmissor(uint64_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
-  debugPrintfln("[IR]      - status:%s origem:%s Protocol:%s | Bits:%d | Code:0x%08llX (%llu)",
-                status, origem, getIRProtocol(protocol), bits,
-                (unsigned long long)code, (unsigned long long)code);
+  debugLogPrintf("[IR]", "status:%s origem:%s Protocol:%s | Bits:%d | Code:0x%08llX (%llu)",
+            status, origem, getIRProtocol(protocol), bits,
+            (unsigned long long)code, (unsigned long long)code);
 }
 
 // Notifica WS, MQTT e telnet com o resultado de um envio IR.
@@ -366,50 +380,47 @@ void desligamentoUniversal() {
 
   switch (testN) {
     case 0:
-      debugPrintln(" ");
-      debugPrintln("=====================================================");
-      debugPrintln("      Iniciando teste universal de desligamento      ");
-      debugPrintln("=====================================================");
-      debugPrintln("[Teste]   - Enviando: NEC LG...");
+      debugPrintLog("[Teste]", "=====================================================");
+      debugPrintLog("[Teste]", "      Iniciando teste universal de desligamento      ");
+      debugPrintLog("[Teste]", "=====================================================");
+      debugPrintLog("[Teste]", "Enviando: NEC LG...");
       handleIRCommand("0x20DF10EF", "NEC", 32, "[Teste]");  // LG Power
       testN++;
       break;
 
     case 1:
-      debugPrintln("[Teste]   - Enviando: NEC Samsung...");
+      debugPrintLog("[Teste]", "Enviando: NEC Samsung...");
       handleIRCommand("0xE0E040BF", "NEC", 32, "[Teste]");  // Samsung Power
       testN++;
       break;
 
     case 2:
-      debugPrintln("[Teste]   - Enviando: NEC Genérico...");
+      debugPrintLog("[Teste]", "Enviando: NEC Genérico...");
       handleIRCommand("0x00FF02FD", "NEC", 32, "[Teste]");  // NEC genérico
       testN++;
       break;
 
     case 3:
-      debugPrintln("[Teste]   - Enviando: NIKAI TCL...");
+      debugPrintLog("[Teste]", "Enviando: NIKAI TCL...");
       handleIRCommand("0xD5F2A", "NIKAI", 24, "[Teste]");  // Código NIKAI TCL
       testN++;
       break;
 
     case 4:
-      debugPrintln("[Teste]   - Enviando: Sony SIRC...");
+      debugPrintLog("[Teste]", "Enviando: Sony SIRC...");
       handleIRCommand("0xA90", "SONY", 12, "[Teste]");  // Sony Power (12 bits)
       testN++;
       break;
 
     case 5:
-      debugPrintln("[Teste]   - Enviando: RC5...");
+      debugPrintLog("[Teste]", "Enviando: RC5...");
       handleIRCommand("0x0C", "RC5", 12, "[Teste]");  // RC5 Power (Philips)
       testN++;
       break;
 
     case 6:
-      debugPrintln(" ");
-      debugPrintln("Teste universal finalizado.");
-      debugPrintln("=====================================================");
-      debugPrintln(" ");
+      debugPrintLog("[Teste]", "Teste universal finalizado.");
+      debugPrintLog("[Teste]", "=====================================================");
       IR_EmissorTeste = false;
       testN = 0;
       MQTTsendIRConfig();
@@ -420,4 +431,14 @@ void desligamentoUniversal() {
     default:
       break;
   }
+}
+
+void handleIRPostSend() {
+  if (!irPostSendPending) return;
+  if (millis() - irPostSendMillis < 200) return;
+
+  irPostSendPending = false;
+  enviandoCod = false;
+  irrecv.resume();
+  sendIRFeedback(irPostSendCode, irPostSendProtocol, irPostSendBits, "ok", irPostSendOrigem);
 }

@@ -27,6 +27,7 @@ const state =
     remotesData: {}, // dados do remotes.json carregados em memória
     selectedRemote: localStorage.getItem("selectedRemote") || null, // último modelo selecionado
     lastPayloads: {}, // cache dos últimos payloads recebidos por type
+    wsPassword: localStorage.getItem("wsPassword") || "",
   });
 
 /* =========================================================
@@ -44,11 +45,11 @@ function connectWS() {
 
   state.ws.onopen = () => {
     updateWSStatus(true);
-    flushQueue();
     if (state.reconnectTimer) {
       clearTimeout(state.reconnectTimer);
       state.reconnectTimer = null;
     }
+    wsSend({ cmd: "auth", password: state.wsPassword || "" });
   };
 
   state.ws.onclose = () => {
@@ -78,6 +79,16 @@ function wsSend(msg) {
   } else {
     state.wsQueue.push(data);
   }
+}
+
+function showWSAuthModal() {
+  const pass = prompt("🔐 Digite a senha do dispositivo:");
+  if (pass === null) return;
+  try {
+    localStorage.setItem("wsPassword", pass);
+  } catch (_) {}
+  state.wsPassword = pass;
+  wsSend({ cmd: "auth", password: pass });
 }
 
 // Envia todas as mensagens enfileiradas após reconexão.
@@ -146,7 +157,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           localStorage.setItem("selectedRemote", e.target.value);
-        } catch (_) { }
+        } catch (_) {}
         loadButtons(e.target.value);
       });
     }
@@ -239,12 +250,21 @@ function handleWSMessage(event) {
       alert("Configurações resetadas!");
       break;
 
-    case "authError":
-      alert("❌ Senha incorreta!");
+    // case "log":
+    //   saveLogToHistory(data);
+    //   break;
+
+    case "console":
+      saveLogToHistory(data);
       break;
 
-    case "log":
-      saveLogToHistory(data.msg);
+    case "authOk":
+      flushQueue();
+      state.configPopulated = false;
+      break;
+
+    case "authError":
+      showWSAuthModal();
       break;
   }
 }
@@ -310,8 +330,10 @@ function updateSystemWS(data) {
 
   document.title = `✅ ${data.name}`;
 
-  if (data.uptime_seconds !== undefined)
+  if (data.uptime_seconds !== undefined) {
     state.uptimeSeconds = data.uptime_seconds;
+    restartUptimeInterval();
+  }
 
   // Popula o form de configurações apenas uma vez por conexão.
   if (data.config && !state.configPopulated) {
@@ -456,7 +478,10 @@ function updateMQTTWS(data) {
 // Reaplica o último estado conhecido de cada tipo ao navegar entre páginas.
 function replayLastPayloads() {
   const updaters = {
-    system: (data) => updateSystemWS(state.configPopulated ? { ...data, config: undefined } : data),
+    system: (data) =>
+      updateSystemWS(
+        state.configPopulated ? { ...data, config: undefined } : data,
+      ),
     ledb: updateLEDBWS,
     sensor: updateSensorWS,
     ir: updateIRWS,
@@ -483,13 +508,17 @@ function formatUptime(s) {
   return `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(sec).padStart(2, "0")}s`;
 }
 
-// Inicia o intervalo apenas uma vez — sobrevive à navegação entre páginas.
-if (!state.uptimeInterval) {
+function restartUptimeInterval() {
+  if (state.uptimeInterval) {
+    clearInterval(state.uptimeInterval);
+  }
   state.uptimeInterval = setInterval(() => {
     state.uptimeSeconds++;
     setText("uptime", formatUptime(state.uptimeSeconds));
   }, 1000);
 }
+
+if (!state.uptimeInterval) restartUptimeInterval();
 
 /* =========================================================
    10. HISTÓRICO IR
@@ -527,7 +556,7 @@ function renderIRHistory() {
     // Click simples: copia hex para clipboard.
     li.onclick = () => {
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(d.hex).catch(() => { });
+        navigator.clipboard.writeText(d.hex).catch(() => {});
       } else {
         // Fallback para browsers sem Clipboard API.
         const ta = document.createElement("textarea");
@@ -569,34 +598,54 @@ function renderIRHistory() {
 ========================================================= */
 
 // Adiciona mensagem ao histórico e re-renderiza.
-function saveLogToHistory(msg) {
-  if (!msg) return;
+function saveLogToHistory(data) {
+  console.log(
+    `type: ${data.type} log: ${data.log} msg: ${data.msg} newline: ${data.newline}`,
+  );
+
+  if (!data.msg) return;
+
   const timestamp = new Date().toLocaleTimeString("pt-BR");
-  state.logHistory.push(`${timestamp} ${msg}`);
-  if (state.logHistory.length > 50) state.logHistory.shift();
+
+  const logTag = data.log || "[LOG]";
+  const newline = data.newline == 1 || data.newline === "1";
+
+  const color = getLogColor(logTag);
+  const safeMsg = escapeHtml(data.msg);
+  const tagFormatted = logTag.padEnd(10, " ");
+
+  const line =
+    `<span style="color:#888">${timestamp}</span> ` +
+    `<span style="color:${color}; font-weight:bold">${tagFormatted}</span> ` +
+    `<span style="color:${color}">- ${safeMsg}</span>`;
+
+  state.logHistory.push(line);
+
+  if (newline) {
+    state.logHistory.push("");
+  }
+
+  if (state.logHistory.length > 50) {
+    state.logHistory.splice(0, state.logHistory.length - 50);
+  }
+
   renderLogHistory();
 }
 
 // Renderiza o histórico de logs no DOM.
 function renderLogHistory() {
-  const list = document.getElementById("logHistory");
-  if (!list) return;
+  const el = document.getElementById("log");
+  if (!el) return; // 🔒 evita erro
 
-  list.innerHTML = "";
-  state.logHistory.forEach((msg) => {
-    const li = document.createElement("li");
-    li.textContent = msg;
-    list.appendChild(li);
-  });
-
-  list.scrollTop = list.scrollHeight;
+  el.innerHTML = state.logHistory.join("<br>");
+  el.scrollTop = el.scrollHeight;
 }
 
 // Limpa o histórico de logs.
 function clearLogs() {
   state.logHistory = [];
-  const list = document.getElementById("logHistory");
-  if (list) list.innerHTML = "";
+  const el = document.getElementById("log");
+  if (el) el.innerHTML = "";
 }
 
 // Envia comando de texto digitado no console via WS.
@@ -609,12 +658,59 @@ function sendTelnetCmd() {
   input.value = "";
 }
 
+function getLogColor(tag) {
+  if (!tag) return "#ffffff";
+
+  tag = tag.toUpperCase();
+
+  if (tag.includes("HTTP")) return "#00FFFF"; // ciano
+  if (tag.includes("MQTT")) return "#FFA500"; // laranja
+  if (tag.includes("WIFI")) return "#8e5a8a"; // roxo
+  if (tag.includes("LED A")) return "#009dff"; // azul
+  if (tag.includes("LED B")) return "#FFD700"; // amarelo
+  if (tag.includes("ERROR")) return "#FF4C4C"; // vermelho
+  if (tag.includes("WARN")) return "#FFD700"; // amarelo
+  if (tag.includes("INFO")) return "#87CEFA"; // azul claro
+
+  return "#CCCCCC"; // padrão
+}
+
+function escapeHtml(str) {
+  return str.replace(/[&<>"']/g, function (m) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[m];
+  });
+}
+
 /* =========================================================
    12. GERENCIAMENTO DE ARQUIVOS (config.json / remotes.json)
 ========================================================= */
 
-function exportConfig() {
-  window.location.href = "/download?file=/config.json";
+async function exportConfig() {
+  try {
+    const res = await fetch("/download?file=/config.json");
+    if (res.status === 401) {
+      showConfigStatus("❌ Sem permissão.", "#ef4444");
+      return;
+    }
+    if (!res.ok) {
+      showConfigStatus("❌ Arquivo não encontrado.", "#ef4444");
+      return;
+    }
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "config.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch {
+    showConfigStatus("❌ Erro ao exportar.", "#ef4444");
+  }
 }
 
 async function importConfig() {
@@ -661,8 +757,26 @@ function showConfigStatus(msg, color) {
   setTimeout(() => (el.textContent = ""), 3000);
 }
 
-function exportRemotes() {
-  window.location.href = "/download?file=/remotes.json";
+async function exportRemotes() {
+  try {
+    const res = await fetch("/download?file=/remotes.json");
+    if (res.status === 401) {
+      showRemotesStatus("❌ Sem permissão.", "#ef4444");
+      return;
+    }
+    if (!res.ok) {
+      showRemotesStatus("❌ Arquivo não encontrado.", "#ef4444");
+      return;
+    }
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "remotes.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch {
+    showRemotesStatus("❌ Erro ao exportar.", "#ef4444");
+  }
 }
 
 async function importRemotes() {
@@ -746,6 +860,10 @@ async function loadRemotes() {
     populateRemoteSelect();
   } catch (err) {
     console.error("Erro ao carregar remotes:", err);
+    showRemotesStatus(
+      "❌ Erro ao carregar remotes.json. Faça o upload do arquivo.",
+      "#ef4444",
+    );
   }
 }
 
@@ -949,7 +1067,7 @@ function populateConfig(data) {
   // Detecta modo IP (DHCP ou fixo) e exibe campos correspondentes.
   const modeEl = document.getElementById("cfg_ip_mode");
   if (modeEl) {
-    modeEl.value = (data.ip && data.ip !== "0.0.0.0") ? "static" : "dhcp";
+    modeEl.value = data.ip && data.ip !== "0.0.0.0" ? "static" : "dhcp";
     toggleIPFields();
   }
 
@@ -978,6 +1096,7 @@ function saveDeviceConfig() {
     }
   }
 
+  const wsPassword = get("cfg_ws_password");
   wsSend({
     cmd: "saveConfig",
     hostname: get("cfg_hostname").trim(),
@@ -992,6 +1111,7 @@ function saveDeviceConfig() {
     mqtt_enabled: get("cfg_mqtt_enabled"),
     mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
     aht10_enabled: get("cfg_aht10_enabled") === "true",
+    ws_password: wsPassword.length > 0 ? wsPassword : "__keep__",
   });
 
   showCfgStatus("⏳ Salvando...", "#facc15");

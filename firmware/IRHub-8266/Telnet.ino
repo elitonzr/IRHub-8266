@@ -35,7 +35,6 @@ void handleTelnet() {
 void processTelnetCommand(char* cmd) {
 
   if (strcmp(cmd, "status") == 0) {
-    debugPrintln(" ");
     debugUptime();
     debugNetwork();
     debugLED();

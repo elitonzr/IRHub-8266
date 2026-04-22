@@ -1,4 +1,5 @@
 #include "globals.h"  // garantir que está incluído
+static bool wsAuthenticated[WEBSOCKETS_SERVER_CLIENT_MAX] = {};
 
 void getHttpCredentials(char* user, size_t userSize, char* pass, size_t passSize) {
   strlcpy(user, "admin", userSize);
@@ -24,11 +25,11 @@ void printHttpCredentials() {
 
   getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
 
-  debugPrintln("==============  HTTP AUTH ==============");
-  debugPrintln(" ");
-  debugPrintf("  Usuario: %s", user);
-  debugPrintf("  Senha  : %s", pass);
-  debugPrintln("========================================");
+  // debugPrintfln("[HTTP]    - AUTH Usuario: %s Senha  : %s", user, pass);
+  // debugPrintfln("[WS]      - AUTH Senha  : %s", PasswordWS);
+
+  debugLogPrintf("[HTTP]", "AUTH Usuario: %s Senha  : %s", user, pass);
+  debugLogPrintf("[WS]", "AUTH Senha  : %s", PasswordWS);
 }
 
 // ==============================
@@ -390,25 +391,20 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
     case WStype_CONNECTED:
       debugPrintfln("[WS]      - cliente %u conectado", num);
-      debugPrintln("wsSendSystem");
       wsSendSystem();
-      debugPrintln("wsSendNetwork");
       wsSendNetwork();
-      debugPrintln("wsSendMQTT");
       wsSendMQTT();
-      debugPrintln("wsSendInfoIR");
       wsSendInfoIR();
-      debugPrintln("wsSendInfoIR_Receptor");
       wsSendInfoIR_Receptor();
-      debugPrintln("wsSendLEDB");
       wsSendLEDB();
+      wsAuthenticated[num] = false;
 
       break;
 
     case WStype_DISCONNECTED:
       debugPrintf("[WS]      - cliente %u desconectado", num);
       debugPrintln("");
-
+      wsAuthenticated[num] = false;
       break;
 
     case WStype_TEXT:
@@ -426,6 +422,23 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         const char* cmd = doc["cmd"];
 
         if (!cmd) return;
+
+        if (strcmp(cmd, "auth") == 0) {
+          const char* provided = doc["password"] | "";
+          if (strcmp(provided, PasswordWS) == 0) {
+            wsAuthenticated[num] = true;
+            webSocket.sendTXT(num, "{\"type\":\"authOk\"}");
+          } else {
+            wsAuthenticated[num] = false;
+            webSocket.sendTXT(num, "{\"type\":\"authError\"}");
+          }
+          return;
+        }
+
+        if (!wsAuthenticated[num]) {
+          webSocket.sendTXT(num, "{\"type\":\"authError\"}");
+          return;
+        }
 
         if (strcmp(cmd, "toggleLEDB") == 0) {
           ledB_state = !ledB_state;
@@ -517,6 +530,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         else if (strcmp(cmd, "saveConfig") == 0) {
           debugPrintln("[WS]      - saveConfig recebido");
 
+          const char* provided = doc["password"] | "";
+          if (strlen(provided) > 0) {
+            if (strcmp(provided, PasswordWS) != 0) {
+              webSocket.sendTXT(num, "{\"type\":\"authError\"}");
+              return;
+            }
+          }
           const char* v_hostname = doc["hostname"] | hostname_buf;
           const char* v_mqtt_id = doc["mqtt_id"] | mqtt_id_buf;
           const char* v_grupo = doc["grupo"] | grupo_buf;
@@ -531,6 +551,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           const char* v_mqtt_user = doc["mqtt_user"] | mqtt_user_buf;
           const char* v_mqtt_password = doc["mqtt_password"] | "";
           const char* v_mqtt_enabled = doc["mqtt_enabled"] | mqtt_enabled_buf;
+
+          const char* v_ws_password = doc["ws_password"] | "";
+          if (strcmp(v_ws_password, "__keep__") != 0 && strlen(v_ws_password) > 0) {
+            strlcpy(PasswordWS, v_ws_password, sizeof(PasswordWS));
+          }
 
           strlcpy(hostname_buf, v_hostname, sizeof(hostname_buf));
           strlcpy(mqtt_id_buf, v_mqtt_id, sizeof(mqtt_id_buf));
@@ -547,7 +572,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
           strlcpy(mqtt_enabled_buf, v_mqtt_enabled, sizeof(mqtt_enabled_buf));
 
+          bool aht10_prev = aht10_enabled;
           aht10_enabled = doc["aht10_enabled"] | aht10_enabled;
+          if (aht10_enabled && !aht10_prev) {
+            Wire.begin(12, 13);
+            if (aht.begin(&Wire)) {
+              estadoAHT10 = AHT10_ONLINE;
+              debugPrintln("[AHT10]   - Inicializado a quente.");
+            } else {
+              estadoAHT10 = AHT10_OFFLINE;
+              debugPrintln("[AHT10]   - Falha na inicialização a quente.");
+            }
+          }
 
           recalcularTopicos();
           saveConfig();
@@ -605,7 +641,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
 void wsSendSystem() {
   // StaticJsonDocument<2560> doc;
-  StaticJsonDocument<2148> doc;
+  DynamicJsonDocument doc(2148);
 
   doc["type"] = "system";
   doc["name"] = mqtt_id_buf;

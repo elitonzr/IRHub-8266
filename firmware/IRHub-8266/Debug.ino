@@ -1,5 +1,138 @@
+#include <stdarg.h>
+
 const char* debugOnOff(bool v) {
   return v ? "Ligado" : "Desligado";
+}
+
+// ------------------------------------------------------------
+// Envia mensagem para o WebSocket em formato JSON
+//
+// ✔ Sanitiza a string:
+//   - Remove \n e \r
+//   - Escapa "\" e aspas (")
+//   → evita quebrar o JSON no frontend
+//
+// ✔ Formato enviado:
+//   {
+//     "type": "console",
+//     "log": "[HTTP]",
+//     "msg": "texto",
+//     "newline": "1"
+//   }
+//
+// ✔ newline:
+//   - "1" → frontend adiciona quebra de linha
+//   - "0" → linha normal
+//
+// ✔ Observações:
+//   - Usa buffers fixos (evita fragmentação de heap no ESP8266)
+//   - Não usa String (boa prática no seu projeto)
+//
+// EX:
+//   debugPrintLog("[HTTP]", "Mensagem simples");
+//   debugPrintLog("[ERROR]", "Falha", true);
+// ------------------------------------------------------------
+void debugPrintLog(const char* type_log = "console", const char* msg = "", bool newline = false) {
+
+  // fallback de segurança
+  if (!type_log) type_log = "log";
+  if (!msg) msg = "";
+
+  char buffer[512];  // buffer sanitizado
+  size_t j = 0;
+
+  // -------- SANITIZAÇÃO --------
+  for (size_t i = 0; msg[i] && j < sizeof(buffer) - 2; i++) {
+
+    // remove quebras de linha (frontend controla isso)
+    if (msg[i] == '\n' || msg[i] == '\r') continue;
+
+    // escapa barra invertida: \ → \\.
+    if (msg[i] == '\\') {
+      buffer[j++] = '\\';
+      buffer[j++] = '\\';
+      continue;
+    }
+
+    // escapa aspas: " → \"
+    if (msg[i] == '"') {
+      buffer[j++] = '\\';
+      buffer[j++] = '"';
+    } else {
+      buffer[j++] = msg[i];
+    }
+  }
+
+  buffer[j] = '\0';  // finaliza string
+
+  // -------- MONTA JSON --------
+  char json[600];
+
+  snprintf(json, sizeof(json),
+           "{\"type\":\"console\",\"log\":\"%s\",\"msg\":\"%s\",\"newline\":\"%d\"}",
+           type_log, buffer, newline ? 1 : 0);
+
+  // -------- ENVIO --------
+  if (webSocket.connectedClients() > 0) {
+    webSocket.broadcastTXT(json);
+    // Serial.println(json); // opcional debug local
+  }
+}
+
+// ------------------------------------------------------------
+// Formata mensagem estilo printf e envia SEM quebra de linha
+//
+// EX:
+//   debugLogPrintf("[HTTP]", "Usuario: %s", user);
+// ------------------------------------------------------------
+void debugLogPrintf(const char* type, const char* format, ...) {
+
+  if (!type) type = "console";
+
+  char msg[512];
+
+  va_list args;
+  va_start(args, format);
+  int len = vsnprintf(msg, sizeof(msg), format, args);
+  va_end(args);
+
+  // erro de formatação
+  if (len < 0) {
+    debugPrintLog("[ERROR]", "erro de formatação", true);
+    return;
+  }
+
+  msg[sizeof(msg) - 1] = '\0';
+
+  debugPrintLog(type, msg, false);
+}
+
+// ------------------------------------------------------------
+// Formata mensagem estilo printf e envia COM quebra de linha
+//
+// EX:
+//   debugLogPrintfln("[HTTP]", "Usuario: %s", user);
+// ------------------------------------------------------------
+void debugLogPrintfln(const char* type, const char* format, ...) {
+
+  if (!type) type = "console";
+
+  char msg[512];
+
+  va_list args;
+  va_start(args, format);
+  int len = vsnprintf(msg, sizeof(msg), format, args);
+  va_end(args);
+
+  // erro de formatação
+  if (len < 0) {
+    debugPrintLog("[ERROR]", "erro de formatação", true);
+    return;
+  }
+
+  msg[sizeof(msg) - 1] = '\0';
+
+  debugPrintLog(type, msg, true);
 }
 
 // ------------------------------------------------------------
@@ -132,177 +265,136 @@ void debugPrintfln(const char* format, ...) {
 }
 
 void debugPassword() {
-  debugPrintln("=============== PASSWORD ===============");
-  debugPrintln(" ");
+  debugPrintLog("[AUTH]", "================= AUTH =================");
   printHttpCredentials();
-  debugPrintln(" ");
   printOTACredentials();
-  debugPrintln("");
   printPortalCredentials();
-  debugPrintln("");
-  debugPrintln("========================================");
-  debugPrintln("");
-  debugPrintln("");
+  debugPrintLog("[AUTH]", "========================================", true);
 }
 
 void debugBuild() {
-  debugPrintln("============== BUILD INFO ==============");
-  debugPrintln(" ");
-  debugPrint("  Data e hora   : ");
-  debugPrintln(buildDateTime.c_str());
-  debugPrint("  Versão        : ");
-  debugPrintln(buildVersion.c_str());
-  debugPrintln("========================================");
-  debugPrintln("");
-  debugPrintln("");
+  debugPrintLog("[INFO]", "============== BUILD INFO ==============");
+  debugLogPrintf("[INFO]", "Data e hora   : %s", buildDateTime.c_str());
+  debugLogPrintf("[INFO]", "Versão        : %s", buildVersion.c_str());
+  debugPrintLog("[INFO]", "========================================", true);
 }
 
 void debugHelp() {
-  debugPrintln("");
-  debugPrintln("========= COMANDOS DISPONIVEIS =========");
-  debugPrintln("");
-  debugPrintln("  status              -> Mostra estado geral");
-  debugPrintln("  led                 -> Inverte estado do LED B");
-  debugPrintln("  IR                  -> Sensores IR");
-  debugPrintln("  ir receptor [modo]  -> Define protocolo do receptor IR");
-  debugPrintln("  AHT10               -> Sensor AHT10");
-  debugPrintln("  mqtt                -> Status do MQTT");
-  debugPrintln("  network             -> Status da rede WiFi");
-  debugPrintln("  info                -> Informacoes de compilacao");
-  debugPrintln("  irteste [on/off]    -> Ativa/desativa teste do emissor IR");
-  debugPrintln("  heap                -> Mostra memoria livre");
-  debugPrintln("  reboot              -> Reinicia o dispositivo");
-  debugPrintln("  help                -> Mostra esta lista");
-  debugPrintln("========================================");
-  debugPrintln("");
-  debugPrintln("");
+  debugPrintLog("[HELP]", "========= COMANDOS DISPONIVEIS =========");
+  debugPrintLog("[HELP]", "  status              -> Mostra estado geral");
+  debugPrintLog("[HELP]", "  led                 -> Inverte estado do LED B");
+  debugPrintLog("[HELP]", "  IR                  -> Sensores IR");
+  debugPrintLog("[HELP]", "  ir receptor [modo]  -> Define protocolo do receptor IR");
+  debugPrintLog("[HELP]", "  AHT10               -> Sensor AHT10");
+  debugPrintLog("[HELP]", "  mqtt                -> Status do MQTT");
+  debugPrintLog("[HELP]", "  network             -> Status da rede WiFi");
+  debugPrintLog("[HELP]", "  info                -> Informacoes de compilacao");
+  debugPrintLog("[HELP]", "  irteste [on/off]    -> Ativa/desativa teste do emissor IR");
+  debugPrintLog("[HELP]", "  heap                -> Mostra memoria livre");
+  debugPrintLog("[HELP]", "  reboot              -> Reinicia o dispositivo");
+  debugPrintLog("[HELP]", "  help                -> Mostra esta lista");
+  debugPrintLog("[HELP]", "========================================", true);
 }
 
 void debugUptime() {
-  debugPrintln("================ UPTIME ================");
-  debugPrintln(" ");
-  debugPrintfln("  Uptime: %s", getFormattedUptime().c_str());
-  debugPrintln(" ");
-  debugPrintln("========================================");
-  debugPrintln("");
-  debugPrintln("");
+  debugPrintLog("[UPTIME]", "================ UPTIME ================");
+  debugLogPrintf("[UPTIME]", "  Uptime: %s", getFormattedUptime().c_str());
+  debugPrintLog("[UPTIME]", "========================================", true);
 }
 
 void debugLEDA() {
-  debugPrintfln("[LED A]   - Estado:%s Modo:%s", debugOnOff(ledCtrl.estado), getLedModeString());
+  debugLogPrintf("[LED A]", "Estado:%s Modo:%s", debugOnOff(ledCtrl.estado), getLedModeString());
 }
 
 void debugLEDB() {
-  debugPrintfln("[LED B]   - Estado:%s", debugOnOff(ledB_state));
+  debugLogPrintf("[LED B]", "Estado:%s", debugOnOff(ledB_state));
 }
 
 void debugLED() {
-  debugPrintln("");
-  debugPrintln("================ LEDs ==================");
+  debugPrintLog("[LED]", "================ LEDs ==================");
   debugLEDA();
   debugLEDB();
-  debugPrintln("========================================");
-  debugPrintln("");
-  debugPrintln("");
+  debugPrintLog("[LED]", "========================================", true);
 }
 
 void debugAHT10() {
-  debugPrintln("================ AHT10 =================");
-  debugPrintln("");
+  debugPrintLog("[AHT10]", "================ AHT10 =================");
 
   lerSensorAHT10();
 
   if (estadoAHT10 != AHT10_ONLINE) {
-    debugPrint("  AHT10: ");
-    debugPrintln(EstadoAHT10());
-    debugPrintln("========================================");
-    debugPrintln("");
-    debugPrintln("");
+    debugLogPrintf("[AHT10]", "Estado: %s", EstadoAHT10());
+    debugPrintLog("[AHT10]", "========================================", true);
     return;
   }
 
-  debugPrintfln("  Temperatura : %.1f °C", temperatura);
-  debugPrintfln("  Umidade     : %.1f %%", umidade);
-  debugPrintln("========================================");
-  debugPrintln("");
-  debugPrintln("");
+  debugLogPrintf("[AHT10]", "  Temperatura : %.1f °C", temperatura);
+  debugLogPrintf("[AHT10]", "  Umidade     : %.1f %%", umidade);
+  debugPrintLog("[AHT10]", "========================================", true);
 }
 
 void debugsendInfoIR() {
-  debugPrintfln("[IR]      - Receptor: GPIO %d Modo :%s", kRecvPin, EstadoIRReceptor());
-  debugPrintfln("[IR]      - Emissor : GPIO  %d Teste:%s", kIrLed, debugOnOff(IR_EmissorTeste));
+  debugLogPrintf("[IR]", "Receptor: GPIO %d Modo :%s", kRecvPin, EstadoIRReceptor());
+  debugLogPrintf("[IR]", "Emissor : GPIO  %d Teste:%s", kIrLed, debugOnOff(IR_EmissorTeste));
 }
 
 void debugIR() {
-  debugPrintln("============= IR Receptor ==============");
-  debugPrintln("");
+  debugPrintLog("[IR]", "============= IR Receptor ==============");
 
   if (!lastIR.valido) {
-    debugPrintln("  Nenhum sinal recebido ainda.");
-    debugPrintln("========================================");
-    debugPrintln("");
-    debugPrintln("");
+    debugPrintLog("[IR]", "  Nenhum sinal recebido ainda.");
+    debugPrintLog("[IR]", "========================================", true);
     return;
   }
 
-  debugPrintfln("[IR]      - Receptor {\"Protocol\":\"%s\", \"type\":%d, \"bits\":%d, \"RAW_Len\":%d, \"DEC\":%llu, \"HEX\":\"%s\"}",
-                lastIR.protocolo,
-                lastIR.decode_type,
-                lastIR.bits,
-                lastIR.rawlen,
-                (unsigned long long)lastIR.dec,
-                lastIR.hexStr);
+  debugLogPrintfln("[IR]", "Receptor {\"Protocol\":\"%s\", \"type\":%d, \"bits\":%d, \"RAW_Len\":%d, \"DEC\":%llu, \"HEX\":\"%s\"}",
+                   lastIR.protocolo,
+                   lastIR.decode_type,
+                   lastIR.bits,
+                   lastIR.rawlen,
+                   (unsigned long long)lastIR.dec,
+                   lastIR.hexStr);
 
-  debugPrintln("");
-  debugPrintln("--- Source Code ---");
-  debugPrintln(resultToSourceCode(&results).c_str());
-  debugPrintln("========================================");
-  debugPrintln("");
-  debugPrintln("");
+
+  debugPrintLog("[IR]", "Source Code ");
+  debugPrintLog("[IR]", resultToSourceCode(&results).c_str());
+  debugPrintLog("[IR]", "========================================", true);
 }
 
 void debugNetwork() {
-  debugPrintln("================ NETWORK ===============");
-  debugPrintln("");
-  debugPrintfln("  SSID      : %s", WiFi.SSID().c_str());
-  debugPrintfln("  IP        : %s", WiFi.localIP().toString().c_str());
-  debugPrintfln("  Gateway   : %s", WiFi.gatewayIP().toString().c_str());
-  debugPrintfln("  Subnet    : %s", WiFi.subnetMask().toString().c_str());
-  debugPrintfln("  RSSI      : %d dBm", WiFi.RSSI());
-  debugPrintfln("  mDNS      : http://%s.local", hostname_buf);
-  debugPrintln("========================================");
-  debugPrintln("");
-  debugPrintln("");
+  debugPrintLog("[WIFI]", "================ NETWORK ===============");
+  debugLogPrintf("[WIFI]", "  SSID      : %s", WiFi.SSID().c_str());
+  debugLogPrintf("[WIFI]", "  IP        : %s", WiFi.localIP().toString().c_str());
+  debugLogPrintf("[WIFI]", "  Gateway   : %s", WiFi.gatewayIP().toString().c_str());
+  debugLogPrintf("[WIFI]", "  Subnet    : %s", WiFi.subnetMask().toString().c_str());
+  debugLogPrintf("[WIFI]", "  RSSI      : %d dBm", WiFi.RSSI());
+  debugLogPrintf("[WIFI]", "  mDNS      : http://%s.local", hostname_buf);
+  debugPrintLog("[WIFI]", "========================================", true);
 }
 
 void debugMQTT() {
-  debugPrintln("================= MQTT =================");
-  debugPrintln(" ");
-  debugPrintfln("  Status    : %s", mqtt_client.connected() ? "online" : "offline");
-  debugPrintfln("  Server    : %s", mqtt_server);
-  debugPrintfln("  Client ID : %s", clientID.c_str());
-  debugPrintfln("  Tópico    : %s/#", myTopic.c_str());
-  debugPrintfln("  Sucessos  : %d", mqttOK);
-  debugPrintfln("  Erros     : %d", mqttErro);
-  debugPrintln(" ");
-  debugPrintln("  Subscriptions:");
-  debugPrintfln("            : %s", topic_command);
+  debugPrintLog("[MQTT]", "================= MQTT =================");
+  debugLogPrintf("[MQTT]", "  Status    : %s", mqtt_client.connected() ? "online" : "offline");
+  debugLogPrintf("[MQTT]", "  Server    : %s", mqtt_server);
+  debugLogPrintf("[MQTT]", "  Client ID : %s", clientID.c_str());
+  debugLogPrintf("[MQTT]", "  Tópico    : %s/#", myTopic.c_str());
+  debugLogPrintf("[MQTT]", "  Sucessos  : %d", mqttOK);
+  debugLogPrintf("[MQTT]", "  Erros     : %d", mqttErro);
+  debugPrintLog("[MQTT]", "  Subscriptions:");
+  debugLogPrintf("[MQTT]", "            : %s", topic_command);
 
-  debugPrintln(" ");
 
-  debugPrintln("  Publishers:");
-  debugPrintfln("            : %s", topic_status);
-  debugPrintfln("            : %s", topic_info_device);
-  debugPrintfln("            : %s", topic_info_network);
-  debugPrintfln("            : %s", topic_info_mqtt);
-  debugPrintfln("            : %s", topic_info_uptime);
-  debugPrintfln("            : %s", topic_switch_ledb_state);
-  debugPrintfln("            : %s", topic_sensor_aht10);
-  debugPrintfln("            : %s", topic_sensor_aht10_status);
-  debugPrintfln("            : %s", topic_sensor_ir_config);
-  debugPrintfln("            : %s", topic_sensor_ir_received);
-  debugPrintfln("            : %s", topic_sensor_ir_sent);
-  debugPrintln("========================================");
-  debugPrintln("");
-  debugPrintln("");
+  debugPrintLog("[MQTT]", "  Publishers:");
+  debugLogPrintf("[MQTT]", "            : %s", topic_status);
+  debugLogPrintf("[MQTT]", "            : %s", topic_info_device);
+  debugLogPrintf("[MQTT]", "            : %s", topic_info_network);
+  debugLogPrintf("[MQTT]", "            : %s", topic_info_mqtt);
+  debugLogPrintf("[MQTT]", "            : %s", topic_info_uptime);
+  debugLogPrintf("[MQTT]", "            : %s", topic_switch_ledb_state);
+  debugLogPrintf("[MQTT]", "            : %s", topic_sensor_aht10);
+  debugLogPrintf("[MQTT]", "            : %s", topic_sensor_aht10_status);
+  debugLogPrintf("[MQTT]", "            : %s", topic_sensor_ir_config);
+  debugLogPrintf("[MQTT]", "            : %s", topic_sensor_ir_received);
+  debugLogPrintf("[MQTT]", "            : %s", topic_sensor_ir_sent);
+  debugPrintLog("[MQTT]", "========================================", true);
 }

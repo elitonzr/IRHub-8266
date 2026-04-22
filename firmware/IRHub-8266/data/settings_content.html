@@ -140,6 +140,22 @@
           <option value="false">Desabilitado</option>
         </select>
       </div>
+
+      <hr />
+      <p class="section-label">Segurança</p>
+      <div class="item">
+        Senha WebSocket:
+        <input
+          id="cfg_ws_password"
+          type="password"
+          autocomplete="new-password"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="deixe vazio para manter a atual"
+        />
+      </div>
+
       <hr />
       <div class="item">
         <button class="btn-primary btn-block" onclick="saveDeviceConfig()">

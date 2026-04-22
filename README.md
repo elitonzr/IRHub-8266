@@ -148,7 +148,12 @@ IRHub-8266-Sala/
         └── sent/state
 ```
 
-Para detalhes completos sobre payloads e comandos, consulte [`docs/MQTT.md`](docs/MQTT.md).
+Para detalhes completos, consulte a documentação em [`docs/`](docs/):
+
+- [`MQTT.md`](docs/MQTT.md) — payloads e comandos MQTT
+- [`pinout.md`](docs/pinout.md) — mapeamento de pinos
+- [`hardware.md`](docs/hardware.md) — componentes e circuito
+- [`config-remotes.md`](docs/config-remotes.md) — criação de controles remotos
 
 ---
 

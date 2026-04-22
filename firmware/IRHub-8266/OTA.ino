@@ -10,7 +10,8 @@ void setup_ota() {
     recalcularTopicos();
   }
 
-  ArduinoOTA.setHostname(clientID.c_str());
+  // ArduinoOTA.setHostname(clientID.c_str());
+  ArduinoOTA.setHostname(hostname_buf);
 
   // -------- OTA - Senha --------
   ArduinoOTA.setPassword(Password);
@@ -39,9 +40,11 @@ void setup_ota() {
 }
 
 void printOTACredentials() {
-  debugPrintln("=============== OTA AUTH ===============");
-  debugPrintln(" ");
-  debugPrintf("  Senha  : %s\n", Password);
-  debugPrintln(" ");
-  debugPrintln("========================================");
+  debugPrintfln("[OTA]     - AUTH Senha  : %s", Password);
+
+  // debugPrintln("=============== OTA AUTH ===============");
+  // debugPrintln(" ");
+  // debugPrintf("  Senha  : %s\n", Password);
+  // debugPrintln(" ");
+  // debugPrintln("========================================");
 }

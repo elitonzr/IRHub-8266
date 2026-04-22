@@ -145,14 +145,28 @@ void loop() {
 
   // ---- WIFI WATCHDOG ----
   static unsigned long tWifi = 0;
-
   if (now - tWifi > 30000) {  // verifica a cada 30 segundos
     tWifi = now;
     wifi_watchdog();
   }
 
+  // ---- HEAP WATCHDOG ----
+  static unsigned long tHeap = 0;
+  if (now - tHeap > 30000) {
+    tHeap = now;
+    uint32_t heap = ESP.getFreeHeap();
+    if (heap < 5000) {
+      debugPrintfln("[SYS]     - HEAP CRÍTICO: %lu bytes — reiniciando", (unsigned long)heap);
+      delay(500);
+      ESP.restart();
+    } else if (heap < 8000) {
+      debugPrintfln("[SYS]     - HEAP AVISO: %lu bytes livres", (unsigned long)heap);
+    }
+  }
+
   // ---- IR DECODER ----
   myIRdecoder();
+  handleIRPostSend();
 
   // ---- SENSOR WS ----
   static unsigned long tSensor = 0;

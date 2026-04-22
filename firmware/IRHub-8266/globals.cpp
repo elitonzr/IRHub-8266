@@ -46,10 +46,14 @@ const String buildVersion  = "0.6.0";
 // PASSWORD
 // ================================================================
 char PasswordPortal[16] = "12345678";
+char PasswordWS[16] = "";
 char Password[16];
 
 void initPassword() {
   snprintf(Password, sizeof(Password), "%08X", ESP.getChipId());
+  if (strlen(PasswordWS) == 0) {
+    strlcpy(PasswordWS, Password, sizeof(PasswordWS));
+  }
 }
 
 // ================================================================

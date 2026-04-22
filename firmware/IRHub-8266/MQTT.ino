@@ -266,7 +266,8 @@ void MQTTsendLEDB() {
   char msg[64];
   size_t len = serializeJson(doc, msg, sizeof(msg));
   if (!mqtt_client.connected()) return;
-  mqtt_client.publish(topic_switch_ledb_state, msg, len);
+  // mqtt_client.publish(topic_switch_ledb_state, msg, len);
+  mqtt_client.publish(topic_switch_ledb_state, (const uint8_t*)msg, len, true);
 }
 
 /************************************************************
@@ -281,8 +282,8 @@ void MQTTsendAHT10() {
   }
 
   StaticJsonDocument<128> doc;
-  doc["temperature"] = temperatura;
-  doc["humidity"] = umidade;
+  doc["temperatura"] = temperatura;
+  doc["umidade"] = umidade;
 
   char msg[128];
   size_t len = serializeJson(doc, msg, sizeof(msg));
@@ -315,7 +316,8 @@ void MQTTsendIRConfig() {
   char msg[128];
   size_t len = serializeJson(doc, msg, sizeof(msg));
   if (!mqtt_client.connected()) return;
-  mqtt_client.publish(topic_sensor_ir_config, msg, len);
+  // mqtt_client.publish(topic_sensor_ir_config, msg, len);
+  mqtt_client.publish(topic_sensor_ir_config, (const uint8_t*)msg, len, true);
 }
 
 /************************************************************
