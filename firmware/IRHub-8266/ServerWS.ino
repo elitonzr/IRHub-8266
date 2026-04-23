@@ -25,9 +25,6 @@ void printHttpCredentials() {
 
   getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
 
-  // debugPrintfln("[HTTP]    - AUTH Usuario: %s Senha  : %s", user, pass);
-  // debugPrintfln("[WS]      - AUTH Senha  : %s", PasswordWS);
-
   debugLogPrintf("[HTTP]", "AUTH Usuario: %s Senha  : %s", user, pass);
   debugLogPrintf("[WS]", "AUTH Senha  : %s", PasswordWS);
 }
@@ -362,7 +359,7 @@ void handleUpload() {
 
     case UPLOAD_FILE_ABORTED:
       {
-        debugPrintLog("[FS]", "Upload ABORTADO");
+        debugLogPrint("[FS]", "Upload ABORTADO");
         if (fsUploadFile) fsUploadFile.close();
         break;
       }
@@ -490,7 +487,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           uint8_t bits = doc["bits"] | 32;
 
           if (!codeStr || strlen(codeStr) == 0) {
-            debugPrintLog("[WS]", "code vazio");
+            debugLogPrint("[WS]", "code vazio");
             sendIRFeedback(0, UNKNOWN, 0, "code vazio", "[WS]");
             return;
           }
@@ -506,7 +503,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
           }
-          debugPrintLog("[WS]", "Abrindo portal WiFi");
+          debugLogPrint("[WS]", "Abrindo portal WiFi");
           webSocket.broadcastTXT("{\"type\":\"wifiPortal\"}");
           delay(500);
           startWiFiManagerPortal();
@@ -520,14 +517,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
           }
-          debugPrintLog("[WS]", "Reset WiFi solicitado");
+          debugLogPrint("[WS]", "Reset WiFi solicitado");
           webSocket.broadcastTXT("{\"type\":\"resetWifi\"}");
           delay(500);
           resetWifi();
         }
 
         else if (strcmp(cmd, "saveConfig") == 0) {
-          debugPrintLog("[WS]", "saveConfig recebido");
+          debugLogPrint("[WS]", "saveConfig recebido");
 
           const char* provided = doc["password"] | "";
           if (strlen(provided) > 0) {
@@ -577,10 +574,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
             Wire.begin(12, 13);
             if (aht.begin(&Wire)) {
               estadoAHT10 = AHT10_ONLINE;
-              debugPrintLog("[AHT10]", "Inicializado a quente.");
+              debugLogPrint("[AHT10]", "Inicializado a quente.");
             } else {
               estadoAHT10 = AHT10_OFFLINE;
-              debugPrintLog("[AHT10]", "Falha na inicialização a quente.");
+              debugLogPrint("[AHT10]", "Falha na inicialização a quente.");
             }
           }
 
@@ -590,10 +587,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           if (mqttEnabled()) {
             mqtt_client.disconnect();
             mqtt_client.setServer(mqtt_server, mqtt_port);
-            debugPrintLog("[MQTT]", "Reconectando com novas configurações...");
+            debugLogPrint("[MQTT]", "Reconectando com novas configurações...");
           } else {
             mqtt_client.disconnect();
-            debugPrintLog("[MQTT]", "Desabilitado, desconectando.");
+            debugLogPrint("[MQTT]", "Desabilitado, desconectando.");
           }
 
           webSocket.broadcastTXT("{\"type\":\"configSaved\"}");
@@ -607,14 +604,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
           }
-          debugPrintLog("[WS]", "Reset Config solicitado");
+          debugLogPrint("[WS]", "Reset Config solicitado");
           webSocket.broadcastTXT("{\"type\":\"resetConfig\"}");
           delay(500);
           resetConfig();
         }
 
         else if (strcmp(cmd, "reboot") == 0) {
-          debugPrintLog("[WS]", "Reboot solicitado");
+          debugLogPrint("[WS]", "Reboot solicitado");
           webSocket.broadcastTXT("{\"type\":\"reboot\"}");
           delay(500);
           ESP.restart();
@@ -667,7 +664,7 @@ void wsSendSystem() {
   char buffer[2148];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintLog("[WS]", "Erro: JSON system truncado");
+    debugLogPrint("[WS]", "Erro: JSON system truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -680,7 +677,7 @@ void wsSendLEDB() {
   char buffer[64];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintLog("[WS]", "Erro: JSON ledb truncado");
+    debugLogPrint("[WS]", "Erro: JSON ledb truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -701,7 +698,7 @@ void wsSendAHT10() {
   char buffer[128];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintLog("[WS]", "Erro: JSON sensor truncado");
+    debugLogPrint("[WS]", "Erro: JSON sensor truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -720,7 +717,7 @@ void wsSendNetwork() {
   char buffer[256];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintLog("[WS]", "Erro: JSON network truncado");
+    debugLogPrint("[WS]", "Erro: JSON network truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -741,7 +738,7 @@ void wsSendMQTT() {
   char buffer[384];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintLog("[WS]", "Erro: JSON mqtt truncado");
+    debugLogPrint("[WS]", "Erro: JSON mqtt truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -755,7 +752,7 @@ void wsSendInfoIR() {
   char buffer[128];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintLog("[WS]", "Erro: JSON ir truncado");
+    debugLogPrint("[WS]", "Erro: JSON ir truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -776,7 +773,7 @@ void wsSendInfoIR_Receptor() {
   char buffer[192];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
-    debugPrintLog("[WS]", "Erro: JSON ir_receptor truncado");
+    debugLogPrint("[WS]", "Erro: JSON ir_receptor truncado");
     return;
   }
   webSocket.broadcastTXT(buffer, len);
@@ -786,7 +783,7 @@ void wsSendIREmissor(uint64_t code, decode_type_t protocol, uint8_t bits, const 
   char payload[256];
   size_t len = buildIRJson(payload, sizeof(payload), code, protocol, bits, status, origem);
   if (len == 0 || len >= sizeof(payload)) {
-    debugPrintLog("[WS]", "Erro: JSON IR");
+    debugLogPrint("[WS]", "Erro: JSON IR");
     return;
   }
   webSocket.broadcastTXT(payload, len);

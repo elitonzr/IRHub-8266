@@ -4,7 +4,7 @@
 void loadConfig() {
 
   if (!LittleFS.exists("/config.json")) {
-    debugPrintLog("[FS]", "config.json não existe");
+    debugLogPrint("[FS]", "config.json não existe");
     recalcularTopicos();
     return;
   }
@@ -40,7 +40,7 @@ void loadConfig() {
       IR_ReceptorEstado = static_cast<IR_ReceptorMode>(ir_receptor);
     }
 
-    debugPrintLog("[FS]", "Config carregada");
+    debugLogPrint("[FS]", "Config carregada");
   }
   file.close();
   recalcularTopicos();
@@ -69,7 +69,7 @@ void saveConfig() {
   if (!file) return;
   serializeJson(doc, file);
   file.close();
-  debugPrintLog("[FS]", "Config salva!");
+  debugLogPrint("[FS]", "Config salva!");
 }
 
 // ==========================
@@ -81,12 +81,12 @@ void resetConfig() {
 
   if (LittleFS.exists("/config.json")) {
     if (LittleFS.remove("/config.json")) {
-      debugPrintLog("[FS]", "config.json removido.");
+      debugLogPrint("[FS]", "config.json removido.");
     } else {
-      debugPrintLog("[FS]", "Erro ao remover config.json.");
+      debugLogPrint("[FS]", "Erro ao remover config.json.");
     }
   } else {
-    debugPrintLog("[FS]", "config.json não encontrado.");
+    debugLogPrint("[FS]", "config.json não encontrado.");
   }
 
   delay(1000);

@@ -85,7 +85,7 @@ void setup_WiFiManager() {
 void startWiFiManagerPortal() {
   setLedMode(LED_WIFI_DISCONNECTED);
 
-  debugPrintLog("[WiFi]", "Portal de configuração iniciado");
+  debugLogPrint("[WiFi]", "Portal de configuração iniciado");
 
   // ---------- GARANTE ESTADO LIMPO ----------
   WiFi.disconnect(true);
@@ -98,11 +98,11 @@ void startWiFiManagerPortal() {
 
   IPAddress apIP = WiFi.softAPIP();
 
-  debugPrintLog("[WiFi]", "📡 Conecte-se na rede Wi-Fi:");
+  debugLogPrint("[WiFi]", "📡 Conecte-se na rede Wi-Fi:");
 
   printPortalCredentials();
 
-  debugPrintLog("[WiFi]", "🌐 Acesse o portal em:");
+  debugLogPrint("[WiFi]", "🌐 Acesse o portal em:");
   debugLogPrintf("[WiFi]", "http://%s", apIP.toString().c_str());
 
   // ---------- WIFI MANAGER ----------
@@ -131,7 +131,9 @@ void startWiFiManagerPortal() {
 
   // ---------- ABRE PORTAL ----------
   if (!wifiManager.startConfigPortal(hostname_buf, PasswordPortal)) {
-    debugPrintln("[WiFi]    - ⚠️ Portal fechado ou timeout");
+
+    debugLogPrint("[WiFi]", "⚠️ Portal fechado ou timeout");
+
     delete p_hostname;
     delete p_mqtt_id;
     delete p_grupo;
@@ -146,7 +148,7 @@ void startWiFiManagerPortal() {
     return;
   }
 
-  debugPrintLog("[WiFi]", "✅ Portal finalizado");
+  debugLogPrint("[WiFi]", "✅ Portal finalizado");
   debugLogPrintf("[WiFi]", "📶 Rede selecionada: %s", WiFi.SSID().c_str());
 
   // ---------- SALVA CONFIG ----------
@@ -165,7 +167,7 @@ void startWiFiManagerPortal() {
     String ssid = WiFi.SSID();
     String pass = WiFi.psk();
 
-    debugPrintLog("[WiFi]", "🔧 Reconfigurando rede com IP fixo...");
+    debugLogPrint("[WiFi]", "🔧 Reconfigurando rede com IP fixo...");
     debugLogPrintf("[WiFi]", "SSID: %s", ssid.c_str());
     debugLogPrintf("[WiFi]", "IP configurado: %s", ipStr);
 
@@ -183,25 +185,18 @@ void startWiFiManagerPortal() {
       delay(50);
     }
 
-    debugPrintln("");
-
     if (WiFi.status() == WL_CONNECTED) {
       setLedMode(LED_IDLE);
-      debugPrintLog("[WiFi]", "✅ Reconectado com sucesso!");
+      debugLogPrint("[WiFi]", "✅ Reconectado com sucesso!");
       debugLogPrintf("[WiFi]", "🌐 IP: %s", WiFi.localIP().toString().c_str());
-
-      debugPrintln("[WiFi]    - ✅ Reconectado com sucesso!");
-      debugPrintf("[WiFi]    - 🌐 IP: %s", WiFi.localIP().toString().c_str());
     } else {
-      debugPrintln("[WiFi]    - ❌ Falha ao reconectar");
+      debugLogPrint("[WiFi]", "❌ Falha ao reconectar");
     }
 
   } else {
-    debugPrintLog("[WiFi]", "📡 DHCP ativo");
+    debugLogPrint("[WiFi]", "📡 DHCP ativo");
     debugLogPrintf("[WiFi]", "🌐 IP: %s", WiFi.localIP().toString().c_str());
   }
-
-  debugPrintln("========================================");
 }
 
 void setupWiFiManagerParams(
@@ -303,7 +298,7 @@ void atualizaConfig(
   bool validIP = ipOk && gwOk && snOk;
 
   if (!(validIP || dhcp)) {
-    debugPrintLog("[WiFi]", "IP inválido digitado no portal, configuração ignorada.");
+    debugLogPrint("[WiFi]", "IP inválido digitado no portal, configuração ignorada.");
     debugLogPrintf("[WiFi]", "🌐 IP: %s", WiFi.localIP().toString().c_str());
 
     startFeedbackLED(6, 50);
@@ -353,7 +348,7 @@ void atualizaConfig(
   // ==========================
   recalcularTopicos();
   saveConfig();
-  debugPrintLog("[WiFi]", "- Config válida salva. Reiniciando...");
+  debugLogPrint("[WiFi]", "- Config válida salva. Reiniciando...");
   startFeedbackLED(3, 100);
 
   while (ledCtrl.ativo) {
@@ -377,7 +372,7 @@ void wifi_watchdog() {
     if (reconnecting) {
       reconnecting = false;
       setLedMode(LED_IDLE);
-      debugPrintLog("[WiFi]", "Reconectado!");
+      debugLogPrint("[WiFi]", "Reconectado!");
       debugLogPrintf("[WiFi]", "🌐 IP: %s", WiFi.localIP().toString().c_str());
     }
     return;
@@ -388,7 +383,7 @@ void wifi_watchdog() {
 
     setLedMode(LED_WIFI_CONNECTING);
 
-    debugPrintLog("[WiFi]", "Conexão perdida! Tentando reconectar...");
+    debugLogPrint("[WiFi]", "Conexão perdida! Tentando reconectar...");
 
     String ssid = WiFi.SSID();
     String pass = WiFi.psk();
@@ -401,7 +396,7 @@ void wifi_watchdog() {
     if (strlen(ipStr) > 6 && ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
 
       WiFi.config(ip, gw, sn, dns);
-      debugPrintLog("[WiFi]", "IP fixo reaplicado");
+      debugLogPrint("[WiFi]", "IP fixo reaplicado");
     }
 
     if (ssid.length() > 0) {
@@ -420,7 +415,7 @@ void wifi_watchdog() {
 
     reconnecting = false;
     setLedMode(LED_WIFI_DISCONNECTED);
-    debugPrintLog("[WiFi]", "Falha ao reconectar");
+    debugLogPrint("[WiFi]", "Falha ao reconectar");
   }
 }
 
@@ -428,7 +423,7 @@ void wifi_watchdog() {
 // CALLBACK SAVE CONFIG
 // ==========================
 void saveConfigCallback() {
-  debugPrintLog("[WiFiManager]", "Solicitação para salvar config");
+  debugLogPrint("[WiFiManager]", "Solicitação para salvar config");
 
   shouldSaveConfig = true;
 }

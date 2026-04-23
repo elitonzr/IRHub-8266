@@ -115,7 +115,7 @@ void loop() {
     // 1s → abre portal
     // ==========================
     if (pressTime > 1000 && pressTime < 3000 && !portalOpened) {
-      debugPrintLog("[BTN]", "Abrindo portal WiFi...", false);
+      debugLogPrint("[BTN]", "Abrindo portal WiFi...", false);
       portalOpened = true;
       startWiFiManagerPortal();
     }
@@ -124,7 +124,7 @@ void loop() {
     // 5s → reset total
     // ==========================
     if (pressTime > 5000) {
-      debugPrintLog("[BTN]", "Reset total solicitado via botão", false);
+      debugLogPrint("[BTN]", "Reset total solicitado via botão", false);
       resetConfig();
     }
 
@@ -155,12 +155,13 @@ void loop() {
   if (now - tHeap > 30000) {
     tHeap = now;
     uint32_t heap = ESP.getFreeHeap();
+
     if (heap < 5000) {
-      debugPrintfln("[SYS]     - HEAP CRÍTICO: %lu bytes — reiniciando", (unsigned long)heap);
+      debugLogPrintf("[SYS]", "HEAP CRÍTICO: %lu bytes — reiniciando", (unsigned long)heap);
       delay(500);
       ESP.restart();
     } else if (heap < 8000) {
-      debugPrintfln("[SYS]     - HEAP AVISO: %lu bytes livres", (unsigned long)heap);
+      debugLogPrintf("[SYS]", "HEAP AVISO: %lu bytes livres", (unsigned long)heap);
     }
   }
 
@@ -245,8 +246,7 @@ void loop() {
 
       telnetClient = telnetServer.available();
 
-      debugPrint("");
-      debugPrintln("[Telnet]  - Cliente conectado!");
+      debugLogPrint("[Telnet]", "Cliente conectado!");
       debugHelp();
 
     } else {

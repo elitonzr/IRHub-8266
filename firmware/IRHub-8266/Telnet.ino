@@ -23,11 +23,11 @@ void handleTelnet() {
   for (size_t i = 0; i < strlen(telnetBuffer); i++)
     telnetBuffer[i] = tolower(telnetBuffer[i]);
 
-  debugPrintLog("[Telnet]", telnetBuffer);
+  debugLogPrint("[Telnet]", telnetBuffer);
 
   processTelnetCommand(telnetBuffer);
 
-  debugPrintLog("[Telnet]", "> ");
+  debugLogPrint("[Telnet]", "> ");
 }
 
 void processTelnetCommand(char* cmd) {
@@ -107,13 +107,13 @@ void processTelnetCommand(char* cmd) {
       IR_ReceptorSET(n);
       debugLogPrintf("[IR]", "Receptor: %s", EstadoIRReceptor());
     } else {
-      debugPrintLog("[IR]", "Modos válidos: all, known, disabled, nec, sony, rc5, rc6, samsung, nikai, lg, jvc, whynter");
+      debugLogPrint("[IR]", "Modos válidos: all, known, disabled, nec, sony, rc5, rc6, samsung, nikai, lg, jvc, whynter");
     }
   }
 
   else if (strcmp(cmd, "reboot") == 0) {
 
-    debugPrintLog("[BTN]", "Reiniciando...");
+    debugLogPrint("[BTN]", "Reiniciando...");
     delay(1000);
     ESP.restart();
   }
@@ -131,6 +131,6 @@ void processTelnetCommand(char* cmd) {
   else {
 
     debugLogPrintf("[Telnet]", "Comando desconhecido: %s", cmd);
-    debugPrintLog("[Telnet]", "Digite 'help' para lista de comandos.");
+    debugLogPrint("[Telnet]", "Digite 'help' para lista de comandos.");
   }
 }

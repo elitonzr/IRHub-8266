@@ -44,12 +44,12 @@ void lerSensorAHT10() {
     if (millis() - lastRetry < retryInterval) return;
     lastRetry = millis();
 
-    debugPrintLog("[AHT10]", "Tentando reinicializar sensor...");
+    debugLogPrint("[AHT10]", "Tentando reinicializar sensor...");
     if (aht.begin(&Wire)) {
       estadoAHT10 = AHT10_ONLINE;
-      debugPrintLog("[AHT10]", "Sensor recuperado!");
+      debugLogPrint("[AHT10]", "Sensor recuperado!");
     } else {
-      debugPrintLog("[AHT10]", "Falha na reinicialização.");
+      debugLogPrint("[AHT10]", "Falha na reinicialização.");
     }
     return;
   }

@@ -380,47 +380,47 @@ void desligamentoUniversal() {
 
   switch (testN) {
     case 0:
-      debugPrintLog("[Teste]", "=====================================================");
-      debugPrintLog("[Teste]", "      Iniciando teste universal de desligamento      ");
-      debugPrintLog("[Teste]", "=====================================================");
-      debugPrintLog("[Teste]", "Enviando: NEC LG...");
+      debugLogPrint("[Teste]", "=====================================================");
+      debugLogPrint("[Teste]", "      Iniciando teste universal de desligamento      ");
+      debugLogPrint("[Teste]", "=====================================================");
+      debugLogPrint("[Teste]", "Enviando: NEC LG...");
       handleIRCommand("0x20DF10EF", "NEC", 32, "[Teste]");  // LG Power
       testN++;
       break;
 
     case 1:
-      debugPrintLog("[Teste]", "Enviando: NEC Samsung...");
+      debugLogPrint("[Teste]", "Enviando: NEC Samsung...");
       handleIRCommand("0xE0E040BF", "NEC", 32, "[Teste]");  // Samsung Power
       testN++;
       break;
 
     case 2:
-      debugPrintLog("[Teste]", "Enviando: NEC Genérico...");
+      debugLogPrint("[Teste]", "Enviando: NEC Genérico...");
       handleIRCommand("0x00FF02FD", "NEC", 32, "[Teste]");  // NEC genérico
       testN++;
       break;
 
     case 3:
-      debugPrintLog("[Teste]", "Enviando: NIKAI TCL...");
+      debugLogPrint("[Teste]", "Enviando: NIKAI TCL...");
       handleIRCommand("0xD5F2A", "NIKAI", 24, "[Teste]");  // Código NIKAI TCL
       testN++;
       break;
 
     case 4:
-      debugPrintLog("[Teste]", "Enviando: Sony SIRC...");
+      debugLogPrint("[Teste]", "Enviando: Sony SIRC...");
       handleIRCommand("0xA90", "SONY", 12, "[Teste]");  // Sony Power (12 bits)
       testN++;
       break;
 
     case 5:
-      debugPrintLog("[Teste]", "Enviando: RC5...");
+      debugLogPrint("[Teste]", "Enviando: RC5...");
       handleIRCommand("0x0C", "RC5", 12, "[Teste]");  // RC5 Power (Philips)
       testN++;
       break;
 
     case 6:
-      debugPrintLog("[Teste]", "Teste universal finalizado.");
-      debugPrintLog("[Teste]", "=====================================================");
+      debugLogPrint("[Teste]", "Teste universal finalizado.");
+      debugLogPrint("[Teste]", "=====================================================");
       IR_EmissorTeste = false;
       testN = 0;
       MQTTsendIRConfig();

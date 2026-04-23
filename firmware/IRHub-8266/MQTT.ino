@@ -130,7 +130,7 @@ void mqtt_reconnect() {
   firstAttempt = false;
   lastAttempt = now;
 
-  debugPrintLog("[MQTT]", "Tentando conexão...");
+  debugLogPrint("[MQTT]", "Tentando conexão...");
 
   StaticJsonDocument<64> doc;
   doc["state"] = "offline";
@@ -148,12 +148,12 @@ void mqtt_reconnect() {
 
   if (conectado) {
     mqttOK++;
-    debugPrintLog("[MQTT]", "Sucesso! Conectado ao broker");
+    debugLogPrint("[MQTT]", "Sucesso! Conectado ao broker");
 
     // Subscriptions
     mqtt_client.subscribe(topic_command);
 
-    debugPrintLog("[MQTT]", "Publicando feedbacks iniciais...");
+    debugLogPrint("[MQTT]", "Publicando feedbacks iniciais...");
     MQTTsendStatus();
     MQTTsendInfoDevice();
     MQTTsendInfoNetwork();
@@ -163,7 +163,7 @@ void mqtt_reconnect() {
     if (aht10_enabled) MQTTsendAHT10();
     MQTTsendLEDB();
 
-    debugPrintLog("[MQTT]", "Feito!");
+    debugLogPrint("[MQTT]", "Feito!");
     debugMQTT();
 
   } else {
@@ -337,7 +337,7 @@ void MQTTsendIR_Received() {
   char msg[192];
   size_t len = serializeJson(doc, msg, sizeof(msg));
   if (len == 0 || len >= sizeof(msg)) {
-    debugPrintln("[MQTT]    - Erro: JSON ir_received truncado");
+    debugLogPrint("[MQTT]", "Erro: JSON ir_received truncado");
     return;
   }
   if (!mqtt_client.connected()) return;
@@ -367,11 +367,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   memcpy(mensagem, payload, copyLen);
   mensagem[copyLen] = '\0';
 
-  debugPrint("[MQTT]    - topic [");
-  debugPrint(topic);
-  debugPrint("] payload [");
-  debugPrint(mensagem);
-  debugPrintln("]");
+  debugLogPrintf("[MQTT]", "topic: %s payload: %s", topic, mensagem);
 
   // Comando geral
   if (strcmp(topic, topic_command) == 0) {
@@ -388,14 +384,14 @@ void processaComando(byte* payload, unsigned int length) {
 
   DeserializationError error = deserializeJson(doc, payload, length);
   if (error) {
-    debugPrintln("[processaComando] - JSON inválido");
+    debugLogPrint("[MQTT]", "JSON inválido");
     return;
   }
 
   const char* cmd = doc["cmd"];
 
   if (!cmd) {
-    debugPrintln("[processaComando] - Campo 'cmd' ausente");
+    debugLogPrint("[MQTT]", "Campo 'cmd' ausente");
     return;
   }
 
@@ -437,8 +433,7 @@ void processaComando(byte* payload, unsigned int length) {
     } else if (strcasecmp(action, "off") == 0) {
       ledB_state = false;
     } else {
-      debugPrint("[processaComando] - Comando LEDB inválido: ");
-      debugPrintln(action);
+      debugLogPrintf("[MQTT]", "Comando LEDB inválido: %s", action);
       return;
     }
 
@@ -456,7 +451,8 @@ void processaComando(byte* payload, unsigned int length) {
     const char* mode = doc["mode"];
 
     if (!mode) {
-      debugPrintln("[processaComando] - Campo 'mode' ausente");
+
+      debugLogPrint("[MQTT]", "Campo 'mode' ausente");
       return;
     }
 
@@ -478,7 +474,7 @@ void processaComando(byte* payload, unsigned int length) {
     if (modo != -1) {
       IR_ReceptorSET(modo);
     } else {
-      debugPrintln("[processaComando] - Modo IR inválido");
+      debugLogPrint("[MQTT]", "Modo IR inválido");
     }
   }
 
@@ -501,7 +497,7 @@ void processaComando(byte* payload, unsigned int length) {
   // =========================
   else if (strcmp(cmd, "reboot") == 0) {
 
-    debugPrintln("[processaComando] - Reboot solicitado");
+    debugLogPrint("[MQTT]", "Reboot solicitado");
     MQTTsendStatus();
 
     delay(500);
@@ -513,7 +509,7 @@ void processaComando(byte* payload, unsigned int length) {
   // =========================
   else if (strcmp(cmd, "wifi_reset") == 0) {
 
-    debugPrintln("[processaComando] - Reset WiFi solicitado");
+    debugLogPrint("[MQTT]", "Reset WiFi solicitado");
 
     WiFi.disconnect(true);
     delay(500);
@@ -549,7 +545,7 @@ void processaComando(byte* payload, unsigned int length) {
     if (hostname) {
       strlcpy(hostname_buf, hostname, sizeof(hostname_buf));
       saveConfig();
-      debugPrintln("[processaComando] - Hostname atualizado");
+      debugLogPrint("[MQTT]", "Hostname atualizado");
     }
 
   }
@@ -558,6 +554,6 @@ void processaComando(byte* payload, unsigned int length) {
   // ❌ COMANDO DESCONHECIDO
   // =========================
   else {
-    debugPrintln("[processaComando] - Comando desconhecido");
+    debugLogPrint("[MQTT]", "Comando desconhecido");
   }
 }
