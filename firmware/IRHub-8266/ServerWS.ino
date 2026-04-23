@@ -546,7 +546,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
           const char* v_mqtt_user = doc["mqtt_user"] | mqtt_user_buf;
           const char* v_mqtt_password = doc["mqtt_password"] | "";
-          const char* v_mqtt_enabled = doc["mqtt_enabled"] | mqtt_enabled_buf;
 
           const char* v_ws_password = doc["ws_password"] | "";
           if (strcmp(v_ws_password, "__keep__") != 0 && strlen(v_ws_password) > 0) {
@@ -566,7 +565,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
             strlcpy(mqtt_password_buf, v_mqtt_password, sizeof(mqtt_password_buf));
           }
 
-          strlcpy(mqtt_enabled_buf, v_mqtt_enabled, sizeof(mqtt_enabled_buf));
+          bool v_mqtt_enabled = doc["mqtt_enabled"] | mqtt_enabled;
+          mqtt_enabled = v_mqtt_enabled;
 
           bool aht10_prev = aht10_enabled;
           aht10_enabled = doc["aht10_enabled"] | aht10_enabled;
@@ -584,7 +584,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           recalcularTopicos();
           saveConfig();
 
-          if (mqttEnabled()) {
+          if (mqtt_enabled) {
             mqtt_client.disconnect();
             mqtt_client.setServer(mqtt_server, mqtt_port);
             debugLogPrint("[MQTT]", "Reconectando com novas configurações...");
@@ -658,7 +658,7 @@ void wsSendSystem() {
   cfg["mqtt_server"] = mqtt_server;
   cfg["mqtt_port"] = mqtt_port;
   cfg["mqtt_user"] = mqtt_user_buf;
-  cfg["mqtt_enabled"] = mqtt_enabled_buf;
+  cfg["mqtt_enabled"] = mqtt_enabled;
   cfg["aht10_enabled"] = aht10_enabled;
 
   char buffer[2148];
@@ -726,7 +726,7 @@ void wsSendNetwork() {
 void wsSendMQTT() {
   StaticJsonDocument<384> doc;
   doc["type"] = "mqtt";
-  doc["enabled"] = mqttEnabled();
+  doc["enabled"] = mqtt_enabled;
   doc["server"] = mqtt_server;
   doc["port"] = mqtt_port;
   doc["client_id"] = clientID;

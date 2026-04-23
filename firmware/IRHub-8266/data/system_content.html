@@ -1,5 +1,33 @@
 <div class="page-content">
   <div class="grid">
+    <!-- OTA UPDATE -->
+    <section class="card">
+      <header>Atualização de Firmware</header>
+      <div class="item">
+        <div class="upload-row">
+          <input type="file" id="otaFile" accept=".bin" />
+          <button class="btn-send" onclick="startOTAUpdate()">📤 Enviar</button>
+        </div>
+      </div>
+      <div class="item">
+        <progress
+          id="otaProgress"
+          value="0"
+          max="100"
+          style="display: none"
+        ></progress>
+      </div>
+      <div
+        id="otaStatus"
+        style="
+          text-align: center;
+          font-size: 11px;
+          min-height: 16px;
+          margin-top: 8px;
+        "
+      ></div>
+    </section>
+
     <!-- MENU -->
     <section class="card">
       <header>Menu</header>

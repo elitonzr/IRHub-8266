@@ -86,7 +86,7 @@ function showWSAuthModal() {
   if (pass === null) return;
   try {
     localStorage.setItem("wsPassword", pass);
-  } catch (_) { }
+  } catch (_) {}
   state.wsPassword = pass;
   wsSend({ cmd: "auth", password: pass });
 }
@@ -157,7 +157,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           localStorage.setItem("selectedRemote", e.target.value);
-        } catch (_) { }
+        } catch (_) {}
         loadButtons(e.target.value);
       });
     }
@@ -556,7 +556,7 @@ function renderIRHistory() {
     // Click simples: copia hex para clipboard.
     li.onclick = () => {
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(d.hex).catch(() => { });
+        navigator.clipboard.writeText(d.hex).catch(() => {});
       } else {
         // Fallback para browsers sem Clipboard API.
         const ta = document.createElement("textarea");
@@ -599,7 +599,6 @@ function renderIRHistory() {
 
 // Adiciona mensagem ao histórico e re-renderiza.
 function saveLogToHistory(data) {
-
   if (!data.msg) return;
 
   const timestamp = new Date().toLocaleTimeString("pt-BR");
@@ -660,24 +659,24 @@ function getLogColor(tag) {
 
   tag = tag.toUpperCase();
 
-  if (tag.includes("HTTP")) return "#00FFFF";   // ciano
-  if (tag.includes("MQTT")) return "#FFA500";   // laranja
-  if (tag.includes("WIFI")) return "#8e5a8a";   // roxo
-  if (tag.includes("WS")) return "#60a5fa";   // azul claro
-  if (tag.includes("IR")) return "#a78bfa";   // violeta
-  if (tag.includes("FS")) return "#34d399";   // verde
-  if (tag.includes("AHT")) return "#22d3ee";   // ciano claro
-  if (tag.includes("SYS")) return "#f472b6";   // rosa
-  if (tag.includes("BTN")) return "#fb923c";   // laranja claro
-  if (tag.includes("OTA")) return "#facc15";   // amarelo
-  if (tag.includes("LED A")) return "#009dff";  // azul
-  if (tag.includes("LED B")) return "#FFD700";  // amarelo
-  if (tag.includes("ERROR")) return "#FF4C4C";  // vermelho
-  if (tag.includes("WARN")) return "#FFD700";  // amarelo
-  if (tag.includes("INFO")) return "#87CEFA";  // azul claro
+  if (tag.includes("HTTP")) return "#00FFFF"; // ciano
+  if (tag.includes("MQTT")) return "#FFA500"; // laranja
+  if (tag.includes("WIFI")) return "#8e5a8a"; // roxo
+  if (tag.includes("WS")) return "#60a5fa"; // azul claro
+  if (tag.includes("IR")) return "#a78bfa"; // violeta
+  if (tag.includes("FS")) return "#34d399"; // verde
+  if (tag.includes("AHT")) return "#22d3ee"; // ciano claro
+  if (tag.includes("SYS")) return "#f472b6"; // rosa
+  if (tag.includes("BTN")) return "#fb923c"; // laranja claro
+  if (tag.includes("OTA")) return "#facc15"; // amarelo
+  if (tag.includes("LED A")) return "#009dff"; // azul
+  if (tag.includes("LED B")) return "#FFD700"; // amarelo
+  if (tag.includes("ERROR")) return "#FF4C4C"; // vermelho
+  if (tag.includes("WARN")) return "#FFD700"; // amarelo
+  if (tag.includes("INFO")) return "#87CEFA"; // azul claro
   if (tag.includes("TELNET")) return "#94a3b8"; // cinza azulado
-  if (tag.includes("AUTH")) return "#f87171";  // vermelho claro
-  if (tag.includes("TESTE")) return "#c084fc";  // lilás
+  if (tag.includes("AUTH")) return "#f87171"; // vermelho claro
+  if (tag.includes("TESTE")) return "#c084fc"; // lilás
 
   return "#CCCCCC";
 }
@@ -824,6 +823,72 @@ function showRemotesStatus(msg, color) {
   setTimeout(() => (el.textContent = ""), 3000);
 }
 
+function showOtaStatus(msg, color) {
+  const el = document.getElementById("otaStatus");
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color;
+}
+
+function startOTAUpdate() {
+  const file = document.getElementById("otaFile")?.files[0];
+  if (!file) return alert("Selecione um arquivo .bin");
+
+  if (!file.name.endsWith(".bin")) {
+    showOtaStatus("❌ Arquivo inválido. Selecione um .bin", "#ef4444");
+    return;
+  }
+
+  if (
+    !confirm(
+      `Atualizar firmware com "${file.name}"? O dispositivo será reiniciado.`,
+    )
+  )
+    return;
+
+  const pass = prompt("Digite a senha para confirmar:");
+  if (!pass) return;
+
+  const formData = new FormData();
+  // formData.append("firmware", file);
+  formData.append("update", file);
+
+  const xhr = new XMLHttpRequest();
+
+  xhr.upload.onprogress = (e) => {
+    const progress = document.getElementById("otaProgress");
+    if (!progress) return;
+    progress.style.display = "block";
+    if (e.lengthComputable) {
+      progress.value = (e.loaded / e.total) * 100;
+    }
+  };
+
+  xhr.onload = () => {
+    const progress = document.getElementById("otaProgress");
+    if (progress) progress.style.display = "none";
+    if (xhr.status === 200) {
+      showOtaStatus("✅ Firmware enviado! Aguarde o reboot...", "#22c55e");
+    } else if (xhr.status === 401) {
+      showOtaStatus("❌ Senha incorreta.", "#ef4444");
+    } else {
+      showOtaStatus(`❌ Erro: HTTP ${xhr.status}`, "#ef4444");
+    }
+  };
+
+  xhr.onerror = () => {
+    const progress = document.getElementById("otaProgress");
+    if (progress) progress.style.display = "none";
+    showOtaStatus("❌ Falha na conexão.", "#ef4444");
+  };
+
+  showOtaStatus("⏳ Enviando firmware...", "#facc15");
+
+  xhr.open("POST", "/update", true);
+  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + pass));
+  xhr.send(formData);
+}
+
 /* =========================================================
    13. CONTROLES DE REDE (settings)
 ========================================================= */
@@ -839,7 +904,7 @@ function toggleIPFields() {
 function toggleMQTTFields() {
   const enabled = document.getElementById("cfg_mqtt_enabled")?.value;
   const fields = document.getElementById("cfg_mqtt_fields");
-  if (fields) fields.style.display = enabled === "yes" ? "block" : "none";
+  if (fields) fields.style.display = enabled ? "block" : "none";
 }
 
 // Valida formato de endereço IP (string vazia = DHCP, aceito).
@@ -1060,7 +1125,7 @@ function populateConfig(data) {
     cfg_mqtt_server: data.mqtt_server,
     cfg_mqtt_port: data.mqtt_port,
     cfg_mqtt_user: data.mqtt_user,
-    cfg_mqtt_enabled: data.mqtt_enabled,
+    cfg_mqtt_enabled: data.mqtt_enabled ? "true" : "false",
     cfg_aht10_enabled: data.aht10_enabled ? "true" : "false",
     cfg_wifi_ssid: data.wifi_ssid,
     // cfg_mqtt_password omitido — backend não envia a senha
@@ -1115,7 +1180,7 @@ function saveDeviceConfig() {
     mqtt_server: get("cfg_mqtt_server").trim(),
     mqtt_user: get("cfg_mqtt_user").trim(),
     mqtt_password: password.length > 0 ? password : "__keep__",
-    mqtt_enabled: get("cfg_mqtt_enabled"),
+    mqtt_enabled: get("cfg_mqtt_enabled") === "true",
     mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
     aht10_enabled: get("cfg_aht10_enabled") === "true",
     ws_password: wsPassword.length > 0 ? wsPassword : "__keep__",

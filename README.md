@@ -64,14 +64,18 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 
 ### OTA
 
-- Atualização remota via ArduinoOTA
-- Hostname: `clientID` (ex: `IRHub-8266-Sala-<chipID>`)
-- Senha: ChipID em hexadecimal (8 dígitos)
+- **ArduinoOTA** — atualização via IDE Arduino ou terminal na rede local
+  - Hostname: `hostname_buf` (ex: `irhub8266`)
+  - Senha: ChipID em hexadecimal (8 dígitos)
+- **OTA via browser** — atualização pelo dashboard em `/system`
+  - Endpoint: `POST /update` com autenticação HTTP Basic
+  - Aceita arquivo `.bin` gerado pelo Arduino IDE
+  - Barra de progresso integrada ao frontend
 
 ### Telnet
 
 - Porta 8266
-- Comandos: `status`, `led`, `ir`, `ir receptor <modo>`, `irteste [on/off]`, `aht10`, `mqtt`, `network`, `info`, `heap`, `reboot`, `help`
+- Comandos: `status`, `led`, `ir`, `ir receptor <modo>`, `irteste [on/off]`, `aht10`, `mqtt`, `network`, `info`, `heap`, `senha`, `reboot`, `help`
 
 ---
 
@@ -115,7 +119,8 @@ A configuração é feita pelo portal WiFiManager (primeira inicialização ou p
 | Acesso           | Usuário  | Senha                     |
 |------------------|----------|---------------------------|
 | HTTP Basic Auth  | `admin`  | ChipID em hex (8 dígitos) |
-| OTA              | —        | ChipID em hex (8 dígitos) |
+| OTA (ArduinoOTA) | —        | ChipID em hex (8 dígitos) |
+| OTA (browser)    | `admin`  | ChipID em hex (8 dígitos) |
 | Portal WiFi      | —        | `12345678`                |
 
 > A senha HTTP e OTA pode ser consultada via Telnet com o comando `senha`.
@@ -164,7 +169,7 @@ Durante o boot o dispositivo executa na ordem:
 1. Monta LittleFS e carrega `config.json`
 2. Conecta ao WiFi via WiFiManager (abre portal se necessário)
 3. Inicia servidor HTTP (porta 80) e WebSocket (porta 81)
-4. Configura OTA
+4. Configura OTA (ArduinoOTA + HTTP)
 5. Configura e conecta ao MQTT (se habilitado)
 6. Inicializa IR (emissor GPIO4/D2, receptor GPIO14/D5)
 7. Inicializa AHT10 (I2C GPIO12/D6 — GPIO13/D7, somente se habilitado em `config.json`)
@@ -187,7 +192,7 @@ IRHub-8266/
 ├── MQTT.ino           — conexão MQTT, publishers e callback
 ├── IR.ino             — emissor, receptor, parser, feedback
 ├── AHT10.ino          — sensor AHT10
-├── OTA.ino            — atualização OTA
+├── OTA.ino            — atualização OTA (ArduinoOTA + HTTP)
 ├── Telnet.ino         — servidor telnet + comandos
 └── Debug.ino          — funções de debug
 ```
@@ -210,19 +215,20 @@ data/
 
 ## 🛠 Dependências
 
-| Biblioteca           | Uso                        |
-|----------------------|----------------------------|
-| ESP8266WiFi          | WiFi                       |
-| ESP8266WebServer     | Servidor HTTP              |
-| ESP8266mDNS          | mDNS                       |
-| WiFiManager          | Portal de configuração     |
-| WebSocketsServer     | WebSocket (porta 81)       |
-| PubSubClient         | MQTT                       |
-| ArduinoOTA           | Atualização OTA            |
-| IRremoteESP8266      | Envio e recepção IR        |
-| Adafruit_AHTX0       | Sensor AHT10               |
-| ArduinoJson          | Serialização JSON          |
-| LittleFS             | Sistema de arquivos        |
+| Biblioteca               | Uso                             |
+|--------------------------|---------------------------------|
+| ESP8266WiFi              | WiFi                            |
+| ESP8266WebServer         | Servidor HTTP                   |
+| ESP8266mDNS              | mDNS                            |
+| WiFiManager              | Portal de configuração          |
+| WebSocketsServer         | WebSocket (porta 81)            |
+| PubSubClient             | MQTT                            |
+| ArduinoOTA               | Atualização OTA via IDE         |
+| ESP8266HTTPUpdateServer  | Atualização OTA via browser     |
+| IRremoteESP8266          | Envio e recepção IR             |
+| Adafruit_AHTX0           | Sensor AHT10                    |
+| ArduinoJson              | Serialização JSON               |
+| LittleFS                 | Sistema de arquivos             |
 
 ---
 
@@ -235,3 +241,25 @@ data/
 5. Use a página `/settings` para ajustar configurações sem precisar do portal
 
 > Após qualquer upload de arquivos LittleFS, faça **Ctrl+Shift+R** no browser para limpar o cache.
+
+---
+
+## 🔄 Atualização de Firmware (OTA)
+
+### Via Arduino IDE
+
+1. Com o dispositivo na mesma rede, abra **Tools → Port** e selecione a porta de rede do IRHub-8266 (aparece como `irhub8266 at 192.168.x.x`)
+2. Grave normalmente com **Ctrl+U**
+3. Quando solicitado, informe a senha OTA (ChipID em hex — consulte com o comando `senha` no Telnet)
+
+### Via browser (dashboard)
+
+1. No Arduino IDE 2, compile o projeto com **Ctrl+R**
+2. Exporte o binário com **Sketch → Export Compiled Binary** (ou **Ctrl+Alt+S**)
+3. O arquivo `IRHub-8266.ino.bin` será gerado na pasta do projeto
+4. Acesse o dashboard em `http://irhub8266.local`, vá para a página **System**
+5. Na seção **Atualização de Firmware**, selecione o arquivo `.bin`
+6. Clique em **📤 Enviar**, confirme e informe a senha
+7. Aguarde o upload — o dispositivo reiniciará automaticamente ao concluir
+
+> Use sempre o arquivo `IRHub-8266.ino.bin` — **não** use o `IRHub-8266.ino.bootloader.bin`, que inclui o bootloader e não é compatível com OTA.

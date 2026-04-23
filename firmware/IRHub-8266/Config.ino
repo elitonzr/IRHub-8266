@@ -29,8 +29,8 @@ void loadConfig() {
     mqtt_port = doc["mqtt_port"] | 1883;
     strlcpy(mqtt_user_buf, doc["mqtt_user"] | mqtt_user_buf, sizeof(mqtt_user_buf));
     strlcpy(mqtt_password_buf, doc["mqtt_password"] | mqtt_password_buf, sizeof(mqtt_password_buf));
-    strlcpy(mqtt_enabled_buf, doc["mqtt_enabled"] | mqtt_enabled_buf, sizeof(mqtt_enabled_buf));
 
+    mqtt_enabled = doc["mqtt_enabled"] | false;
     aht10_enabled = doc["aht10_enabled"] | false;
 
     strlcpy(PasswordWS, doc["ws_password"] | PasswordWS, sizeof(PasswordWS));
@@ -61,7 +61,7 @@ void saveConfig() {
   doc["mqtt_port"] = mqtt_port;
   doc["mqtt_user"] = mqtt_user_buf;
   doc["mqtt_password"] = mqtt_password_buf;
-  doc["mqtt_enabled"] = mqtt_enabled_buf;
+  doc["mqtt_enabled"] = mqtt_enabled;
   doc["aht10_enabled"] = aht10_enabled;
   doc["ws_password"] = PasswordWS;
   doc["ir_receptor"] = (int)IR_ReceptorEstado;

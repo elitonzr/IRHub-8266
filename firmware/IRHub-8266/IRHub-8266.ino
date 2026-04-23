@@ -78,8 +78,8 @@ void setup() {
   Serial.println("[FS]      - LittleFS pronto");
 
   setup_WiFiManager();
-  setup_server();  // inicializa webSocket
   setup_ota();     // inicializa OTA
+  setup_server();  // inicializa webSocket
   setup_mqtt();    // inicializa MQTT
   setup_IR();      // inicializa IR
   setup_AHT10();   // Inicializa AHT10

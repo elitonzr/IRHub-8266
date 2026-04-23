@@ -61,10 +61,6 @@ const char* mqttStateStr(int state) {
   }
 }
 
-bool mqttEnabled() {
-  return strcmp(mqtt_enabled_buf, "yes") == 0;
-}
-
 void setup_mqtt() {
 
   Serial.println();
@@ -72,7 +68,7 @@ void setup_mqtt() {
   Serial.println("  Configurando o servidor MQTT  ");
   Serial.println("=================================");
 
-  if (!mqttEnabled()) {
+  if (mqtt_enabled) {
     Serial.println("[MQTT]    - desabilitado pelo usuário.");
   }
 
@@ -99,7 +95,7 @@ void setup_mqtt() {
   // -------- Subscriptions --------
   snprintf(topic_command, sizeof(topic_command), "%s/command", myTopic.c_str());
 
-  if (mqttEnabled()) {
+  if (mqtt_enabled) {
     mqtt_client.setServer(mqtt_server, mqtt_port);
     mqtt_client.setCallback(callback);
   }
@@ -116,7 +112,7 @@ void setup_mqtt() {
 
 void mqtt_reconnect() {
 
-  if (!mqttEnabled()) return;
+  if (!mqtt_enabled) return;
 
   static unsigned long lastAttempt = 0;
   static bool firstAttempt = true;
