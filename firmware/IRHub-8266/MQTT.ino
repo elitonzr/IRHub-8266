@@ -130,7 +130,7 @@ void mqtt_reconnect() {
   firstAttempt = false;
   lastAttempt = now;
 
-  debugPrintln("[MQTT]    - Tentando conexão MQTT...");
+  debugPrintLog("[MQTT]", "Tentando conexão...");
 
   StaticJsonDocument<64> doc;
   doc["state"] = "offline";
@@ -148,12 +148,12 @@ void mqtt_reconnect() {
 
   if (conectado) {
     mqttOK++;
-    debugPrintln("[MQTT]    - Sucesso! Conectado ao broker MQTT");
+    debugPrintLog("[MQTT]", "Sucesso! Conectado ao broker");
 
     // Subscriptions
     mqtt_client.subscribe(topic_command);
 
-    debugPrintln("[MQTT]    - Publicando feedbacks iniciais...");
+    debugPrintLog("[MQTT]", "Publicando feedbacks iniciais...");
     MQTTsendStatus();
     MQTTsendInfoDevice();
     MQTTsendInfoNetwork();
@@ -163,12 +163,12 @@ void mqtt_reconnect() {
     if (aht10_enabled) MQTTsendAHT10();
     MQTTsendLEDB();
 
-    debugPrintln("[MQTT]    - Feito!");
+    debugPrintLog("[MQTT]", "Feito!");
     debugMQTT();
 
   } else {
     mqttErro++;
-    debugPrintfln("[MQTT]    - Falha MQTT rc: %d State: %s", mqtt_client.state(), mqttStateStr(mqtt_client.state()));
+    debugLogPrintf("[MQTT]", "Falha rc: %d State: %s", mqtt_client.state(), mqttStateStr(mqtt_client.state()));
   }
 }
 

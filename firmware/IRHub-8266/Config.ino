@@ -4,7 +4,7 @@
 void loadConfig() {
 
   if (!LittleFS.exists("/config.json")) {
-    debugPrintln("[FS]      - Arquivo não existe");
+    debugPrintLog("[FS]", "config.json não existe");
     recalcularTopicos();
     return;
   }
@@ -17,8 +17,7 @@ void loadConfig() {
   StaticJsonDocument<512> doc;
   DeserializationError err = deserializeJson(doc, file);
   if (err) {
-    debugPrint("[FS]      - Erro ao parsear config.json: ");
-    debugPrintln(err.c_str());
+    debugLogPrintf("[FS]", "Erro ao parsear config.json: %s", err.c_str());
   } else {
     strlcpy(hostname_buf, doc["hostname"] | hostname_buf, sizeof(hostname_buf));
     strlcpy(mqtt_id_buf, doc["mqtt_id"] | mqtt_id_buf, sizeof(mqtt_id_buf));
@@ -41,7 +40,7 @@ void loadConfig() {
       IR_ReceptorEstado = static_cast<IR_ReceptorMode>(ir_receptor);
     }
 
-    debugPrintln("[FS]      - Config carregada");
+    debugPrintLog("[FS]", "Config carregada");
   }
   file.close();
   recalcularTopicos();
@@ -70,7 +69,7 @@ void saveConfig() {
   if (!file) return;
   serializeJson(doc, file);
   file.close();
-  debugPrintln("[FS]      - Config salva!");
+  debugPrintLog("[FS]", "Config salva!");
 }
 
 // ==========================
@@ -82,12 +81,12 @@ void resetConfig() {
 
   if (LittleFS.exists("/config.json")) {
     if (LittleFS.remove("/config.json")) {
-      debugPrintln("[FS]      - config.json removido.");
+      debugPrintLog("[FS]", "config.json removido.");
     } else {
-      debugPrintln("[FS]      - Erro ao remover config.json.");
+      debugPrintLog("[FS]", "Erro ao remover config.json.");
     }
   } else {
-    debugPrintln("[FS]      - config.json nao encontrado.");
+    debugPrintLog("[FS]", "config.json não encontrado.");
   }
 
   delay(1000);

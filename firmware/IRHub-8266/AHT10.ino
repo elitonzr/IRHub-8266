@@ -5,8 +5,8 @@
 // ================================================================
 Adafruit_AHTX0 aht;  // Endereço I2C 0x38 — SDA GPIO12, SCL GPIO13
 
-float umidade = 0.0f;// Variável para armazenar a umidade
-float temperatura = 0.0f;// Variável para armazenar a temperatura
+float umidade = 0.0f;      // Variável para armazenar a umidade
+float temperatura = 0.0f;  // Variável para armazenar a temperatura
 
 AHT10State estadoAHT10 = AHT10_OFFLINE;
 
@@ -44,12 +44,12 @@ void lerSensorAHT10() {
     if (millis() - lastRetry < retryInterval) return;
     lastRetry = millis();
 
-    debugPrintln("[AHT10]   - Tentando reinicializar sensor...");
+    debugPrintLog("[AHT10]", "Tentando reinicializar sensor...");
     if (aht.begin(&Wire)) {
       estadoAHT10 = AHT10_ONLINE;
-      debugPrintln("[AHT10]   - Sensor recuperado!");
+      debugPrintLog("[AHT10]", "Sensor recuperado!");
     } else {
-      debugPrintln("[AHT10]   - Falha na reinicialização.");
+      debugPrintLog("[AHT10]", "Falha na reinicialização.");
     }
     return;
   }

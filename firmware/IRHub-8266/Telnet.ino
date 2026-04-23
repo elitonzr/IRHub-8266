@@ -23,13 +23,11 @@ void handleTelnet() {
   for (size_t i = 0; i < strlen(telnetBuffer); i++)
     telnetBuffer[i] = tolower(telnetBuffer[i]);
 
-  debugPrintln(" ");
-  debugPrint("[Telnet]  > ");
-  debugPrintln(telnetBuffer);
+  debugPrintLog("[Telnet]", telnetBuffer);
 
   processTelnetCommand(telnetBuffer);
 
-  debugPrint("> ");
+  debugPrintLog("[Telnet]", "> ");
 }
 
 void processTelnetCommand(char* cmd) {
@@ -52,40 +50,28 @@ void processTelnetCommand(char* cmd) {
   }
 
   else if (strcmp(cmd, "ir") == 0) {
-    debugPrintln("");
     debugIR();
-    debugPrintln("");
   }
 
   else if (strcmp(cmd, "aht10") == 0) {
-    debugPrintln("");
     debugAHT10();
-    debugPrintln("");
 
   }
 
   else if (strcmp(cmd, "mqtt") == 0) {
-    debugPrintln("");
     debugMQTT();
-    debugPrintln("");
   }
 
   else if (strcmp(cmd, "network") == 0) {
-    debugPrintln("");
     debugNetwork();
-    debugPrintln("");
   }
 
   else if ((strcmp(cmd, "senha") == 0) || (strcmp(cmd, "password") == 0)) {
-    debugPrintln("");
     debugPassword();
-    debugPrintln("");
   }
 
   else if (strcmp(cmd, "info") == 0) {
-    debugPrintln("");
     debugBuild();
-    debugPrintln("");
   }
 
   else if (strcmp(cmd, "irteste") == 0 || strcmp(cmd, "irteste on") == 0) {
@@ -119,23 +105,22 @@ void processTelnetCommand(char* cmd) {
 
     if (n >= 0) {
       IR_ReceptorSET(n);
-      debugPrint("  IR Receptor: ");
-      debugPrintln(EstadoIRReceptor());
+      debugLogPrintf("[IR]", "Receptor: %s", EstadoIRReceptor());
     } else {
-      debugPrintln("  Modos válidos: all, known, disabled, nec, sony, rc5, rc6, samsung, nikai, lg, jvc, whynter");
+      debugPrintLog("[IR]", "Modos válidos: all, known, disabled, nec, sony, rc5, rc6, samsung, nikai, lg, jvc, whynter");
     }
   }
 
   else if (strcmp(cmd, "reboot") == 0) {
 
-    debugPrintln("Reiniciando...");
+    debugPrintLog("[BTN]", "Reiniciando...");
     delay(1000);
     ESP.restart();
   }
 
   else if (strcmp(cmd, "heap") == 0) {
 
-    debugPrintf("Heap livre: %lu bytes", (unsigned long)ESP.getFreeHeap());
+    debugLogPrintf("[SYS]", "Heap livre: %lu bytes", (unsigned long)ESP.getFreeHeap());
   }
 
   else if (strcmp(cmd, "help") == 0) {
@@ -145,8 +130,7 @@ void processTelnetCommand(char* cmd) {
 
   else {
 
-    debugPrint("Comando desconhecido: ");
-    debugPrintln(cmd);
-    debugPrintln("Digite 'help' para lista de comandos.");
+    debugLogPrintf("[Telnet]", "Comando desconhecido: %s", cmd);
+    debugPrintLog("[Telnet]", "Digite 'help' para lista de comandos.");
   }
 }

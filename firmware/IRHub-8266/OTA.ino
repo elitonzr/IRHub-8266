@@ -40,11 +40,5 @@ void setup_ota() {
 }
 
 void printOTACredentials() {
-  debugPrintfln("[OTA]     - AUTH Senha  : %s", Password);
-
-  // debugPrintln("=============== OTA AUTH ===============");
-  // debugPrintln(" ");
-  // debugPrintf("  Senha  : %s\n", Password);
-  // debugPrintln(" ");
-  // debugPrintln("========================================");
+  debugLogPrintf("[OTA]", "AUTH Senha: %s", Password);
 }

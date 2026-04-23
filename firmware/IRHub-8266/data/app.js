@@ -622,8 +622,8 @@ function saveLogToHistory(data) {
     state.logHistory.push("");
   }
 
-  if (state.logHistory.length > 50) {
-    state.logHistory.splice(0, state.logHistory.length - 50);
+  if (state.logHistory.length > 200) {
+    state.logHistory.splice(0, state.logHistory.length - 200);
   }
 
   renderLogHistory();
@@ -660,16 +660,26 @@ function getLogColor(tag) {
 
   tag = tag.toUpperCase();
 
-  if (tag.includes("HTTP")) return "#00FFFF"; // ciano
-  if (tag.includes("MQTT")) return "#FFA500"; // laranja
-  if (tag.includes("WIFI")) return "#8e5a8a"; // roxo
-  if (tag.includes("LED A")) return "#009dff"; // azul
-  if (tag.includes("LED B")) return "#FFD700"; // amarelo
-  if (tag.includes("ERROR")) return "#FF4C4C"; // vermelho
-  if (tag.includes("WARN")) return "#FFD700"; // amarelo
-  if (tag.includes("INFO")) return "#87CEFA"; // azul claro
+  if (tag.includes("HTTP")) return "#00FFFF";   // ciano
+  if (tag.includes("MQTT")) return "#FFA500";   // laranja
+  if (tag.includes("WIFI")) return "#8e5a8a";   // roxo
+  if (tag.includes("WS")) return "#60a5fa";   // azul claro
+  if (tag.includes("IR")) return "#a78bfa";   // violeta
+  if (tag.includes("FS")) return "#34d399";   // verde
+  if (tag.includes("AHT")) return "#22d3ee";   // ciano claro
+  if (tag.includes("SYS")) return "#f472b6";   // rosa
+  if (tag.includes("BTN")) return "#fb923c";   // laranja claro
+  if (tag.includes("OTA")) return "#facc15";   // amarelo
+  if (tag.includes("LED A")) return "#009dff";  // azul
+  if (tag.includes("LED B")) return "#FFD700";  // amarelo
+  if (tag.includes("ERROR")) return "#FF4C4C";  // vermelho
+  if (tag.includes("WARN")) return "#FFD700";  // amarelo
+  if (tag.includes("INFO")) return "#87CEFA";  // azul claro
+  if (tag.includes("TELNET")) return "#94a3b8"; // cinza azulado
+  if (tag.includes("AUTH")) return "#f87171";  // vermelho claro
+  if (tag.includes("TESTE")) return "#c084fc";  // lilás
 
-  return "#CCCCCC"; // padrão
+  return "#CCCCCC";
 }
 
 function escapeHtml(str) {
