@@ -1,8 +1,9 @@
 static bool wsAuthenticated[WEBSOCKETS_SERVER_CLIENT_MAX] = {};
 
 void getHttpCredentials(char* user, size_t userSize, char* pass, size_t passSize) {
+  initPassword();
   strlcpy(user, "admin", userSize);
-  strlcpy(pass, Password, passSize);
+  strlcpy(pass, PasswordWS, passSize);
 }
 
 bool checkAuth() {
@@ -13,8 +14,11 @@ bool checkAuth() {
 
   if (!server.authenticate(user, pass)) {
     server.requestAuthentication();
+    debugLogPrint("[AUTH]", "Não autenticado");
+
     return false;
   }
+  debugLogPrint("[AUTH]", "Autenticação ok!");
   return true;
 }
 
@@ -24,8 +28,9 @@ void printHttpCredentials() {
 
   getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
 
-  debugLogPrintf("[HTTP]", "AUTH Usuario: %s Senha  : %s", user, pass);
-  debugLogPrintf("[WS]", "AUTH Senha  : %s", PasswordWS);
+  debugLogPrintf("[AUTH]", "%-6s | Usuario : %-12s | Senha: %-10s", "HTTP", user, pass);
+  debugLogPrintf("[AUTH]", "%-6s |         : %-12s | Senha: %-10s", "WS", "", PasswordWS);
+
 }
 
 // ==============================
@@ -404,25 +409,34 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
     case WStype_TEXT:
       {
         String msg = String((char*)payload).substring(0, length);
-        debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
 
         /* ---------- COMANDOS JSON ---------- */
 
         StaticJsonDocument<512> doc;
         DeserializationError err = deserializeJson(doc, msg);
 
-        if (err) return;
+        if (err) {
+          debugLogPrintf("[ERROR]", "[WS] Recebido: %.*s", length, (const char*)payload);
+          return;
+        }
 
         const char* cmd = doc["cmd"];
+
+        if (!(strcmp(cmd, "auth") == 0)) {
+          debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
+        }
 
         if (!cmd) return;
 
         if (strcmp(cmd, "auth") == 0) {
           const char* provided = doc["password"] | "";
+
           if (strcmp(provided, PasswordWS) == 0) {
+            debugLogPrint("[AUTH]", "Autenticação ok!");
             wsAuthenticated[num] = true;
             webSocket.sendTXT(num, "{\"type\":\"authOk\"}");
           } else {
+            debugLogPrint("[AUTH]", "Não autenticado");
             wsAuthenticated[num] = false;
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
           }
@@ -501,14 +515,16 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           const char* provided = doc["password"] | "";
 
           if (strcmp(provided, pass) != 0) {
+            debugLogPrint("[ERROR]", "Erro de autenticação");
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
           }
 
           debugLogPrint("[WS]", "Abrindo portal WiFi");
+          printPortalCredentials();
           webSocket.broadcastTXT("{\"type\":\"wifiPortal\"}");
           delay(500);
-          startWiFiManagerPortal();
+          startConfigPortal();
         }
 
         else if (strcmp(cmd, "resetWifi") == 0) {
@@ -540,6 +556,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           const char* v_hostname = doc["hostname"] | hostname_buf;
           const char* v_mqtt_id = doc["mqtt_id"] | mqtt_id_buf;
           const char* v_grupo = doc["grupo"] | grupo_buf;
+
+          // -------- REDE --------
+          const char* v_wifi_ssid = doc["wifi_ssid"] | wifi_ssid_buf;
+          strlcpy(wifi_ssid_buf, v_wifi_ssid, sizeof(wifi_ssid_buf));
+
+          const char* v_wifi_password = doc["wifi_password"] | "";
+          if (strcmp(v_wifi_password, "__keep__") != 0 && strlen(v_wifi_password) > 0) {
+            strlcpy(wifi_password_buf, v_wifi_password, sizeof(wifi_password_buf));
+          }
           const char* v_ip = doc["ip"] | ipStr;
           const char* v_gw = doc["gw"] | gwStr;
           const char* v_sn = doc["sn"] | snStr;
@@ -640,8 +665,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 }
 
 void wsSendSystem() {
-  // StaticJsonDocument<2560> doc;
-  DynamicJsonDocument doc(512);
+  // DynamicJsonDocument doc(512);
+  StaticJsonDocument<512> doc;
 
   doc["type"] = "system";
   doc["name"] = mqtt_id_buf;
@@ -652,18 +677,26 @@ void wsSendSystem() {
   doc["heap"] = ESP.getFreeHeap();
 
   JsonObject cfg = doc.createNestedObject("config");
-  cfg["wifi_ssid"] = WiFi.SSID();
+
+  // -------- Identificação --------
   cfg["hostname"] = hostname_buf;
   cfg["mqtt_id"] = mqtt_id_buf;
   cfg["grupo"] = grupo_buf;
+
+  // -------- Rede --------
+  cfg["wifi_ssid"] = wifi_ssid_buf;
   cfg["ip"] = ipStr;
   cfg["gw"] = gwStr;
   cfg["sn"] = snStr;
+
+  // -------- MQTT --------
   cfg["mqtt_server"] = mqtt_server;
   cfg["mqtt_port"] = mqtt_port;
   cfg["mqtt_user"] = mqtt_user_buf;
   cfg["mqtt_enabled"] = mqtt_enabled;
+
   cfg["aht10_enabled"] = aht10_enabled;
+  doc["ir_receptor"] = (int)IR_ReceptorEstado;
 
   char buffer[512];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));

@@ -12,6 +12,8 @@ char grupo_buf[32] = "Sala";
 // ================================================================
 // REDE
 // ================================================================
+char wifi_ssid_buf[64] = "";
+char wifi_password_buf[64] = "";
 char ipStr[16] = "";
 char gwStr[16] = "";
 char snStr[16] = "";
@@ -40,19 +42,18 @@ bool aht10_enabled = false;
 // BUILD
 // ================================================================
 const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
-const String buildVersion = "0.6.0";
+const String buildVersion = "0.7.0";
 
 // ================================================================
 // PASSWORD
 // ================================================================
+// char Password[16];
 char PasswordPortal[16] = "12345678";
 char PasswordWS[16] = "";
-char Password[16];
 
 void initPassword() {
-  snprintf(Password, sizeof(Password), "%08X", ESP.getChipId());
   if (strlen(PasswordWS) == 0) {
-    strlcpy(PasswordWS, Password, sizeof(PasswordWS));
+    snprintf(PasswordWS, sizeof(PasswordWS), "%08X", ESP.getChipId());
   }
 }
 

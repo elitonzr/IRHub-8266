@@ -5,7 +5,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <DNSServer.h>
-#include <WiFiManager.h>
+// #include <WiFiManager.h>
 
 /************ OTA ************/
 #include <ESP8266mDNS.h>
@@ -77,7 +77,8 @@ void setup() {
 
   Serial.println("[FS]      - LittleFS pronto");
 
-  setup_WiFiManager();
+  setup_WiFi();
+  // setup_WiFiManager();
   setup_ota();     // inicializa OTA
   setup_server();  // inicializa webSocket
   setup_mqtt();    // inicializa MQTT
@@ -117,7 +118,7 @@ void loop() {
     if (pressTime > 1000 && pressTime < 3000 && !portalOpened) {
       debugLogPrint("[BTN]", "Abrindo portal WiFi...", false);
       portalOpened = true;
-      startWiFiManagerPortal();
+      startConfigPortal();
     }
 
     // ==========================
@@ -147,7 +148,7 @@ void loop() {
   static unsigned long tWifi = 0;
   if (now - tWifi > 30000) {  // verifica a cada 30 segundos
     tWifi = now;
-    wifi_watchdog();
+    // wifi_watchdog();
   }
 
   // ---- HEAP WATCHDOG ----
@@ -246,7 +247,7 @@ void loop() {
 
       telnetClient = telnetServer.available();
 
-      debugLogPrint("[Telnet]", "Cliente conectado!");
+      debugLogPrint("[Telnet]", "Cliente conectado!", true);
       debugHelp();
 
     } else {

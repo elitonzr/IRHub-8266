@@ -63,16 +63,16 @@ const char* mqttStateStr(int state) {
 
 void setup_mqtt() {
 
-  Serial.println();
-  Serial.println("=================================");
-  Serial.println("  Configurando o servidor MQTT  ");
-  Serial.println("=================================");
+  debugLogPrint("[MQTT]", "=================================");
+  debugLogPrint("[MQTT]", "  Configurando o servidor MQTT  ");
+  debugLogPrint("[MQTT]", "=================================!");
+
 
   if (!mqtt_enabled) {
-    Serial.println("[MQTT]    - desabilitado pelo usuário.");
+    debugLogPrint("[MQTT]", "Desabilitado pelo usuário.", true);
   }
 
-  Serial.println("    Criando Tópicos");
+    debugLogPrint("[MQTT]", "Criando Tópicos");
 
   // -------- Publishers --------
   snprintf(topic_status, sizeof(topic_status), "%s/status", myTopic.c_str());
@@ -98,16 +98,11 @@ void setup_mqtt() {
   if (mqtt_enabled) {
     mqtt_client.setServer(mqtt_server, mqtt_port);
     mqtt_client.setCallback(callback);
-  }
 
-  Serial.println("    Tópicos Criados");
-  Serial.print("    Servidor          : ");
-  Serial.println(mqtt_server);
-  Serial.print("    Client ID         : ");
-  Serial.println(clientID);
-  Serial.print("    Tópico principal  : ");
-  Serial.println(myTopic + "/#");
-  Serial.println("    MQTT configurado!");
+    debugLogPrint("[MQTT]", "Tópicos Criados");
+    debugLogPrintf("[MQTT]", "Servidor: %s | Client ID: %s | Tópico principal: %s/#", mqtt_server, clientID, myTopic);
+    debugLogPrint("[MQTT]", "configurado!", true);
+  }
 }
 
 void mqtt_reconnect() {

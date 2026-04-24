@@ -82,11 +82,11 @@ function wsSend(msg) {
 }
 
 function showWSAuthModal() {
-  const pass = prompt("🔐 Digite a senha do dispositivo:");
+  const pass = prompt("🔐 Informe a senha WS para continuar:");
   if (pass === null) return;
   try {
     localStorage.setItem("wsPassword", pass);
-  } catch (_) { }
+  } catch (_) {}
   state.wsPassword = pass;
   wsSend({ cmd: "auth", password: pass });
 }
@@ -157,7 +157,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           localStorage.setItem("selectedRemote", e.target.value);
-        } catch (_) { }
+        } catch (_) {}
         loadButtons(e.target.value);
       });
     }
@@ -174,9 +174,17 @@ function initPageScript(path) {
     }
     state._settingsFormDirty = false;
 
-    document.querySelectorAll("#app-content input, #app-content select").forEach((el) => {
-      el.addEventListener("change", () => { state._settingsFormDirty = true; }, { once: true });
-    });
+    document
+      .querySelectorAll("#app-content input, #app-content select")
+      .forEach((el) => {
+        el.addEventListener(
+          "change",
+          () => {
+            state._settingsFormDirty = true;
+          },
+          { once: true },
+        );
+      });
   }
 }
 
@@ -483,7 +491,10 @@ function updateMQTTWS(data) {
 }
 
 function applyIRReceptorState(data) {
-  if (data.receptor_protocol && irModeMap[data.receptor_protocol] !== undefined) {
+  if (
+    data.receptor_protocol &&
+    irModeMap[data.receptor_protocol] !== undefined
+  ) {
     const sel = document.getElementById("irReceptorSelect");
     if (sel) sel.value = irModeMap[data.receptor_protocol];
   }
@@ -579,7 +590,7 @@ function renderIRHistory() {
     // Click simples: copia hex para clipboard.
     li.onclick = () => {
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(d.hex).catch(() => { });
+        navigator.clipboard.writeText(d.hex).catch(() => {});
       } else {
         // Fallback para browsers sem Clipboard API.
         const ta = document.createElement("textarea");
@@ -732,6 +743,7 @@ async function exportConfig() {
       return;
     }
     const blob = await res.blob();
+    s;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "config.json";
@@ -746,7 +758,7 @@ async function importConfig() {
   if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?"))
     return;
 
-  const pass = prompt("Digite a senha para confirmar:");
+  const pass = prompt("🔐 Informe a senha HTTP para continuar:");
   if (!pass) return;
 
   const file = document.getElementById("configFile")?.files[0];
@@ -819,7 +831,7 @@ async function importRemotes() {
     return;
   }
 
-  const pass = prompt("Digite a senha para confirmar:");
+  const pass = prompt("🔐 Informe a senha HTTP para continuar:");
   if (!pass) return;
 
   const formData = new FormData();
@@ -872,7 +884,7 @@ function startOTAUpdate() {
   )
     return;
 
-  const pass = prompt("Digite a senha para confirmar:");
+  const pass = prompt("🔐 Informe a senha OTA para continuar:");
   if (!pass) return;
 
   const formData = new FormData();
@@ -1081,7 +1093,9 @@ function sendIRManual() {
   const isDec = /^\d+$/.test(code);
 
   if (!isHex && !isDec) {
-    return alert("Código inválido. Use hex (0x20DF10EF) ou decimal (551489775).");
+    return alert(
+      "Código inválido. Use hex (0x20DF10EF) ou decimal (551489775).",
+    );
   }
 
   wsSend({ cmd: "sendIR", code, protocol: proto, bits });
@@ -1123,14 +1137,14 @@ function rebootDevice() {
 
 function openWifiPortal() {
   if (!confirm("Abrir portal de configuração WiFi?")) return;
-  const pass = prompt("Digite a senha para confirmar:");
+  const pass = prompt("🔐 Informe a senha WS para continuar:");
   if (!pass) return;
   wsSend({ cmd: "wifiPortal", password: pass });
 }
 
 function resetWifi() {
   if (!confirm("Resetar configurações WiFi?")) return;
-  const pass = prompt("Digite a senha para confirmar:");
+  const pass = prompt("🔐 Informe a senha WS para continuar:");
   if (!pass) return;
   wsSend({ cmd: "resetWifi", password: pass });
 }
@@ -1138,7 +1152,7 @@ function resetWifi() {
 function resetConfig() {
   if (!confirm("Apagar config.json? Isso apagará todas as configurações!"))
     return;
-  const pass = prompt("Digite a senha para confirmar:");
+  const pass = prompt("🔐 Informe a senha WS para continuar:");
   if (!pass) return;
   wsSend({ cmd: "resetConfig", password: pass });
 }
@@ -1205,11 +1219,14 @@ function saveDeviceConfig() {
   }
 
   const wsPassword = get("cfg_ws_password");
+  const wifiPassword = get("cfg_wifi_password");
   wsSend({
     cmd: "saveConfig",
     hostname: get("cfg_hostname").trim(),
     mqtt_id: get("cfg_mqtt_id").trim(),
     grupo: get("cfg_grupo").trim(),
+    wifi_ssid: get("cfg_wifi_ssid").trim(),
+    wifi_password: wifiPassword.length > 0 ? wifiPassword : "__keep__",
     ip,
     gw,
     sn,

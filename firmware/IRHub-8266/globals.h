@@ -24,19 +24,16 @@ extern char grupo_buf[32];
 // ================================================================
 // REDE
 // ================================================================
+extern char wifi_ssid_buf[64];
+extern char wifi_password_buf[64];
 extern char ipStr[16];
 extern char gwStr[16];
 extern char snStr[16];
 
 // ================================================================
-// WIFI MANAGER
-// ================================================================
-extern bool shouldSaveConfig;
-
-// ================================================================
 // PASSWORD
 // ================================================================
-extern char Password[16];
+// extern char Password[16];
 extern char PasswordPortal[16];
 extern char PasswordWS[16];
 void initPassword();

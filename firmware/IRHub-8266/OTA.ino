@@ -16,7 +16,8 @@ void setup_ota() {
 
   // OTA via ArduinoOTA (IDE/terminal)
   ArduinoOTA.setHostname(hostname_buf);
-  ArduinoOTA.setPassword(Password);
+  ArduinoOTA.setPassword(PasswordWS);
+
   printOTACredentials();
 
   ArduinoOTA.onStart([]() {
@@ -41,9 +42,6 @@ void setup_ota() {
     debugLogPrintf("[OTA]", "Erro: %s", desc);
   });
 
-  // OTA via HTTP (browser) — endpoint /update com auth Basic
-  // httpUpdater.setup(&server, "/update", "admin", Password);
-
   // OTA via HTTP manual com autenticação integrada
   server.on("/update", HTTP_GET, []() {
     if (!checkAuth()) return;
@@ -60,8 +58,10 @@ void setup_ota() {
       if (!checkAuth()) return;
       if (Update.hasError()) {
         server.send(500, "text/plain", "Falha na atualização");
+        debugLogPrint("[ERROR]", "Falha na atualização");
       } else {
         server.send(200, "text/plain", "OK. Reiniciando...");
+        debugLogPrint("[OTA]", "Firmware enviado! Aguarde o reboot...");
         delay(1000);
         ESP.restart();
       }
@@ -128,6 +128,5 @@ void setup_ota() {
 }
 
 void printOTACredentials() {
-  debugLogPrintf("[OTA]", "Hostname : %s", hostname_buf);
-  debugLogPrintf("[OTA]", "via HTTP Senha    : %s", Password);
+  debugLogPrintf("[AUTH]", "%-6s | Hostname: %-12s | Senha: %-10s", "OTA", hostname_buf, PasswordWS);
 }

@@ -63,9 +63,9 @@ void setup_IR() {
   irsend.begin();       // Inicializa emissor
   irrecv.enableIRIn();  // Inicializa receptor
 
-  Serial.print("    Emissor   : GPIO ");
+  Serial.print("Emissor   : GPIO ");
   Serial.println(kIrLed);
-  Serial.print("    Receptor  : GPIO ");
+  Serial.print("Receptor  : GPIO ");
   Serial.println(kRecvPin);
 }
 

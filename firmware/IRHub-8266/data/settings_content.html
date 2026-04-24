@@ -45,18 +45,23 @@
       <div class="item">Grupo: <input id="cfg_grupo" type="text" /></div>
       <hr />
       <p class="section-label">WiFi</p>
-
+      <div class="item">SSID: <input id="cfg_wifi_ssid" type="text" /></div>
       <div class="item">
-        SSID atual:
-        <input id="cfg_wifi_ssid" type="text" disabled />
+        Senha:
+        <input
+          id="cfg_wifi_password"
+          type="password"
+          placeholder="deixe vazio para manter a atual"
+        />
       </div>
 
+      <hr />
+      <p class="section-label">Ações WiFi</p>
       <div class="item">
         <button class="btn-primary btn-block" onclick="openWifiPortal()">
-          📶 Configurar WiFi
+          📶 Abrir Portal AP (derruba conexão)
         </button>
       </div>
-
       <div class="item">
         <button class="btn-clean btn-block" onclick="resetWifi()">
           ⚠️ Reset WiFi

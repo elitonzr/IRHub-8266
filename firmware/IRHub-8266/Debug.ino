@@ -32,16 +32,27 @@ void debugLogPrint(const char* tag, const char* msg, bool newline) {
   if (!msg) msg = "";
 
   // ---- Serial ----
-  Serial.print(tag);
-  Serial.print(" ");
-  Serial.println(msg);
+  Serial.printf("%-10s - %s\n", tag, msg);
+  // Serial.print(tag);
+  // Serial.print(" - ");
+  // Serial.println(msg);
+  if (newline) { Serial.println(""); }
+
 
   // ---- Telnet ----
   if (telnetClient && telnetClient.connected()) {
-    telnetClient.print(tag);
-    telnetClient.print(" ");
-    telnetClient.println(msg);
+    telnetClient.printf("%-10s - %s\n", tag, msg);
+
+    if (newline) { telnetClient.println(); }
   }
+
+  // if (telnetClient && telnetClient.connected()) {
+  //   telnetClient.print(tag);
+  //   telnetClient.print("    ");
+  //   telnetClient.println(msg);
+
+  //   if (newline) { telnetClient.println(""); }
+  // }
 
   // ---- WebSocket — sanitiza e monta JSON ----
   if (webSocket.connectedClients() == 0) return;
@@ -50,16 +61,24 @@ void debugLogPrint(const char* tag, const char* msg, bool newline) {
   size_t j = 0;
   for (size_t i = 0; msg[i] && j < sizeof(buffer) - 2; i++) {
     if (msg[i] == '\n' || msg[i] == '\r') continue;
-    if (msg[i] == '\\') { buffer[j++] = '\\'; buffer[j++] = '\\'; continue; }
-    if (msg[i] == '"')  { buffer[j++] = '\\'; buffer[j++] = '"';  continue; }
+    if (msg[i] == '\\') {
+      buffer[j++] = '\\';
+      buffer[j++] = '\\';
+      continue;
+    }
+    if (msg[i] == '"') {
+      buffer[j++] = '\\';
+      buffer[j++] = '"';
+      continue;
+    }
     buffer[j++] = msg[i];
   }
   buffer[j] = '\0';
 
   char json[600];
   snprintf(json, sizeof(json),
-    "{\"type\":\"console\",\"log\":\"%s\",\"msg\":\"%s\",\"newline\":\"%d\"}",
-    tag, buffer, newline ? 1 : 0);
+           "{\"type\":\"console\",\"log\":\"%s\",\"msg\":\"%s\",\"newline\":\"%d\"}",
+           tag, buffer, newline ? 1 : 0);
 
   webSocket.broadcastTXT(json);
 }
@@ -77,7 +96,10 @@ void debugLogPrintf(const char* tag, const char* format, ...) {
   va_start(args, format);
   int len = vsnprintf(msg, sizeof(msg), format, args);
   va_end(args);
-  if (len < 0) { debugLogPrint("[ERROR]", "erro de formatação"); return; }
+  if (len < 0) {
+    debugLogPrint("[ERROR]", "erro de formatação");
+    return;
+  }
   msg[sizeof(msg) - 1] = '\0';
   debugLogPrint(tag, msg, false);
 }
@@ -88,7 +110,10 @@ void debugLogPrintfln(const char* tag, const char* format, ...) {
   va_start(args, format);
   int len = vsnprintf(msg, sizeof(msg), format, args);
   va_end(args);
-  if (len < 0) { debugLogPrint("[ERROR]", "erro de formatação", true); return; }
+  if (len < 0) {
+    debugLogPrint("[ERROR]", "erro de formatação", true);
+    return;
+  }
   msg[sizeof(msg) - 1] = '\0';
   debugLogPrint(tag, msg, true);
 }
@@ -99,9 +124,9 @@ void debugLogPrintfln(const char* tag, const char* format, ...) {
 
 void debugPassword() {
   debugLogPrint("[AUTH]", "================= AUTH =================");
-  printHttpCredentials();
-  printOTACredentials();
   printPortalCredentials();
+  printOTACredentials();
+  printHttpCredentials();
   debugLogPrint("[AUTH]", "========================================", true);
 }
 
@@ -177,9 +202,9 @@ void debugIR() {
     return;
   }
   debugLogPrintf("[IR]", "Protocol:%s type:%d bits:%d rawlen:%d",
-    lastIR.protocolo, lastIR.decode_type, lastIR.bits, lastIR.rawlen);
+                 lastIR.protocolo, lastIR.decode_type, lastIR.bits, lastIR.rawlen);
   debugLogPrintf("[IR]", "DEC:%llu HEX:%s",
-    (unsigned long long)lastIR.dec, lastIR.hexStr);
+                 (unsigned long long)lastIR.dec, lastIR.hexStr);
   debugLogPrint("[IR]", "Source Code:");
   debugLogPrint("[IR]", resultToSourceCode(&results).c_str());
   debugLogPrint("[IR]", "========================================", true);

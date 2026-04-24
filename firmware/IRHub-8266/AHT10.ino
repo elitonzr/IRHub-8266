@@ -12,15 +12,15 @@ AHT10State estadoAHT10 = AHT10_OFFLINE;
 
 void setup_AHT10() {
 
-  if (!aht10_enabled) {
-    Serial.println("[AHT10]   - Desabilitado.");
-    return;
-  }
-
   Serial.println();
   Serial.println("=================================");
   Serial.println("        Configurando AHT10        ");
   Serial.println("=================================");
+
+  if (!aht10_enabled) {
+    Serial.println("[AHT10]   - Desabilitado.");
+    return;
+  }
 
   Wire.begin(12, 13);
   if (!aht.begin(&Wire)) {
