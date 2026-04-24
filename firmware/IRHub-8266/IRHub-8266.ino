@@ -125,7 +125,7 @@ void loop() {
     // ==========================
     if (pressTime > 5000) {
       debugLogPrint("[BTN]", "Reset total solicitado via botão", false);
-      resetConfig();
+      handleResetButton();
     }
 
   } else {

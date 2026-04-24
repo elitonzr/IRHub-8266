@@ -93,6 +93,10 @@ void resetConfig() {
   ESP.restart();
 }
 
+void handleResetButton() {
+  resetConfig();
+}
+
 // ==========================
 // RESET WIFI NO FS
 // ==========================

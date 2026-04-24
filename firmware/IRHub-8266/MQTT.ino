@@ -68,7 +68,7 @@ void setup_mqtt() {
   Serial.println("  Configurando o servidor MQTT  ");
   Serial.println("=================================");
 
-  if (mqtt_enabled) {
+  if (!mqtt_enabled) {
     Serial.println("[MQTT]    - desabilitado pelo usuário.");
   }
 

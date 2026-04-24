@@ -1,4 +1,3 @@
-#include "globals.h"  // garantir que está incluído
 static bool wsAuthenticated[WEBSOCKETS_SERVER_CLIENT_MAX] = {};
 
 void getHttpCredentials(char* user, size_t userSize, char* pass, size_t passSize) {
@@ -328,7 +327,7 @@ void handleUpload() {
       {
         if (!checkAuth()) {
           fsUploadFile = File();
-          break;
+          return;
         }
         String filename = upload.filename;
         if (!filename.startsWith("/")) filename = "/" + filename;
@@ -395,7 +394,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
       wsSendInfoIR_Receptor();
       wsSendLEDB();
       wsAuthenticated[num] = false;
-
       break;
 
     case WStype_DISCONNECTED:
@@ -480,6 +478,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           IR_ReceptorSET(mode);
           return;
         }
+
         if (strcmp(cmd, "sendIR") == 0) {
 
           const char* codeStr = doc["code"];
@@ -493,16 +492,19 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           }
 
           handleIRCommand(codeStr, protoStr, bits, "[WS]");
+          return;
         }
 
         else if (strcmp(cmd, "wifiPortal") == 0) {
           char user[16], pass[32];
           getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
           const char* provided = doc["password"] | "";
+
           if (strcmp(provided, pass) != 0) {
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
           }
+
           debugLogPrint("[WS]", "Abrindo portal WiFi");
           webSocket.broadcastTXT("{\"type\":\"wifiPortal\"}");
           delay(500);
@@ -513,10 +515,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           char user[16], pass[32];
           getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
           const char* provided = doc["password"] | "";
+
           if (strcmp(provided, pass) != 0) {
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
           }
+
           debugLogPrint("[WS]", "Reset WiFi solicitado");
           webSocket.broadcastTXT("{\"type\":\"resetWifi\"}");
           delay(500);
@@ -637,7 +641,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
 void wsSendSystem() {
   // StaticJsonDocument<2560> doc;
-  DynamicJsonDocument doc(2148);
+  DynamicJsonDocument doc(512);
 
   doc["type"] = "system";
   doc["name"] = mqtt_id_buf;
@@ -661,7 +665,7 @@ void wsSendSystem() {
   cfg["mqtt_enabled"] = mqtt_enabled;
   cfg["aht10_enabled"] = aht10_enabled;
 
-  char buffer[2148];
+  char buffer[512];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
     debugLogPrint("[WS]", "Erro: JSON system truncado");

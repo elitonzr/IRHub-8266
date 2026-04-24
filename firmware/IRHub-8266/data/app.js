@@ -86,7 +86,7 @@ function showWSAuthModal() {
   if (pass === null) return;
   try {
     localStorage.setItem("wsPassword", pass);
-  } catch (_) {}
+  } catch (_) { }
   state.wsPassword = pass;
   wsSend({ cmd: "auth", password: pass });
 }
@@ -157,7 +157,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           localStorage.setItem("selectedRemote", e.target.value);
-        } catch (_) {}
+        } catch (_) { }
         loadButtons(e.target.value);
       });
     }
@@ -169,7 +169,14 @@ function initPageScript(path) {
   }
 
   if (path === "/settings") {
-    state.configPopulated = false;
+    if (!state._settingsFormDirty) {
+      state.configPopulated = false;
+    }
+    state._settingsFormDirty = false;
+
+    document.querySelectorAll("#app-content input, #app-content select").forEach((el) => {
+      el.addEventListener("change", () => { state._settingsFormDirty = true; }, { once: true });
+    });
   }
 }
 
@@ -475,6 +482,22 @@ function updateMQTTWS(data) {
   }
 }
 
+function applyIRReceptorState(data) {
+  if (data.receptor_protocol && irModeMap[data.receptor_protocol] !== undefined) {
+    const sel = document.getElementById("irReceptorSelect");
+    if (sel) sel.value = irModeMap[data.receptor_protocol];
+  }
+  if (!state.irDotTimer) {
+    const dot = document.getElementById("irDot");
+    if (dot)
+      dot.className =
+        "dot " +
+        (data.receptor_protocol && data.receptor_protocol !== "DISABLED"
+          ? "green"
+          : "yellow");
+  }
+}
+
 // Reaplica o último estado conhecido de cada tipo ao navegar entre páginas.
 function replayLastPayloads() {
   const updaters = {
@@ -485,7 +508,7 @@ function replayLastPayloads() {
     ledb: updateLEDBWS,
     sensor: updateSensorWS,
     ir: updateIRWS,
-    // ir_receptor: updateIRReceptorWS,
+    ir_receptor: applyIRReceptorState,
     network: updateNetworkWS,
     mqtt: updateMQTTWS,
   };
@@ -556,7 +579,7 @@ function renderIRHistory() {
     // Click simples: copia hex para clipboard.
     li.onclick = () => {
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(d.hex).catch(() => {});
+        navigator.clipboard.writeText(d.hex).catch(() => { });
       } else {
         // Fallback para browsers sem Clipboard API.
         const ta = document.createElement("textarea");
@@ -789,7 +812,6 @@ async function importRemotes() {
   const file = document.getElementById("remotesFile")?.files[0];
   if (!file) return alert("Selecione um arquivo .json");
 
-  // Valida JSON antes de enviar.
   try {
     JSON.parse(await file.text());
   } catch {
@@ -797,12 +819,16 @@ async function importRemotes() {
     return;
   }
 
+  const pass = prompt("Digite a senha para confirmar:");
+  if (!pass) return;
+
   const formData = new FormData();
   formData.append("upload", file);
 
   const xhr = new XMLHttpRequest();
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
+  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + pass));
   xhr.onload = () => {
     if (xhr.status === 401) {
       showRemotesStatus("❌ Senha incorreta.", "#ef4444");
@@ -904,7 +930,7 @@ function toggleIPFields() {
 function toggleMQTTFields() {
   const enabled = document.getElementById("cfg_mqtt_enabled")?.value;
   const fields = document.getElementById("cfg_mqtt_fields");
-  if (fields) fields.style.display = enabled ? "block" : "none";
+  if (fields) fields.style.display = enabled === "true" ? "block" : "none";
 }
 
 // Valida formato de endereço IP (string vazia = DHCP, aceito).
@@ -988,6 +1014,7 @@ function loadButtons(model) {
 
     const b = document.createElement("button");
     b.textContent = btn.name;
+    b.type = "button";
     b.className = "btn-ir-remote";
 
     if (btn.fontSize) b.style.fontSize = btn.fontSize;
@@ -1049,6 +1076,14 @@ function sendIRManual() {
   const bits = parseInt(document.getElementById("irBits")?.value) || 32;
 
   if (!code) return alert("Digite um código IR.");
+
+  const isHex = /^0x[0-9a-fA-F]+$/i.test(code) || /^[0-9a-fA-F]+$/i.test(code);
+  const isDec = /^\d+$/.test(code);
+
+  if (!isHex && !isDec) {
+    return alert("Código inválido. Use hex (0x20DF10EF) ou decimal (551489775).");
+  }
+
   wsSend({ cmd: "sendIR", code, protocol: proto, bits });
 }
 
@@ -1149,6 +1184,7 @@ function populateConfig(data) {
 
 // Valida e envia o payload de configuração para o backend.
 function saveDeviceConfig() {
+  state._settingsFormDirty = false;
   const get = (id) => document.getElementById(id)?.value ?? "";
   const password = get("cfg_mqtt_password");
 
