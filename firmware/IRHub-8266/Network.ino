@@ -1,6 +1,27 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#include <DNSServer.h>
+#include <ESP8266mDNS.h>
+#include "webpage.h"
+
 // ==========================
-// TENTATIVA DE CONEXÃO DIRETA
-// Retorna true se conectou, false se falhou.
+// GLOBALS
+// ==========================
+DNSServer dnsServer;
+
+enum DeviceWiFiState {
+  WIFI_CONNECTING,
+  WIFI_CONNECTED,
+  WIFI_AP_MODE
+};
+
+DeviceWiFiState wifiState = WIFI_CONNECTING;
+
+volatile bool hasActivity = false;
+unsigned long lastActivity = 0;
+
+// ==========================
+// WIFI CONNECT
 // ==========================
 bool tryWiFiConnect() {
   if (strlen(wifi_ssid_buf) == 0) return false;
@@ -9,42 +30,52 @@ bool tryWiFiConnect() {
   WiFi.hostname(hostname_buf);
 
   IPAddress ip, gw, sn, dns(8, 8, 8, 8);
+
   if (strlen(ipStr) > 6 && ip.fromString(ipStr) && gw.fromString(gwStr) && sn.fromString(snStr)) {
-    WiFi.config(ip, gw, sn, dns);
-    Serial.println("[WiFi]    - IP fixo aplicado");
+
+    if (WiFi.config(ip, gw, sn, dns)) {
+      debugLogPrint("[WiFi]", "IP fixo aplicado");
+    } else {
+      debugLogPrint("[WiFi]", "Falha ao aplicar IP fixo");
+    }
   }
 
   WiFi.begin(wifi_ssid_buf, wifi_password_buf);
-  Serial.print("[WiFi]    - Conectando a ");
-  Serial.println(wifi_ssid_buf);
+
+  debugLogPrintf("[WiFi]", "Conectando a %s", wifi_ssid_buf);
 
   setLedMode(LED_WIFI_CONNECTING);
 
   unsigned long t = millis();
+
   while (WiFi.status() != WL_CONNECTED) {
     if (millis() - t > 10000) {
-      Serial.println("[WiFi]    - Timeout.");
+      debugLogPrint("[WiFi]", "Timeout conexão");
       return false;
     }
+
     handleFeedbackLED();
-    delay(100);
+    yield();
   }
+
   return true;
 }
 
 // ==========================
-// SETUP WIFI PRINCIPAL
+// SETUP WIFI
 // ==========================
 void setup_WiFi() {
   setLedMode(LED_WIFI_DISCONNECTED);
   loadConfig();
 
   if (tryWiFiConnect()) {
-    Serial.println("[WiFi]    - Conectado!");
+    wifiState = WIFI_CONNECTED;
+
+    debugLogPrint("[WiFi]", "Conectado!");
 
     if (MDNS.begin(hostname_buf)) {
       MDNS.addService("http", "tcp", 80);
-      Serial.println(String("[mDNS] http://") + hostname_buf + ".local");
+      debugLogPrintf("[mDNS]", "http://%s.local", hostname_buf);
     }
 
     setLedMode(LED_IDLE);
@@ -52,135 +83,237 @@ void setup_WiFi() {
     return;
   }
 
-  // Sem credenciais ou falha → abre portal próprio
   startConfigPortal();
 }
 
 // ==========================
-// PORTAL DE CONFIGURAÇÃO PRÓPRIO
+// HTML PARTES
+// ==========================
+void sendPortalPage() {
+  int n = WiFi.scanNetworks(false, true);
+  if (n > 15) n = 15;
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  server.sendContent_P(PAGE_PORTAL_1);
+
+  for (int i = 0; i < n; i++) {
+    char option[128];
+    snprintf(option, sizeof(option),
+             "<option value='%s'>%s (%d dBm)</option>",
+             WiFi.SSID(i).c_str(),
+             WiFi.SSID(i).c_str(),
+             WiFi.RSSI(i));
+    server.sendContent(option);
+  }
+
+  server.sendContent_P(PAGE_PORTAL_2);
+  server.sendContent(PasswordWS);  // ws_pass
+
+  server.sendContent_P(PAGE_PORTAL_2B);
+  server.sendContent(grupo_buf);  // grupo
+
+  server.sendContent_P(PAGE_PORTAL_2C);
+  String safeHost = hostname_buf;
+  safeHost.replace("\"", "&quot;");
+  server.sendContent(safeHost);  // hostname
+
+  bool hasStaticIP = strlen(ipStr) > 6;
+
+  server.sendContent_P(PAGE_PORTAL_3);
+
+  String ipModeScript = "<script>document.getElementById('ip_mode').value='";
+  ipModeScript += hasStaticIP ? "static" : "dhcp";
+  ipModeScript += "';toggleIP(document.getElementById('ip_mode').value);</script>";
+  server.sendContent(ipModeScript);
+
+  server.sendContent(hasStaticIP ? ipStr : "");
+
+  server.sendContent_P(PAGE_PORTAL_4);
+  server.sendContent(hasStaticIP ? gwStr : "");
+
+  server.sendContent_P(PAGE_PORTAL_5);
+  server.sendContent(hasStaticIP ? snStr : "");
+
+  server.sendContent_P(PAGE_PORTAL_6);
+}
+
+// ==========================
+// PORTAL
 // ==========================
 void startConfigPortal() {
+
+  wifiState = WIFI_AP_MODE;
+
   setLedMode(LED_WIFI_DISCONNECTED);
-  debugLogPrint("[WiFi]", "Iniciando portal de configuração próprio");
+  debugLogPrint("[WiFi]", "Modo AP - Portal config");
 
   WiFi.mode(WIFI_AP);
   WiFi.softAP(hostname_buf, PasswordPortal);
-  delay(500);
+
+  delay(300);
 
   IPAddress apIP(192, 168, 4, 1);
-  IPAddress apGW(192, 168, 4, 1);
-  IPAddress apSN(255, 255, 255, 0);
-  WiFi.softAPConfig(apIP, apGW, apSN);
+  WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
 
-  // DNS Server — redireciona qualquer domínio para o portal (captive portal)
-  DNSServer dnsServer;
   dnsServer.start(53, "*", apIP);
 
   printPortalCredentials();
 
-  // Página HTML do portal
+  // ROTAS
   server.on("/start", HTTP_GET, []() {
-    // Faz scan das redes disponíveis
-    int n = WiFi.scanNetworks();
-    String options = "";
-    for (int i = 0; i < n; i++) {
-      options += "<option value='" + WiFi.SSID(i) + "'>" + WiFi.SSID(i) + " (" + WiFi.RSSI(i) + " dBm)</option>";
-    }
-
-    String html = R"rawliteral(
-  <!DOCTYPE html><html><head>
-  <meta charset='UTF-8'>
-  <meta name='viewport' content='width=device-width,initial-scale=1'>
-  <title>IRHub-8266 Setup</title>
-  <link rel='stylesheet' href='/style.css'>
-  </head><body>
-  <nav class='navbar'><span class='navbar-brand'>IRHub-8266 Setup</span></nav>
-  <div class='page-content'>
-  <section class='card'>
-    <header>Configuração WiFi</header>
-    <form action='/save' method='POST'>
-      <div class='item'>SSID:
-        <select name='ssid' style='width:100%'>)rawliteral";
-    html += options;
-    html += R"rawliteral(</select>
-      </div>
-      <div class='item'>Senha WiFi:
-        <input type='password' name='wifi_pass' placeholder='Senha da rede'>
-      </div>
-      <hr>
-      <div class='item'>Hostname:
-        <input type='text' name='hostname' value=')rawliteral";
-    html += hostname_buf;
-    html += R"rawliteral('>
-      </div>
-      <div class='item'>
-        <button type='submit' class='btn-primary btn-block'>💾 Salvar e Reiniciar</button>
-      </div>
-    </form>
-  </section>
-  </div>
-  </body></html>
-  )rawliteral";
-    server.send(200, "text/html", html);
+    hasActivity = true;
+    sendPortalPage();
   });
 
-  // Captive portal redirect
-  server.onNotFound([&apIP]() {
-    server.sendHeader("Location", String("http://") + apIP.toString(), true);
-    server.send(302, "text/plain", "");
-  });
-
-  // Recebe o form e salva
   server.on("/save", HTTP_POST, []() {
-    String ssid = server.arg("ssid");
+    hasActivity = true;
+    String ssidManual = server.arg("ssid_manual");
+    String ssidSelect = server.arg("ssid_select");
     String wifiPass = server.arg("wifi_pass");
+    String wsPass = server.arg("ws_pass");
+    String grupo = server.arg("grupo");
     String hostname = server.arg("hostname");
 
+    // prioridade: manual > select
+    String ssid = ssidManual.length() > 0 ? ssidManual : ssidSelect;
+    ssid.trim();
+
+    // validações
     if (ssid.length() == 0) {
       server.send(400, "text/plain", "SSID obrigatório");
       return;
     }
 
+    // salva SSID
     strlcpy(wifi_ssid_buf, ssid.c_str(), sizeof(wifi_ssid_buf));
-    strlcpy(wifi_password_buf, wifiPass.c_str(), sizeof(wifi_password_buf));
-    if (hostname.length() > 0)
+
+    // senha WiFi só se informada
+    if (wifiPass.length() > 0) {
+      strlcpy(wifi_password_buf, wifiPass.c_str(), sizeof(wifi_password_buf));
+    }
+
+    // PasswordWS (opcional)
+    if (wsPass.length() > 0) {
+      strlcpy(PasswordWS, wsPass.c_str(), sizeof(PasswordWS));
+    }
+
+    // grupo MQTT
+    if (grupo.length() > 0) {
+      strlcpy(grupo_buf, grupo.c_str(), sizeof(grupo_buf));
+    }
+
+    // hostname (sanitizado)
+    if (hostname.length() > 0) {
+
+      hostname.replace(" ", "-");
+
+      for (size_t i = 0; i < hostname.length(); i++) {
+        if (!isalnum(hostname[i]) && hostname[i] != '-') {
+          hostname[i] = '-';
+        }
+      }
+
       strlcpy(hostname_buf, hostname.c_str(), sizeof(hostname_buf));
+    }
+
+    String ipMode = server.arg("ip_mode");
+    if (ipMode == "static") {
+      String ip = server.arg("ip");
+      String gw = server.arg("gw");
+      String sn = server.arg("sn");
+      ip.trim();
+      gw.trim();
+      sn.trim();
+      strlcpy(ipStr, ip.c_str(), sizeof(ipStr));
+      strlcpy(gwStr, gw.c_str(), sizeof(gwStr));
+      strlcpy(snStr, sn.c_str(), sizeof(snStr));
+    } else {
+      ipStr[0] = '\0';
+      gwStr[0] = '\0';
+      snStr[0] = '\0';
+    }
 
     recalcularTopicos();
     saveConfig();
 
     server.send(200, "text/html",
-                "<html><body style='font-family:sans-serif;background:#111827;color:#f9fafb;"
-                "display:flex;align-items:center;justify-content:center;height:100vh'>"
-                "<h2>✅ Salvo! Reiniciando...</h2></body></html>");
-    delay(1500);
+                "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+                "<meta http-equiv='refresh' content='5;url=http://192.168.4.1/start'>"
+                "<style>body{font-family:sans-serif;background:#111827;color:#f9fafb;"
+                "display:flex;align-items:center;justify-content:center;height:100vh;}"
+                "</style></head><body><h2>✅ Salvo! Reiniciando...</h2></body></html>");
+
+    unsigned long t = millis();
+    while (millis() - t < 1500) yield();
+
     ESP.restart();
   });
 
-  server.begin();
+  server.on("/reboot", HTTP_POST, []() {
+    server.send(200, "text/html",
+                "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+                "<meta http-equiv='refresh' content='5;url=http://192.168.4.1/start'>"
+                "<style>body{font-family:sans-serif;background:#111827;color:#f9fafb;"
+                "display:flex;align-items:center;justify-content:center;height:100vh;}"
+                "</style></head><body><h2>🔄 Reiniciando...</h2></body></html>");
+    unsigned long t = millis();
+    while (millis() - t < 1500) yield();
+    ESP.restart();
+  });
 
-  // Loop do portal — aguarda configuração ou timeout de 3 minutos
-  unsigned long tPortal = millis();
-  while (millis() - tPortal < 180000) {
-    dnsServer.processNextRequest();
+  server.onNotFound([&apIP]() {
+    if (!server.uri().startsWith("/api")) {
+      server.sendHeader("Location", String("http://") + apIP.toString() + "/start", true);
+      server.send(302, "text/plain", "");
+    } else {
+      server.send(404, "application/json", "{\"error\":\"not found\"}");
+    }
+  });
+
+  static bool serverStarted = false;
+  if (!serverStarted) {
+    server.begin();
+    serverStarted = true;
+  }
+  lastActivity = millis();
+
+  // unsigned long tPortal = millis();
+
+  while (true) {
+
+    if (millis() - lastActivity > 180000) {
+      debugLogPrint("[WiFi]", "Timeout portal");
+      dnsServer.stop();
+      ESP.restart();
+    }
+
     server.handleClient();
+
+    if (hasActivity) {
+      lastActivity = millis();
+      hasActivity = false;
+    }
+
+    dnsServer.processNextRequest();
     handleFeedbackLED();
     yield();
   }
-
-  // Timeout — reinicia sem salvar
-  debugLogPrint("[WiFi]", "Portal timeout. Reiniciando...");
-  ESP.restart();
 }
 
 // ==========================
-// RECALCULA TÓPICOS MQTT
+// MQTT TOPICS
 // ==========================
 void recalcularTopicos() {
   myTopic = String(mqtt_id_buf) + "-" + String(grupo_buf);
-  clientID = String(myTopic) + "-" + String(ESP.getChipId());
+  clientID = myTopic + "-" + String(ESP.getChipId());
 }
 
+// ==========================
+// LOG PORTAL
+// ==========================
 void printPortalCredentials() {
-  debugLogPrintf("[AUTH]", "%-6s | SSID    : %-12s | Senha: %-10s | %s", "Portal", hostname_buf, PasswordPortal, "http://192.168.4.1/start");
+  debugLogPrintf("[AUTH]",
+                 "%-6s | SSID: %-12s | Senha: %-10s | %s",
+                 "Portal", hostname_buf, PasswordPortal, "http://192.168.4.1/start");
 }

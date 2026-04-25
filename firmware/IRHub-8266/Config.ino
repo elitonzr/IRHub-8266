@@ -14,7 +14,7 @@ void loadConfig() {
     return;
   }
 
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<768> doc;
   DeserializationError err = deserializeJson(doc, file);
   if (err) {
     debugLogPrintf("[FS]", "Erro ao parsear config.json: %s", err.c_str());
@@ -57,21 +57,21 @@ void loadConfig() {
 // SALVA CONFIG NO FS
 // ==========================
 void saveConfig() {
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<768> doc;
 
-  //Identificação
+  // -------- Identificação --------
   doc["hostname"] = hostname_buf;
   doc["mqtt_id"] = mqtt_id_buf;
   doc["grupo"] = grupo_buf;
 
-  //Rede
+  // -------- REDE --------
   doc["wifi_ssid"] = wifi_ssid_buf;
   doc["wifi_password"] = wifi_password_buf;
   doc["ip"] = ipStr;
   doc["gw"] = gwStr;
   doc["sn"] = snStr;
 
-  //MQTT
+  // -------- MQTT --------
   doc["mqtt_server"] = mqtt_server;
   doc["mqtt_port"] = mqtt_port;
   doc["mqtt_user"] = mqtt_user_buf;
@@ -100,24 +100,6 @@ void resetConfig() {
   delay(1000);
   ESP.restart();
 }
-
-// void resetConfig() {
-//   WiFiManager wifiManager;
-//   wifiManager.resetSettings();
-
-//   if (LittleFS.exists("/config.json")) {
-//     if (LittleFS.remove("/config.json")) {
-//       debugLogPrint("[FS]", "config.json removido.");
-//     } else {
-//       debugLogPrint("[FS]", "Erro ao remover config.json.");
-//     }
-//   } else {
-//     debugLogPrint("[FS]", "config.json não encontrado.");
-//   }
-
-//   delay(1000);
-//   ESP.restart();
-// }
 
 void handleResetButton() {
   resetConfig();

@@ -30,6 +30,7 @@ extern char ipStr[16];
 extern char gwStr[16];
 extern char snStr[16];
 
+
 // ================================================================
 // PASSWORD
 // ================================================================
@@ -178,3 +179,4 @@ const char* getLedModeString();
 void debugLogPrint(const char* tag, const char* msg, bool newline = false);
 void debugLogPrintf(const char* tag, const char* format, ...);
 void debugLogPrintfln(const char* tag, const char* format, ...);
+

@@ -86,7 +86,7 @@ function showWSAuthModal() {
   if (pass === null) return;
   try {
     localStorage.setItem("wsPassword", pass);
-  } catch (_) {}
+  } catch (_) { }
   state.wsPassword = pass;
   wsSend({ cmd: "auth", password: pass });
 }
@@ -117,7 +117,11 @@ async function navigateTo(path) {
   window.history.pushState({}, "", path);
 
   try {
-    const file = routes[path] != null ? routes[path] : routes["/"];
+    const file = routes[path];
+    if (!file) {
+      contentArea.innerHTML = `<div style="padding:20px">Página não encontrada: ${path}</div>`;
+      return;
+    }
     const response = await fetch(file);
 
     if (!response.ok) {
@@ -157,7 +161,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           localStorage.setItem("selectedRemote", e.target.value);
-        } catch (_) {}
+        } catch (_) { }
         loadButtons(e.target.value);
       });
     }
@@ -590,7 +594,7 @@ function renderIRHistory() {
     // Click simples: copia hex para clipboard.
     li.onclick = () => {
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(d.hex).catch(() => {});
+        navigator.clipboard.writeText(d.hex).catch(() => { });
       } else {
         // Fallback para browsers sem Clipboard API.
         const ta = document.createElement("textarea");
@@ -743,7 +747,6 @@ async function exportConfig() {
       return;
     }
     const blob = await res.blob();
-    s;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "config.json";
@@ -1200,7 +1203,7 @@ function populateConfig(data) {
 function saveDeviceConfig() {
   state._settingsFormDirty = false;
   const get = (id) => document.getElementById(id)?.value ?? "";
-  const password = get("cfg_mqtt_password");
+  const mqttPassword = get("cfg_mqtt_password");
 
   const ipMode = document.getElementById("cfg_ip_mode")?.value;
   const ip = ipMode === "static" ? get("cfg_ip").trim() : "";
@@ -1232,7 +1235,7 @@ function saveDeviceConfig() {
     sn,
     mqtt_server: get("cfg_mqtt_server").trim(),
     mqtt_user: get("cfg_mqtt_user").trim(),
-    mqtt_password: password.length > 0 ? password : "__keep__",
+    mqtt_password: mqttPassword.length > 0 ? mqttPassword : "__keep__",
     mqtt_enabled: get("cfg_mqtt_enabled") === "true",
     mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
     aht10_enabled: get("cfg_aht10_enabled") === "true",

@@ -1,3 +1,5 @@
+#include "webpage.h"
+
 static bool wsAuthenticated[WEBSOCKETS_SERVER_CLIENT_MAX] = {};
 
 void getHttpCredentials(char* user, size_t userSize, char* pass, size_t passSize) {
@@ -30,103 +32,7 @@ void printHttpCredentials() {
 
   debugLogPrintf("[AUTH]", "%-6s | Usuario : %-12s | Senha: %-10s", "HTTP", user, pass);
   debugLogPrintf("[AUTH]", "%-6s |         : %-12s | Senha: %-10s", "WS", "", PasswordWS);
-
 }
-
-// ==============================
-// FILES_PAGE — upload
-// ==============================
-const char FILES_PAGE[] PROGMEM = R"rawliteral(
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>LittleFS Manager</title>
-
-<link rel="stylesheet" href="/style.css" />
-
-</head>
-<body>
-
-<nav class="navbar">
-  <button class="navbar-burger" onclick="drawerOpen()" aria-label="Menu">
-    &#9776;
-  </button>
-  <span class="navbar-brand" id="name">IRHub-8266</span>
-  <div class="navbar-links">
-    <a href="/">Home</a>
-    <a href="/system">System</a>
-  </div>
-</nav>
-
-<div class="drawer-overlay" id="drawerOverlay" onclick="drawerClose()"></div>
-<div class="drawer" id="drawer">
-  <div class="drawer-title">IRHub-8266</div>
-  <a href="/">&#x1F3E0; Home</a>
-  <a href="/system">&#x1F916; System</a>
-</div>
-
-<div class="page-content">
-
-
-  <h2>📁 LittleFS File Manager</h2>
-
-<div class="card">
-  <h3>📤 Upload de arquivo</h3>
-
-  <div class="upload-row">
-    <input type="file" id="file">
-    <button class="btn-send" onclick="upload()">📤 Enviar</button>
-  </div>
-
-  <progress id="prog" value="0" max="100"></progress>
-</div>
-
-  <div class="card">
-    <table>
-      <tr>
-        <th>📄 Arquivo</th>
-        <th>📦 Tamanho</th>
-        <th>⚙️ Ações</th>
-      </tr>
-      %FILES%
-    </table>
-  </div>
-
-  <p><b>Uso:</b> %USAGE%</p>
-
-</div>
-
-<script>
-function upload(){
-  const file=document.getElementById('file').files[0];
-  if(!file){alert('Selecione um arquivo');return;}
-
-  const xhr=new XMLHttpRequest();
-
-  xhr.upload.onprogress=function(e){
-    if(e.lengthComputable){
-      document.getElementById('prog').value=(e.loaded/e.total)*100;
-    }
-  };
-
-  xhr.onload=function(){
-    alert('Upload concluído');
-    window.location.reload();
-  };
-
-  const formData=new FormData();
-  formData.append('upload',file);
-
-  xhr.withCredentials=true;
-  xhr.open('POST','/upload',true);
-  xhr.send(formData);
-}
-</script>
-
-</body>
-</html>
-)rawliteral";
 
 /************ SERVER ************/
 void setup_server() {
@@ -330,10 +236,6 @@ void handleUpload() {
 
     case UPLOAD_FILE_START:
       {
-        if (!checkAuth()) {
-          fsUploadFile = File();
-          return;
-        }
         String filename = upload.filename;
         if (!filename.startsWith("/")) filename = "/" + filename;
         debugLogPrintf("[FS]", "Upload START: %s", filename.c_str());
@@ -553,6 +455,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
               return;
             }
           }
+
+          // -------- Identificação --------
           const char* v_hostname = doc["hostname"] | hostname_buf;
           const char* v_mqtt_id = doc["mqtt_id"] | mqtt_id_buf;
           const char* v_grupo = doc["grupo"] | grupo_buf;
@@ -570,6 +474,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           const char* v_sn = doc["sn"] | snStr;
           const char* v_mqtt_server = doc["mqtt_server"] | mqtt_server;
 
+          // -------- MQTT --------
           mqtt_port = doc["mqtt_port"] | 1883;
           if (mqtt_port == 0) mqtt_port = 1883;
 
