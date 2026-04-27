@@ -435,7 +435,7 @@ void desligamentoUniversal() {
 
 void handleIRPostSend() {
   if (!irPostSendPending) return;
-  if (millis() - irPostSendMillis < 200) return;
+  if (millis() - irPostSendMillis < 100) return;
 
   irPostSendPending = false;
   enviandoCod = false;

@@ -19,24 +19,45 @@ button { background:#2563eb; color:white; border:none; cursor:pointer; }
 <h2>Configuração WiFi</h2>
 <form action='/save' method='POST'>
 
-<label>SSID (manual)</label>
-<input type='text' name='ssid_manual' placeholder='Digite o SSID'>
+<label>Redes disponíveis</label>
+<div id='net_list' style='max-height:160px;overflow-y:auto;background:#111827;border:1px solid #374151;border-radius:6px;margin-top:10px'></div>
 
-<label>Ou selecione uma rede</label>
-<select name='ssid_select'>
-<option value=''>-- Escolher rede --</option>
+<label style='margin-top:10px'>SSID</label>
+<input type='text' id='ssid_input' name='ssid_manual' placeholder='Selecione ou digite o SSID'>
+<script>
+var _nets=
+)rawliteral";
+
+const char PAGE_PORTAL_1B[] PROGMEM = R"rawliteral(;
+(function(){
+  var ul=document.getElementById('net_list');
+  _nets.forEach(function(n){
+    var d=document.createElement('div');
+    d.textContent=n.ssid+' ('+n.rssi+' dBm)';
+    d.style.cssText='padding:8px 10px;cursor:pointer;border-bottom:1px solid #374151;font-size:13px';
+    d.onmouseover=function(){this.style.background='#1e293b'};
+    d.onmouseout=function(){this.style.background=''};
+    d.onclick=function(){document.getElementById('ssid_input').value=n.ssid};
+    ul.appendChild(d);
+  });
+})();
+</script>
 )rawliteral";
 
 const char PAGE_PORTAL_2[] PROGMEM = R"rawliteral(
-</select>
-
 <label>Senha WiFi</label>
-<input type='password' name='wifi_pass'>
+<div style='display:flex;gap:8px;align-items:center;margin-top:10px'>
+<input type='password' id='wifi_pass' name='wifi_pass' style='margin-top:0'>
+<button type='button' onclick="togglePass('wifi_pass',this)" style='width:auto;padding:10px;margin-top:0'>👁</button>
+</div>
 
 <label>Senha Web (PasswordWS)</label>
-<input type='text' name='ws_pass' placeholder='Opcional' value=')rawliteral";
+<div style='display:flex;gap:8px;align-items:center;margin-top:10px'>
+<input type='password' id='ws_pass' name='ws_pass' placeholder='Opcional' value=')rawliteral";
 
-const char PAGE_PORTAL_2B[] PROGMEM = R"rawliteral('>
+const char PAGE_PORTAL_2B[] PROGMEM = R"rawliteral(' style='margin-top:0'>
+<button type='button' onclick="togglePass('ws_pass',this)" style='width:auto;padding:10px;margin-top:0'>👁</button>
+</div>
 
 <label>Grupo MQTT</label>
 <input type='text' name='grupo' value=')rawliteral";
@@ -49,10 +70,14 @@ const char PAGE_PORTAL_2C[] PROGMEM = R"rawliteral('>
 const char PAGE_PORTAL_3[] PROGMEM = R"rawliteral(">
 
 <label>Modo de IP</label>
-<select name='ip_mode' id='ip_mode' onchange="toggleIP(this.value)">
-  <option value='dhcp'>DHCP</option>
-  <option value='static'>IP Fixo</option>
-</select>
+<div style='display:flex;gap:20px;margin-top:10px'>
+  <label style='display:flex;align-items:center;gap:6px;cursor:pointer'>
+    <input type='radio' name='ip_mode' id='ip_dhcp' value='dhcp' onchange="toggleIP(this.value)" checked> DHCP
+  </label>
+  <label style='display:flex;align-items:center;gap:6px;cursor:pointer'>
+    <input type='radio' name='ip_mode' id='ip_static' value='static' onchange="toggleIP(this.value)"> IP Fixo
+  </label>
+</div>
 
 <div id='ip_fields' style='display:none'>
   <label>IP</label>
@@ -72,6 +97,12 @@ const char PAGE_PORTAL_6[] PROGMEM = R"rawliteral('>
 <script>
 function toggleIP(v){
   document.getElementById('ip_fields').style.display = v==='static'?'block':'none';
+}
+function togglePass(id,btn){
+  var el=document.getElementById(id);
+  var show=el.type==='password';
+  el.type=show?'text':'password';
+  btn.textContent=show?'🙈':'👁';
 }
 </script>
 

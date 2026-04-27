@@ -97,16 +97,21 @@ void sendPortalPage() {
 
   server.sendContent_P(PAGE_PORTAL_1);
 
+  // injeta JSON array de redes para o JS
+  server.sendContent("[");
   for (int i = 0; i < n; i++) {
-    char option[128];
-    snprintf(option, sizeof(option),
-             "<option value='%s'>%s (%d dBm)</option>",
-             WiFi.SSID(i).c_str(),
-             WiFi.SSID(i).c_str(),
+    char entry[128];
+    String ssidEscaped = WiFi.SSID(i);
+    ssidEscaped.replace("\"", "\\\"");
+    snprintf(entry, sizeof(entry),
+             "%s{\"ssid\":\"%s\",\"rssi\":%d}",
+             i > 0 ? "," : "",
+             ssidEscaped.c_str(),
              WiFi.RSSI(i));
-    server.sendContent(option);
+    server.sendContent(entry);
   }
-
+  server.sendContent("]");
+  server.sendContent_P(PAGE_PORTAL_1B);
   server.sendContent_P(PAGE_PORTAL_2);
   server.sendContent(PasswordWS);  // ws_pass
 
@@ -120,13 +125,16 @@ void sendPortalPage() {
 
   bool hasStaticIP = strlen(ipStr) > 6;
 
-  server.sendContent_P(PAGE_PORTAL_3);
-
-  String ipModeScript = "<script>document.getElementById('ip_mode').value='";
+  String ipModeScript = "<script>";
+  ipModeScript += hasStaticIP
+                    ? "document.getElementById('ip_static').checked=true;"
+                    : "document.getElementById('ip_dhcp').checked=true;";
+  ipModeScript += "toggleIP('";
   ipModeScript += hasStaticIP ? "static" : "dhcp";
-  ipModeScript += "';toggleIP(document.getElementById('ip_mode').value);</script>";
+  ipModeScript += "');</script>";
   server.sendContent(ipModeScript);
 
+  server.sendContent_P(PAGE_PORTAL_3);
   server.sendContent(hasStaticIP ? ipStr : "");
 
   server.sendContent_P(PAGE_PORTAL_4);
@@ -168,15 +176,13 @@ void startConfigPortal() {
 
   server.on("/save", HTTP_POST, []() {
     hasActivity = true;
-    String ssidManual = server.arg("ssid_manual");
-    String ssidSelect = server.arg("ssid_select");
     String wifiPass = server.arg("wifi_pass");
     String wsPass = server.arg("ws_pass");
     String grupo = server.arg("grupo");
     String hostname = server.arg("hostname");
 
     // prioridade: manual > select
-    String ssid = ssidManual.length() > 0 ? ssidManual : ssidSelect;
+    String ssid = server.arg("ssid_manual");
     ssid.trim();
 
     // validações
