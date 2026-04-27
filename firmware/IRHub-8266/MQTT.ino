@@ -72,7 +72,7 @@ void setup_mqtt() {
     debugLogPrint("[MQTT]", "Desabilitado pelo usuário.", true);
   }
 
-    debugLogPrint("[MQTT]", "Criando Tópicos");
+  debugLogPrint("[MQTT]", "Criando Tópicos");
 
   // -------- Publishers --------
   snprintf(topic_status, sizeof(topic_status), "%s/status", myTopic.c_str());
@@ -240,7 +240,7 @@ void MQTTsendInfoMQTT() {
 void MQTTsendUptime() {
   StaticJsonDocument<128> doc;
   doc["uptime_formatted"] = getFormattedUptime();
-  doc["uptime_seconds"] = millis() / 1000UL;
+  doc["uptime_seconds"] = uptimeSeconds;
 
   char msg[128];
   size_t len = serializeJson(doc, msg, sizeof(msg));
@@ -535,6 +535,7 @@ void processaComando(byte* payload, unsigned int length) {
 
     if (hostname) {
       strlcpy(hostname_buf, hostname, sizeof(hostname_buf));
+      recalcularTopicos();
       saveConfig();
       debugLogPrint("[MQTT]", "Hostname atualizado");
     }

@@ -43,6 +43,7 @@ void initPassword();
 // FEATURES
 // ================================================================
 extern bool aht10_enabled;
+extern uint32_t uptimeSeconds;
 
 // ================================================================
 // TÓPICOS MQTT

@@ -25,10 +25,23 @@ const state =
     uptimeInterval: null, // setInterval do contador de uptime
     saveConfigTimer: null, // timeout de confirmação de saveConfig
     remotesData: {}, // dados do remotes.json carregados em memória
-    selectedRemote: localStorage.getItem("selectedRemote") || null, // último modelo selecionado
     lastPayloads: {}, // cache dos últimos payloads recebidos por type
-    wsPassword: localStorage.getItem("wsPassword") || "",
+    selectedRemote: lsGet("selectedRemote") || null, // último modelo selecionado
+    wsPassword: lsGet("wsPassword"),
   });
+
+function lsGet(key, fallback = "") {
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+function lsSet(key, val) {
+  try {
+    localStorage.setItem(key, val);
+  } catch {}
+}
 
 /* =========================================================
    2. WEBSOCKET
@@ -82,11 +95,11 @@ function wsSend(msg) {
 }
 
 function showWSAuthModal() {
-  const pass = prompt("🔐 Informe a senha WS para continuar:");
+  const pass = prompt("🔐 Informe a senha para continuar:");
   if (pass === null) return;
-  try {
-    localStorage.setItem("wsPassword", pass);
-  } catch (_) { }
+
+  lsSet("wsPassword", pass);
+
   state.wsPassword = pass;
   wsSend({ cmd: "auth", password: pass });
 }
@@ -160,8 +173,8 @@ function initPageScript(path) {
       select.addEventListener("change", (e) => {
         state.selectedRemote = e.target.value;
         try {
-          localStorage.setItem("selectedRemote", e.target.value);
-        } catch (_) { }
+          lsSet("selectedRemote", e.target.value);
+        } catch (_) {}
         loadButtons(e.target.value);
       });
     }
@@ -280,6 +293,11 @@ function handleWSMessage(event) {
     case "authOk":
       flushQueue();
       state.configPopulated = false;
+      replayLastPayloads();
+      break;
+
+    case "authRequired":
+      wsSend({ cmd: "auth", password: state.wsPassword || "" });
       break;
 
     case "authError":
@@ -568,7 +586,7 @@ if (!state.uptimeInterval) restartUptimeInterval();
 // Adiciona entrada ao histórico, ignorando duplicatas consecutivas.
 function saveIRToHistory(payload) {
   if (payload.dec === undefined || payload.dec === null) return;
-  if (state.irHistory[0]?.dec === payload.dec) return;
+  if (String(state.irHistory[0]?.dec) === String(payload.dec)) return;
   state.irHistory.unshift(payload);
   if (state.irHistory.length > 10) state.irHistory.pop();
   renderIRHistory();
@@ -594,7 +612,7 @@ function renderIRHistory() {
     // Click simples: copia hex para clipboard.
     li.onclick = () => {
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(d.hex).catch(() => { });
+        navigator.clipboard.writeText(d.hex).catch(() => {});
       } else {
         // Fallback para browsers sem Clipboard API.
         const ta = document.createElement("textarea");
@@ -761,7 +779,7 @@ async function importConfig() {
   if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?"))
     return;
 
-  const pass = prompt("🔐 Informe a senha HTTP para continuar:");
+  const pass = prompt("🔐 Informe a senha para continuar:");
   if (!pass) return;
 
   const file = document.getElementById("configFile")?.files[0];
@@ -834,7 +852,7 @@ async function importRemotes() {
     return;
   }
 
-  const pass = prompt("🔐 Informe a senha HTTP para continuar:");
+  const pass = prompt("🔐 Informe a senha para continuar:");
   if (!pass) return;
 
   const formData = new FormData();
@@ -887,7 +905,7 @@ function startOTAUpdate() {
   )
     return;
 
-  const pass = prompt("🔐 Informe a senha OTA para continuar:");
+  const pass = prompt("🔐 Informe a senha para continuar:");
   if (!pass) return;
 
   const formData = new FormData();
@@ -1038,7 +1056,13 @@ function loadButtons(model) {
     if (btn.background) b.style.background = `#${btn.background}`;
     if (btn.color) b.style.color = `#${btn.color}`;
 
-    b.onclick = () => sendIR(btn.protocol, btn.code, btn.bits, b);
+    b.onclick = () => {
+      if (!btn.code) {
+        showIrToast("Botão sem código IR", true);
+        return;
+      }
+      sendIR(btn.protocol, btn.code, btn.bits, b);
+    };
     container.appendChild(b);
   });
 }
@@ -1092,10 +1116,11 @@ function sendIRManual() {
 
   if (!code) return alert("Digite um código IR.");
 
-  const isHex = /^0x[0-9a-fA-F]+$/i.test(code) || /^[0-9a-fA-F]+$/i.test(code);
+  const isHex0x = /^0x[0-9a-fA-F]+$/i.test(code);
+  const isHexRaw = /^[0-9a-fA-F]*[a-fA-F][0-9a-fA-F]*$/.test(code);
   const isDec = /^\d+$/.test(code);
 
-  if (!isHex && !isDec) {
+  if (!isHex0x && !isHexRaw && !isDec) {
     return alert(
       "Código inválido. Use hex (0x20DF10EF) ou decimal (551489775).",
     );
@@ -1140,14 +1165,14 @@ function rebootDevice() {
 
 function openWifiPortal() {
   if (!confirm("Abrir portal de configuração WiFi?")) return;
-  const pass = prompt("🔐 Informe a senha WS para continuar:");
+  const pass = prompt("🔐 Informe a senha para continuar:");
   if (!pass) return;
   wsSend({ cmd: "wifiPortal", password: pass });
 }
 
 function resetWifi() {
   if (!confirm("Resetar configurações WiFi?")) return;
-  const pass = prompt("🔐 Informe a senha WS para continuar:");
+  const pass = prompt("🔐 Informe a senha para continuar:");
   if (!pass) return;
   wsSend({ cmd: "resetWifi", password: pass });
 }
@@ -1155,7 +1180,7 @@ function resetWifi() {
 function resetConfig() {
   if (!confirm("Apagar config.json? Isso apagará todas as configurações!"))
     return;
-  const pass = prompt("🔐 Informe a senha WS para continuar:");
+  const pass = prompt("🔐 Informe a senha para continuar:");
   if (!pass) return;
   wsSend({ cmd: "resetConfig", password: pass });
 }
@@ -1191,7 +1216,8 @@ function populateConfig(data) {
   // Detecta modo IP (DHCP ou fixo) e exibe campos correspondentes.
   const modeEl = document.getElementById("cfg_ip_mode");
   if (modeEl) {
-    modeEl.value = data.ip && data.ip !== "0.0.0.0" ? "static" : "dhcp";
+    modeEl.value =
+      data.ip && data.ip !== "" && data.ip !== "0.0.0.0" ? "static" : "dhcp";
     toggleIPFields();
   }
 
@@ -1240,6 +1266,7 @@ function saveDeviceConfig() {
     mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
     aht10_enabled: get("cfg_aht10_enabled") === "true",
     ws_password: wsPassword.length > 0 ? wsPassword : "__keep__",
+    ir_receptor: state.irModeIndex,
   });
 
   showCfgStatus("⏳ Salvando...", "#facc15");

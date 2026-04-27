@@ -177,6 +177,13 @@ void loop() {
     if (aht10_enabled) wsSendAHT10();
   }
 
+  // ---- UPTIME ----
+  static unsigned long lastUptimeMillis = 0;
+  if (now - lastUptimeMillis >= 1000) {
+    lastUptimeMillis += 1000;
+    uptimeSeconds++;
+  }
+
   // ---- SYSTEM WS ----
   static unsigned long tSystem = 0;
   if (now - tSystem > 5000) {
@@ -260,18 +267,13 @@ void loop() {
 }
 
 String getFormattedUptime() {
-  unsigned long uptimeMillis = millis();  // Tempo desde o boot em milissegundos
-  unsigned long totalSeconds = uptimeMillis / 1000;
-
+  uint32_t totalSeconds = uptimeSeconds;
   unsigned int days = totalSeconds / 86400;
   totalSeconds %= 86400;
-
   unsigned int hours = totalSeconds / 3600;
   totalSeconds %= 3600;
-
   unsigned int minutes = totalSeconds / 60;
   unsigned int seconds = totalSeconds % 60;
-
   char buffer[32];
   snprintf(buffer, sizeof(buffer), "%ud %02uh %02um %02us", days, hours, minutes, seconds);
   return String(buffer);

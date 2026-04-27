@@ -319,7 +319,5 @@ void recalcularTopicos() {
 // LOG PORTAL
 // ==========================
 void printPortalCredentials() {
-  debugLogPrintf("[AUTH]",
-                 "%-6s | SSID: %-12s | Senha: %-10s | %s",
-                 "Portal", hostname_buf, PasswordPortal, "http://192.168.4.1/start");
+  debugLogPrintf("[AUTH]", "%-6s | SSID    : %-12s | Senha: %-10s | %s", "Portal", hostname_buf, PasswordPortal, "http://192.168.4.1/start");
 }

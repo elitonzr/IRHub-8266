@@ -186,6 +186,8 @@ const char FILES_PAGE[] PROGMEM = R"rawliteral(
 
 </div>
 
+<script src="/app.js"></script>
+
 <script>
 function upload(){
   const file=document.getElementById('file').files[0];

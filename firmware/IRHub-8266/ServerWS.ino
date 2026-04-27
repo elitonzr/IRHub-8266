@@ -171,20 +171,27 @@ void setup_server() {
     }
   });
 
+  static bool uploadAuthorized = false;
+
   // --- Gerenciamento de Arquivos (Upload) ---
   server.on(
     "/upload", HTTP_POST, []() {
-      if (!checkAuth()) return;
-
+      if (!uploadAuthorized) {
+        server.send(401, "text/plain", "Unauthorized");
+        return;
+      }
+      uploadAuthorized = false;
       server.sendHeader("Location", "/files");
       server.send(303);
     },
     []() {
-      if (!checkAuth()) {
+      if (server.upload().status == UPLOAD_FILE_START) {
+        uploadAuthorized = checkAuth();
+      }
+      if (!uploadAuthorized) {
         if (fsUploadFile) fsUploadFile.close();
         return;
       }
-
       handleUpload();
     });
 
@@ -293,14 +300,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
   switch (type) {
 
     case WStype_CONNECTED:
-      debugLogPrintf("[WS]", "cliente %u conectado", num);
-      wsSendSystem();
-      wsSendNetwork();
-      wsSendMQTT();
-      wsSendInfoIR();
-      wsSendInfoIR_Receptor();
-      wsSendLEDB();
       wsAuthenticated[num] = false;
+      webSocket.sendTXT(num, "{\"type\":\"authRequired\"}");
       break;
 
     case WStype_DISCONNECTED:
@@ -324,19 +325,25 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         const char* cmd = doc["cmd"];
 
-        if (!(strcmp(cmd, "auth") == 0)) {
+        if (!cmd) return;
+
+        if (strcmp(cmd, "auth") != 0) {
           debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
         }
-
-        if (!cmd) return;
 
         if (strcmp(cmd, "auth") == 0) {
           const char* provided = doc["password"] | "";
 
           if (strcmp(provided, PasswordWS) == 0) {
-            debugLogPrint("[AUTH]", "Autenticação ok!");
             wsAuthenticated[num] = true;
+            debugLogPrint("[AUTH]", "Autenticação ok!");
             webSocket.sendTXT(num, "{\"type\":\"authOk\"}");
+            wsSendSystem();
+            wsSendNetwork();
+            wsSendMQTT();
+            wsSendInfoIR();
+            wsSendInfoIR_Receptor();
+            wsSendLEDB();
           } else {
             debugLogPrint("[AUTH]", "Não autenticado");
             wsAuthenticated[num] = false;
@@ -411,7 +418,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           return;
         }
 
-        else if (strcmp(cmd, "wifiPortal") == 0) {
+        if (strcmp(cmd, "wifiPortal") == 0) {
           char user[16], pass[32];
           getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
           const char* provided = doc["password"] | "";
@@ -427,9 +434,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           webSocket.broadcastTXT("{\"type\":\"wifiPortal\"}");
           delay(500);
           startConfigPortal();
+          return;
         }
 
-        else if (strcmp(cmd, "resetWifi") == 0) {
+        if (strcmp(cmd, "resetWifi") == 0) {
           char user[16], pass[32];
           getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
           const char* provided = doc["password"] | "";
@@ -443,9 +451,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           webSocket.broadcastTXT("{\"type\":\"resetWifi\"}");
           delay(500);
           resetWifi();
+          return;
         }
 
-        else if (strcmp(cmd, "saveConfig") == 0) {
+        if (strcmp(cmd, "saveConfig") == 0) {
           debugLogPrint("[WS]", "saveConfig recebido");
 
           const char* provided = doc["password"] | "";
@@ -495,12 +504,17 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           strlcpy(mqtt_server, v_mqtt_server, sizeof(mqtt_server));
           strlcpy(mqtt_user_buf, v_mqtt_user, sizeof(mqtt_user_buf));
 
-          if (strcmp(v_mqtt_password, "__keep__") != 0) {
+          if (strcmp(v_mqtt_password, "__keep__") != 0 && strlen(v_mqtt_password) > 0) {
             strlcpy(mqtt_password_buf, v_mqtt_password, sizeof(mqtt_password_buf));
           }
 
           bool v_mqtt_enabled = doc["mqtt_enabled"] | mqtt_enabled;
           mqtt_enabled = v_mqtt_enabled;
+
+          int v_ir_receptor = doc["ir_receptor"] | (int)IR_ReceptorEstado;
+          if (v_ir_receptor >= 0 && v_ir_receptor <= 11) {
+            IR_ReceptorEstado = static_cast<IR_ReceptorMode>(v_ir_receptor);
+          }
 
           bool aht10_prev = aht10_enabled;
           aht10_enabled = doc["aht10_enabled"] | aht10_enabled;
@@ -530,7 +544,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           webSocket.broadcastTXT("{\"type\":\"configSaved\"}");
         }
 
-        else if (strcmp(cmd, "resetConfig") == 0) {
+        if (strcmp(cmd, "resetConfig") == 0) {
           char user[16], pass[32];
           getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
           const char* provided = doc["password"] | "";
@@ -544,14 +558,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           resetConfig();
         }
 
-        else if (strcmp(cmd, "reboot") == 0) {
+        if (strcmp(cmd, "reboot") == 0) {
           debugLogPrint("[WS]", "Reboot solicitado");
           webSocket.broadcastTXT("{\"type\":\"reboot\"}");
           delay(500);
           ESP.restart();
         }
 
-        else if (strcmp(cmd, "telnetCmd") == 0) {
+        if (strcmp(cmd, "telnetCmd") == 0) {
           const char* line = doc["line"] | "";
           if (strlen(line) > 0) {
             char buf[TELNET_BUFFER];
@@ -571,14 +585,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
 void wsSendSystem() {
   // DynamicJsonDocument doc(512);
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<768> doc;
 
   doc["type"] = "system";
   doc["name"] = mqtt_id_buf;
   doc["buildDateTime"] = buildDateTime;
   doc["buildVersion"] = buildVersion;
   doc["uptime"] = getFormattedUptime();
-  doc["uptime_seconds"] = millis() / 1000UL;
+  doc["uptime_seconds"] = uptimeSeconds;
   doc["heap"] = ESP.getFreeHeap();
 
   JsonObject cfg = doc.createNestedObject("config");
@@ -601,9 +615,9 @@ void wsSendSystem() {
   cfg["mqtt_enabled"] = mqtt_enabled;
 
   cfg["aht10_enabled"] = aht10_enabled;
-  doc["ir_receptor"] = (int)IR_ReceptorEstado;
+  cfg["ir_receptor"] = (int)IR_ReceptorEstado;
 
-  char buffer[512];
+  char buffer[768];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
     debugLogPrint("[WS]", "Erro: JSON system truncado");
