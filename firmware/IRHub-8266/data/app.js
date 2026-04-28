@@ -41,7 +41,7 @@ function lsGet(key, fallback = "") {
 function lsSet(key, val) {
   try {
     localStorage.setItem(key, val);
-  } catch {}
+  } catch { }
 }
 
 /* =========================================================
@@ -201,7 +201,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           lsSet("selectedRemote", e.target.value);
-        } catch (_) {}
+        } catch (_) { }
         loadButtons(e.target.value);
       });
     }
@@ -327,7 +327,7 @@ function handleWSMessage(event) {
       break;
 
     case "authRequired":
-      wsSend({ cmd: "auth", password: state.wsPassword || "" });
+      wsSend({ cmd: "getChipId" });
       break;
 
     case "authError":
@@ -577,10 +577,7 @@ function applyIRReceptorState(data) {
 // Reaplica o último estado conhecido de cada tipo ao navegar entre páginas.
 function replayLastPayloads() {
   const updaters = {
-    system: (data) =>
-      updateSystemWS(
-        state.configPopulated ? { ...data, config: undefined } : data,
-      ),
+    system: (data) => updateSystemWS(data),
     ledb: updateLEDBWS,
     sensor: updateSensorWS,
     ir: updateIRWS,
@@ -731,29 +728,54 @@ function saveLogToHistory(data) {
 }
 
 // Renderiza o histórico de logs no DOM.
+
 function renderLogHistory() {
   const el = document.getElementById("log");
   if (!el) return;
 
-  // Rebuild completo ao navegar de volta para /system
-  if (el.childNodes.length === 0 && state.logHistory.length > 0) {
-    el.innerHTML = state.logHistory.join("<br>");
-    el.scrollTop = el.scrollHeight;
-    return;
+  if (el.childNodes.length === 0) {
+    state.logRenderedIndex = 0;
   }
 
-  // Append incremental da última linha
-  const last = state.logHistory[state.logHistory.length - 1];
-  if (last === undefined) return;
-  const span = document.createElement("span");
-  span.innerHTML = last + "<br>";
-  el.appendChild(span);
+  const slice = state.logHistory.slice(state.logRenderedIndex);
+  if (slice.length === 0) return;
 
-  // Limita nós filhos a 200
+  const frag = document.createDocumentFragment();
+  slice.forEach((line) => {
+    const span = document.createElement("span");
+    span.innerHTML = line + "<br>";
+    frag.appendChild(span);
+  });
+  el.appendChild(frag);
+  state.logRenderedIndex = state.logHistory.length;
+
   while (el.childNodes.length > 200) el.removeChild(el.firstChild);
-
   el.scrollTop = el.scrollHeight;
 }
+
+// function renderLogHistory() {
+//   const el = document.getElementById("log");
+//   if (!el) return;
+
+//   // Rebuild completo ao navegar de volta para /system
+//   if (el.childNodes.length === 0 && state.logHistory.length > 0) {
+//     el.innerHTML = state.logHistory.join("<br>");
+//     el.scrollTop = el.scrollHeight;
+//     return;
+//   }
+
+//   // Append incremental da última linha
+//   const last = state.logHistory[state.logHistory.length - 1];
+//   if (last === undefined) return;
+//   const span = document.createElement("span");
+//   span.innerHTML = last + "<br>";
+//   el.appendChild(span);
+
+//   // Limita nós filhos a 200
+//   while (el.childNodes.length > 200) el.removeChild(el.firstChild);
+
+//   el.scrollTop = el.scrollHeight;
+// }
 
 // Limpa o histórico de logs.
 function clearLogs() {
@@ -1112,8 +1134,6 @@ function loadButtons(model) {
       container.appendChild(label);
       return;
     }
-
-    if (btn.type && btn.type !== "button") return;
 
     if (btn.type && btn.type !== "button") return;
 

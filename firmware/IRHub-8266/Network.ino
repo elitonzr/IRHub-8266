@@ -145,7 +145,6 @@ void sendPortalPage() {
   server.sendContent(PasswordPortal);  // portal_pass
   server.sendContent_P(PAGE_PORTAL_2D);
   server.sendContent(grupo_buf);  // grupo
-  server.sendContent(grupo_buf);  // grupo
 
   server.sendContent_P(PAGE_PORTAL_2C);
   String safeHost = hostname_buf;

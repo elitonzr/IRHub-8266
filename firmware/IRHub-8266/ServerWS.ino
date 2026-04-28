@@ -339,8 +339,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         if (!cmd) return;
 
-          debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
-
         if (strcmp(cmd, "auth") != 0) {
           debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
         }
@@ -450,11 +448,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         }
 
         if (strcmp(cmd, "wifiPortal") == 0) {
-          char user[16], pass[32];
-          getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
+          // CORRIGIDO
           const char* provided = doc["password"] | "";
 
-          if (strcmp(provided, pass) != 0) {
+          if (strcmp(provided, PasswordPortal) != 0) {
             debugLogPrint("[ERROR]", "Erro de autenticação");
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
@@ -469,11 +466,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         }
 
         if (strcmp(cmd, "resetWifi") == 0) {
-          char user[16], pass[32];
-          getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
           const char* provided = doc["password"] | "";
 
-          if (strcmp(provided, pass) != 0) {
+          if (strcmp(provided, PasswordPortal) != 0) {
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
           }
@@ -621,7 +616,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
 void wsSendSystem() {
   // DynamicJsonDocument doc(512);
-  StaticJsonDocument<768> doc;
+  StaticJsonDocument<1024> doc;
 
   doc["type"] = "system";
   doc["name"] = mqtt_id_buf;
@@ -656,7 +651,7 @@ void wsSendSystem() {
     configDirty = false;
   }
 
-  char buffer[768];
+  char buffer[1024];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));
   if (len == 0 || len >= sizeof(buffer)) {
     debugLogPrint("[WS]", "Erro: JSON system truncado");
