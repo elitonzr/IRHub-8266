@@ -59,6 +59,14 @@ const char PAGE_PORTAL_2B[] PROGMEM = R"rawliteral(' style='margin-top:0'>
 <button type='button' onclick="togglePass('ws_pass',this)" style='width:auto;padding:10px;margin-top:0'>👁</button>
 </div>
 
+<label>Senha Portal AP</label>
+<div style='display:flex;gap:8px;align-items:center;margin-top:10px'>
+<input type='password' id='portal_pass' name='portal_pass' placeholder='Opcional' value=')rawliteral";
+
+const char PAGE_PORTAL_2D[] PROGMEM = R"rawliteral(' style='margin-top:0'>
+<button type='button' onclick="togglePass('portal_pass',this)" style='width:auto;padding:10px;margin-top:0'>👁</button>
+</div>
+
 <label>Grupo MQTT</label>
 <input type='text' name='grupo' value=')rawliteral";
 

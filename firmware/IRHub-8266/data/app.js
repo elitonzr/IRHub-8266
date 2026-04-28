@@ -28,6 +28,7 @@ const state =
     lastPayloads: {}, // cache dos últimos payloads recebidos por type
     selectedRemote: lsGet("selectedRemote") || null, // último modelo selecionado
     wsPassword: lsGet("wsPassword"),
+    wsChipId: null,
   });
 
 function lsGet(key, fallback = "") {
@@ -40,7 +41,7 @@ function lsGet(key, fallback = "") {
 function lsSet(key, val) {
   try {
     localStorage.setItem(key, val);
-  } catch { }
+  } catch {}
 }
 
 /* =========================================================
@@ -56,13 +57,22 @@ function connectWS() {
 
   state.ws = new WebSocket(`ws://${location.hostname}:81`);
 
+  // state.ws.onopen = () => {
+  //   updateWSStatus(true);
+  //   if (state.reconnectTimer) {
+  //     clearTimeout(state.reconnectTimer);
+  //     state.reconnectTimer = null;
+  //   }
+  //   wsSend({ cmd: "auth", password: state.wsPassword || "" });
+  // };
+
   state.ws.onopen = () => {
     updateWSStatus(true);
     if (state.reconnectTimer) {
       clearTimeout(state.reconnectTimer);
       state.reconnectTimer = null;
     }
-    wsSend({ cmd: "auth", password: state.wsPassword || "" });
+    wsSend({ cmd: "getChipId" });
   };
 
   state.ws.onclose = () => {
@@ -104,11 +114,28 @@ function showWSAuthModal() {
   wsSend({ cmd: "auth", password: pass });
 }
 
+// function showWSAuthModal() {
+//   const pass = prompt("🔐 Informe a senha para continuar:");
+//   if (pass === null) return;
+
+//   lsSet("wsPassword", pass);
+//   state.wsPassword = pass;
+//   wsSend({ cmd: "getChipId" });
+// }
+
 // Envia todas as mensagens enfileiradas após reconexão.
 function flushQueue() {
   while (state.wsQueue.length && state.ws.readyState === WebSocket.OPEN) {
     state.ws.send(state.wsQueue.shift());
   }
+}
+
+async function hashPassword(password, chipId) {
+  const msg = password + chipId;
+  const encoded = new TextEncoder().encode(msg);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /* =========================================================
@@ -174,7 +201,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           lsSet("selectedRemote", e.target.value);
-        } catch (_) { }
+        } catch (_) {}
         loadButtons(e.target.value);
       });
     }
@@ -200,7 +227,6 @@ function initPageScript(path) {
         });
       });
   }
-
 }
 
 // Marca o link ativo na navbar e no drawer conforme o path atual.
@@ -230,6 +256,12 @@ function handleWSMessage(event) {
   if (!data.type) return;
 
   switch (data.type) {
+    case "chipId":
+      state.wsChipId = data.value;
+      hashPassword(state.wsPassword || "", data.value).then((hash) => {
+        wsSend({ cmd: "auth", hash });
+      });
+      break;
     case "system":
       updateSystemWS(data);
       break;
@@ -623,7 +655,8 @@ function renderIRHistory() {
     // Click simples: copia hex para clipboard.
     li.onclick = () => {
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(d.hex)
+        navigator.clipboard
+          .writeText(d.hex)
           .then(() => showIrToast("✅ Copiado!"))
           .catch(() => showIrToast("❌ Falha ao copiar", true));
       } else {
@@ -1305,7 +1338,10 @@ function saveDeviceConfig() {
     mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
     aht10_enabled: get("cfg_aht10_enabled") === "true",
     ws_password: wsPassword.length > 0 ? wsPassword : "__keep__",
-    portal_password: get("cfg_portal_password").length > 0 ? get("cfg_portal_password") : "__keep__",
+    portal_password:
+      get("cfg_portal_password").length > 0
+        ? get("cfg_portal_password")
+        : "__keep__",
     ir_receptor: state.irModeIndex,
   });
 
@@ -1329,7 +1365,9 @@ function showCfgStatus(msg, color) {
   el.textContent = msg;
   el.style.color = color;
   if (color === "#22c55e") {
-    document.querySelectorAll(".field-dirty").forEach((f) => f.classList.remove("field-dirty"));
+    document
+      .querySelectorAll(".field-dirty")
+      .forEach((f) => f.classList.remove("field-dirty"));
   }
   setTimeout(() => (el.textContent = ""), 3000);
 }

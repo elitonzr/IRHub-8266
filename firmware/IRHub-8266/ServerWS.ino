@@ -1,4 +1,5 @@
 #include "webpage.h"
+#include <bearssl/bearssl_hash.h>
 
 static bool wsAuthenticated[WEBSOCKETS_SERVER_CLIENT_MAX] = {};
 
@@ -294,13 +295,25 @@ void redirectToFiles(const char* motivo) {
   server.send(200, "text/html", html);
 }
 
+void sha256Hex(const char* input, char* outHex64) {
+  br_sha256_context ctx;
+  br_sha256_init(&ctx);
+  br_sha256_update(&ctx, input, strlen(input));
+  uint8_t hash[32];
+  br_sha256_out(&ctx, hash);
+  for (int i = 0; i < 32; i++) {
+    sprintf(outHex64 + i * 2, "%02x", hash[i]);
+  }
+  outHex64[64] = '\0';
+}
+
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
 
   switch (type) {
 
     case WStype_CONNECTED:
-      wsAuthenticated[num] = false;
       webSocket.sendTXT(num, "{\"type\":\"authRequired\"}");
+      wsAuthenticated[num] = false;
       break;
 
     case WStype_DISCONNECTED:
@@ -326,14 +339,33 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         if (!cmd) return;
 
+          debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
+
         if (strcmp(cmd, "auth") != 0) {
           debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
         }
 
-        if (strcmp(cmd, "auth") == 0) {
-          const char* provided = doc["password"] | "";
+        if (strcmp(cmd, "getChipId") == 0) {
+          char resp[64];
+          snprintf(resp, sizeof(resp), "{\"type\":\"chipId\",\"value\":\"%08X\"}", ESP.getChipId());
+          webSocket.sendTXT(num, resp);
+          return;
+        }
 
-          if (strcmp(provided, PasswordWS) == 0) {
+        // if (strcmp(cmd, "auth") == 0) {
+        //   const char* provided = doc["password"] | "";
+
+        //   if (strcmp(provided, PasswordWS) == 0) {
+        if (strcmp(cmd, "auth") == 0) {
+          const char* provided = doc["hash"] | "";
+
+          char expected[65];
+          char toHash[48];
+          snprintf(toHash, sizeof(toHash), "%s%08X", PasswordWS, ESP.getChipId());
+          sha256Hex(toHash, expected);
+
+          if (strcmp(provided, expected) == 0) {
+
             wsAuthenticated[num] = true;
             debugLogPrint("[AUTH]", "Autenticação ok!");
             webSocket.sendTXT(num, "{\"type\":\"authOk\"}");

@@ -142,6 +142,9 @@ void sendPortalPage() {
   server.sendContent(PasswordWS);  // ws_pass
 
   server.sendContent_P(PAGE_PORTAL_2B);
+  server.sendContent(PasswordPortal);  // portal_pass
+  server.sendContent_P(PAGE_PORTAL_2D);
+  server.sendContent(grupo_buf);  // grupo
   server.sendContent(grupo_buf);  // grupo
 
   server.sendContent_P(PAGE_PORTAL_2C);
@@ -158,7 +161,6 @@ void sendPortalPage() {
   ipModeScript += "toggleIP('";
   ipModeScript += hasStaticIP ? "static" : "dhcp";
   ipModeScript += "');</script>";
-  server.sendContent(ipModeScript);
 
   server.sendContent_P(PAGE_PORTAL_3);
   server.sendContent(hasStaticIP ? ipStr : "");
@@ -170,6 +172,7 @@ void sendPortalPage() {
   server.sendContent(hasStaticIP ? snStr : "");
 
   server.sendContent_P(PAGE_PORTAL_6);
+  server.sendContent(ipModeScript);
 }
 
 // ==========================
@@ -209,6 +212,10 @@ void startConfigPortal() {
       hasActivity = true;
       String wifiPass = server.arg("wifi_pass");
       String wsPass = server.arg("ws_pass");
+      String portalPass = server.arg("portal_pass");
+      if (portalPass.length() > 0) {
+        strlcpy(PasswordPortal, portalPass.c_str(), sizeof(PasswordPortal));
+      }
       String grupo = server.arg("grupo");
       String hostname = server.arg("hostname");
 
@@ -352,4 +359,3 @@ void recalcularTopicos() {
 void printPortalCredentials() {
   debugLogPrintf("[AUTH]", "%-6s | SSID    : %-12s | Senha: %-10s | %s", "Portal", hostname_buf, PasswordPortal, "http://192.168.4.1/start");
 }
-
