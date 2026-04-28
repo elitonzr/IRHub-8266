@@ -64,14 +64,7 @@ const char* mqttStateStr(int state) {
 void setup_mqtt() {
 
   debugLogPrint("[MQTT]", "=================================");
-  debugLogPrint("[MQTT]", "  Configurando o servidor MQTT  ");
-  debugLogPrint("[MQTT]", "=================================!");
-
-
-  if (!mqtt_enabled) {
-    debugLogPrint("[MQTT]", "Desabilitado pelo usuário.", true);
-  }
-
+  debugLogPrint("[MQTT]", "Configurando o servidor MQTT  ");
   debugLogPrint("[MQTT]", "Criando Tópicos");
 
   // -------- Publishers --------
@@ -102,7 +95,10 @@ void setup_mqtt() {
     debugLogPrint("[MQTT]", "Tópicos Criados");
     debugLogPrintf("[MQTT]", "Servidor: %s | Client ID: %s | Tópico principal: %s/#", mqtt_server, clientID, myTopic);
     debugLogPrint("[MQTT]", "configurado!", true);
+  } else {
+    debugLogPrint("[MQTT]", "Desabilitado pelo usuário.");
   }
+  debugLogPrint("[MQTT]", "=================================", true);
 }
 
 void mqtt_reconnect() {

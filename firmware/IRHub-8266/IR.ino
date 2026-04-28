@@ -55,18 +55,14 @@ IRLastData lastIR = {
 // ============================================================
 
 void setup_IR() {
-  Serial.println();
-  Serial.println("=================================");
-  Serial.println("           IR SETUP              ");
-  Serial.println("=================================");
+  debugLogPrint("[IR]", "=================================");
+  debugLogPrint("[IR]", "Configurando IR");
 
   irsend.begin();       // Inicializa emissor
   irrecv.enableIRIn();  // Inicializa receptor
-
-  Serial.print("Emissor   : GPIO ");
-  Serial.println(kIrLed);
-  Serial.print("Receptor  : GPIO ");
-  Serial.println(kRecvPin);
+  
+  debugsendInfoIR();
+  debugLogPrint("[IR]", "=================================", true);
 }
 
 // ============================================================
@@ -322,8 +318,8 @@ void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, co
 
 void debugSendIREmissor(uint64_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
   debugLogPrintf("[IR]", "status:%s origem:%s Protocol:%s | Bits:%d | Code:0x%08llX (%llu)",
-            status, origem, getIRProtocol(protocol), bits,
-            (unsigned long long)code, (unsigned long long)code);
+                 status, origem, getIRProtocol(protocol), bits,
+                 (unsigned long long)code, (unsigned long long)code);
 }
 
 // Notifica WS, MQTT e telnet com o resultado de um envio IR.

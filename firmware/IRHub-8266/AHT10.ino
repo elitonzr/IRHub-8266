@@ -11,25 +11,25 @@ float temperatura = 0.0f;  // Variável para armazenar a temperatura
 AHT10State estadoAHT10 = AHT10_OFFLINE;
 
 void setup_AHT10() {
-
-  Serial.println();
-  Serial.println("=================================");
-  Serial.println("        Configurando AHT10        ");
-  Serial.println("=================================");
+  debugLogPrint("[AHT10]", "=================================");
+  debugLogPrint("[AHT10]", "Configurando AHT10");
 
   if (!aht10_enabled) {
-    Serial.println("[AHT10]   - Desabilitado.");
+    debugLogPrint("[AHT10]", "Desabilitado");
+    debugLogPrint("[AHT10]", "=================================", true);
     return;
   }
 
   Wire.begin(12, 13);
   if (!aht.begin(&Wire)) {
-    Serial.println("    Falha ao detectar o AHT10.");
+    debugLogPrint("[AHT10]", "Falha ao detectar o AHT10.");
     estadoAHT10 = AHT10_OFFLINE;
   } else {
-    Serial.println("    AHT10 Detectado com sucesso!");
+    debugLogPrint("[AHT10]", "Detectado com sucesso!");
     estadoAHT10 = AHT10_ONLINE;
   }
+
+  debugLogPrint("[AHT10]", "=================================", true);
 }
 
 void lerSensorAHT10() {

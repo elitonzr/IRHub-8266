@@ -65,6 +65,9 @@ bool tryWiFiConnect() {
 // SETUP WIFI
 // ==========================
 void setup_WiFi() {
+  debugLogPrint("[WiFi]", "=================================");
+  debugLogPrint("[WiFi]", "Configurando WiFi");
+
   setLedMode(LED_WIFI_DISCONNECTED);
   loadConfig();
 
@@ -80,10 +83,33 @@ void setup_WiFi() {
 
     setLedMode(LED_IDLE);
     recalcularTopicos();
+    debugLogPrint("[WiFi]", "=================================", true);
     return;
+  } else {
+    debugLogPrint("[WiFi]", "Desconectado, iniciando portal");
   }
 
+  debugLogPrint("[WiFi]", "=================================", true);
   startConfigPortal();
+}
+
+void wifi_watchdog() {
+  if (wifiState != WIFI_CONNECTED) return;
+
+  if (WiFi.status() == WL_CONNECTED) return;
+
+  debugLogPrint("[WiFi]", "Conexão perdida. Tentando reconectar...");
+  setLedMode(LED_WIFI_CONNECTING);
+
+  if (tryWiFiConnect()) {
+    setLedMode(LED_IDLE);
+    debugLogPrint("[WiFi]", "Reconectado!");
+    wsSendNetwork();
+  } else {
+    debugLogPrint("[WiFi]", "Falha ao reconectar. Reiniciando...");
+    delay(500);
+    ESP.restart();
+  }
 }
 
 // ==========================
@@ -150,11 +176,12 @@ void sendPortalPage() {
 // PORTAL
 // ==========================
 void startConfigPortal() {
-
+  debugLogPrint("[Portal]", "=================================");
+  debugLogPrint("[Portal]", "Iniciando Portal");
   wifiState = WIFI_AP_MODE;
 
   setLedMode(LED_WIFI_DISCONNECTED);
-  debugLogPrint("[WiFi]", "Modo AP - Portal config");
+  debugLogPrint("[Portal]", "Modo AP - Portal config");
 
   WiFi.mode(WIFI_AP);
   WiFi.softAP(hostname_buf, PasswordPortal);
@@ -289,12 +316,10 @@ void startConfigPortal() {
   }
   lastActivity = millis();
 
-  // unsigned long tPortal = millis();
-
   while (true) {
 
     if (millis() - lastActivity > 180000) {
-      debugLogPrint("[WiFi]", "Timeout portal");
+      debugLogPrint("[Portal]", "Timeout portal");
       dnsServer.stop();
       ESP.restart();
     }
@@ -310,6 +335,7 @@ void startConfigPortal() {
     handleFeedbackLED();
     yield();
   }
+  debugLogPrint("[Portal]", "=================================", true);
 }
 
 // ==========================
@@ -327,21 +353,3 @@ void printPortalCredentials() {
   debugLogPrintf("[AUTH]", "%-6s | SSID    : %-12s | Senha: %-10s | %s", "Portal", hostname_buf, PasswordPortal, "http://192.168.4.1/start");
 }
 
-void wifi_watchdog() {
-  if (wifiState != WIFI_CONNECTED) return;
-
-  if (WiFi.status() == WL_CONNECTED) return;
-
-  debugLogPrint("[WiFi]", "Conexão perdida. Tentando reconectar...");
-  setLedMode(LED_WIFI_CONNECTING);
-
-  if (tryWiFiConnect()) {
-    setLedMode(LED_IDLE);
-    debugLogPrint("[WiFi]", "Reconectado!");
-    wsSendNetwork();
-  } else {
-    debugLogPrint("[WiFi]", "Falha ao reconectar. Reiniciando...");
-    delay(500);
-    ESP.restart();
-  }
-}

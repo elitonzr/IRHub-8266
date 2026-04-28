@@ -33,9 +33,6 @@ void debugLogPrint(const char* tag, const char* msg, bool newline) {
 
   // ---- Serial ----
   Serial.printf("%-10s - %s\n", tag, msg);
-  // Serial.print(tag);
-  // Serial.print(" - ");
-  // Serial.println(msg);
   if (newline) { Serial.println(""); }
 
 
@@ -45,14 +42,6 @@ void debugLogPrint(const char* tag, const char* msg, bool newline) {
 
     if (newline) { telnetClient.println(); }
   }
-
-  // if (telnetClient && telnetClient.connected()) {
-  //   telnetClient.print(tag);
-  //   telnetClient.print("    ");
-  //   telnetClient.println(msg);
-
-  //   if (newline) { telnetClient.println(""); }
-  // }
 
   // ---- WebSocket — sanitiza e monta JSON ----
   if (webSocket.connectedClients() == 0) return;

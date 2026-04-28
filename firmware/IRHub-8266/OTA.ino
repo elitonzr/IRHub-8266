@@ -4,13 +4,12 @@
 // ESP8266HTTPUpdateServer httpUpdater;
 
 void setup_ota() {
-  Serial.println();
-  Serial.println("=================================");
-  Serial.println("      Configurando OTA device     ");
-  Serial.println("=================================");
+
+  debugLogPrint("[OTA]", "=================================");
+  debugLogPrint("[OTA]", "Configurando OTA device");
 
   if (clientID.length() == 0) {
-    Serial.println("[OTA]     - AVISO: clientID vazio, recalculando topicos...");
+    debugLogPrint("[OTA]", "AVISO: clientID vazio, recalculando topicos...");
     recalcularTopicos();
   }
 
@@ -130,7 +129,8 @@ void setup_ota() {
 
   ArduinoOTA.begin();
 
-  Serial.println("[OTA]     - Configurado (ArduinoOTA + HTTP)");
+  debugLogPrint("[OTA]", "Configurado (ArduinoOTA + HTTP)");
+  debugLogPrint("[OTA]", "=================================", true);
 }
 
 void printOTACredentials() {

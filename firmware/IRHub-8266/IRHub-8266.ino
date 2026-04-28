@@ -65,7 +65,8 @@ void setup() {
   ledCtrl.modo = LED_IDLE;
 
   if (!LittleFS.begin()) {
-    Serial.println("[FS]      - Erro ao montar LittleFS");
+    debugLogPrint("[FS]", "Erro ao montar LittleFS");
+
     ledCtrl.modo = LED_ERROR_FS;
     unsigned long tReboot = millis();
     while (millis() - tReboot < 5000) {
@@ -74,8 +75,7 @@ void setup() {
     }
     ESP.restart();
   }
-
-  Serial.println("[FS]      - LittleFS pronto");
+  debugLogPrint("[FS]", "LittleFS pronto");
 
   setup_WiFi();
   // setup_WiFiManager();
@@ -87,12 +87,8 @@ void setup() {
 
   startFeedbackLED(5, 200);  // boot rápido
 
-  Serial.println();
-  Serial.println("=================================");
-  Serial.println("        Setup Concluído!        ");  // Imprime texto na serial.
-  Serial.println("         Sistema pronto          ");
-  Serial.println("=================================");
-  Serial.println();
+  debugLogPrint("[SET]", "Setup Concluído!");
+  debugLogPrint("[SET]", "Sistema pronto");
 }
 
 /************ LOOP ************/

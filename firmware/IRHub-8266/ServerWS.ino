@@ -36,11 +36,8 @@ void printHttpCredentials() {
 
 /************ SERVER ************/
 void setup_server() {
-
-  Serial.println();
-  Serial.println("=================================");
-  Serial.println("    Configurando Servidor HTTP    ");
-  Serial.println("=================================");
+  debugLogPrint("[HTTP]", "=================================");
+  debugLogPrint("[HTTP]", "Configurando Servidor HTTP");
 
   printHttpCredentials();
 
@@ -229,7 +226,9 @@ void setup_server() {
   });
 
   server.begin();
-  Serial.println("Servidor HTTP inicializado");
+  debugLogPrint("[HTTP]", "Servidor HTTP inicializado");
+  debugLogPrint("[HTTP]", "=================================", true);
+
 
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
