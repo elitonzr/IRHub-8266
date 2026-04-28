@@ -110,15 +110,17 @@ void mqtt_reconnect() {
   if (!mqtt_enabled) return;
 
   static unsigned long lastAttempt = 0;
-  static bool firstAttempt = true;
-  const unsigned long retryInterval = 60000;
+  static unsigned long retryInterval = 5000;
+  static int failCount = 0;
 
-  if (mqtt_client.connected()) return;
+  if (mqtt_client.connected()) {
+    retryInterval = 5000;
+    failCount = 0;
+    return;
+  }
 
   unsigned long now = millis();
-  if (!firstAttempt && (now - lastAttempt < retryInterval)) return;
-
-  firstAttempt = false;
+  if (now - lastAttempt < retryInterval) return;
   lastAttempt = now;
 
   debugLogPrint("[MQTT]", "Tentando conexão...");
@@ -159,7 +161,10 @@ void mqtt_reconnect() {
 
   } else {
     mqttErro++;
-    debugLogPrintf("[MQTT]", "Falha rc: %d State: %s", mqtt_client.state(), mqttStateStr(mqtt_client.state()));
+    failCount++;
+    retryInterval = min((unsigned long)(5000 * (1 << min(failCount, 6))), (unsigned long)300000);
+    debugLogPrintf("[MQTT]", "Falha rc: %d State: %s — próxima tentativa em %lus",
+                   mqtt_client.state(), mqttStateStr(mqtt_client.state()), retryInterval / 1000);
   }
 }
 

@@ -495,6 +495,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
             strlcpy(PasswordWS, v_ws_password, sizeof(PasswordWS));
           }
 
+          const char* v_portal_password = doc["portal_password"] | "";
+          if (strcmp(v_portal_password, "__keep__") != 0 && strlen(v_portal_password) > 0) {
+            strlcpy(PasswordPortal, v_portal_password, sizeof(PasswordPortal));
+          }
+
           strlcpy(hostname_buf, v_hostname, sizeof(hostname_buf));
           strlcpy(mqtt_id_buf, v_mqtt_id, sizeof(mqtt_id_buf));
           strlcpy(grupo_buf, v_grupo, sizeof(grupo_buf));
@@ -595,27 +600,30 @@ void wsSendSystem() {
   doc["uptime_seconds"] = uptimeSeconds;
   doc["heap"] = ESP.getFreeHeap();
 
-  JsonObject cfg = doc.createNestedObject("config");
+  if (configDirty) {
+    JsonObject cfg = doc.createNestedObject("config");
 
-  // -------- Identificação --------
-  cfg["hostname"] = hostname_buf;
-  cfg["mqtt_id"] = mqtt_id_buf;
-  cfg["grupo"] = grupo_buf;
+    // -------- Identificação --------
+    cfg["hostname"] = hostname_buf;
+    cfg["mqtt_id"] = mqtt_id_buf;
+    cfg["grupo"] = grupo_buf;
 
-  // -------- Rede --------
-  cfg["wifi_ssid"] = wifi_ssid_buf;
-  cfg["ip"] = ipStr;
-  cfg["gw"] = gwStr;
-  cfg["sn"] = snStr;
+    // -------- Rede --------
+    cfg["wifi_ssid"] = wifi_ssid_buf;
+    cfg["ip"] = ipStr;
+    cfg["gw"] = gwStr;
+    cfg["sn"] = snStr;
 
-  // -------- MQTT --------
-  cfg["mqtt_server"] = mqtt_server;
-  cfg["mqtt_port"] = mqtt_port;
-  cfg["mqtt_user"] = mqtt_user_buf;
-  cfg["mqtt_enabled"] = mqtt_enabled;
+    // -------- MQTT --------
+    cfg["mqtt_server"] = mqtt_server;
+    cfg["mqtt_port"] = mqtt_port;
+    cfg["mqtt_user"] = mqtt_user_buf;
+    cfg["mqtt_enabled"] = mqtt_enabled;
 
-  cfg["aht10_enabled"] = aht10_enabled;
-  cfg["ir_receptor"] = (int)IR_ReceptorEstado;
+    cfg["aht10_enabled"] = aht10_enabled;
+    cfg["ir_receptor"] = (int)IR_ReceptorEstado;
+    configDirty = false;
+  }
 
   char buffer[768];
   size_t len = serializeJson(doc, buffer, sizeof(buffer));

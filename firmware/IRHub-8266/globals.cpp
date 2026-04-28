@@ -39,23 +39,27 @@ String clientID = "";
 // ================================================================
 bool aht10_enabled = false;
 uint32_t uptimeSeconds = 0;
+bool configDirty = true;
 
 // ================================================================
 // BUILD
 // ================================================================
 const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
-const String buildVersion = "0.7.0";
+const String buildVersion = "0.7.4";
 
 // ================================================================
 // PASSWORD
 // ================================================================
 // char Password[16];
-char PasswordPortal[16] = "12345678";
+char PasswordPortal[16] = "";
 char PasswordWS[16] = "";
 
 void initPassword() {
   if (strlen(PasswordWS) == 0) {
     snprintf(PasswordWS, sizeof(PasswordWS), "%08X", ESP.getChipId());
+  }
+  if (strlen(PasswordPortal) == 0) {
+    snprintf(PasswordPortal, sizeof(PasswordPortal), "%08X", ESP.getChipId());
   }
 }
 

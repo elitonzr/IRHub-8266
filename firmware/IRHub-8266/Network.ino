@@ -169,113 +169,118 @@ void startConfigPortal() {
   printPortalCredentials();
 
   // ROTAS
-  server.on("/start", HTTP_GET, []() {
-    hasActivity = true;
-    sendPortalPage();
-  });
+  static bool portalRoutesRegistered = false;
+  if (!portalRoutesRegistered) {
+    portalRoutesRegistered = true;
 
-  server.on("/save", HTTP_POST, []() {
-    hasActivity = true;
-    String wifiPass = server.arg("wifi_pass");
-    String wsPass = server.arg("ws_pass");
-    String grupo = server.arg("grupo");
-    String hostname = server.arg("hostname");
+    server.on("/start", HTTP_GET, []() {
+      hasActivity = true;
+      sendPortalPage();
+    });
 
-    // prioridade: manual > select
-    String ssid = server.arg("ssid_manual");
-    ssid.trim();
+    server.on("/save", HTTP_POST, []() {
+      hasActivity = true;
+      String wifiPass = server.arg("wifi_pass");
+      String wsPass = server.arg("ws_pass");
+      String grupo = server.arg("grupo");
+      String hostname = server.arg("hostname");
 
-    // validações
-    if (ssid.length() == 0) {
-      server.send(400, "text/plain", "SSID obrigatório");
-      return;
-    }
+      // prioridade: manual > select
+      String ssid = server.arg("ssid_manual");
+      ssid.trim();
 
-    // salva SSID
-    strlcpy(wifi_ssid_buf, ssid.c_str(), sizeof(wifi_ssid_buf));
-
-    // senha WiFi só se informada
-    if (wifiPass.length() > 0) {
-      strlcpy(wifi_password_buf, wifiPass.c_str(), sizeof(wifi_password_buf));
-    }
-
-    // PasswordWS (opcional)
-    if (wsPass.length() > 0) {
-      strlcpy(PasswordWS, wsPass.c_str(), sizeof(PasswordWS));
-    }
-
-    // grupo MQTT
-    if (grupo.length() > 0) {
-      strlcpy(grupo_buf, grupo.c_str(), sizeof(grupo_buf));
-    }
-
-    // hostname (sanitizado)
-    if (hostname.length() > 0) {
-
-      hostname.replace(" ", "-");
-
-      for (size_t i = 0; i < hostname.length(); i++) {
-        if (!isalnum(hostname[i]) && hostname[i] != '-') {
-          hostname[i] = '-';
-        }
+      // validações
+      if (ssid.length() == 0) {
+        server.send(400, "text/plain", "SSID obrigatório");
+        return;
       }
 
-      strlcpy(hostname_buf, hostname.c_str(), sizeof(hostname_buf));
-    }
+      // salva SSID
+      strlcpy(wifi_ssid_buf, ssid.c_str(), sizeof(wifi_ssid_buf));
 
-    String ipMode = server.arg("ip_mode");
-    if (ipMode == "static") {
-      String ip = server.arg("ip");
-      String gw = server.arg("gw");
-      String sn = server.arg("sn");
-      ip.trim();
-      gw.trim();
-      sn.trim();
-      strlcpy(ipStr, ip.c_str(), sizeof(ipStr));
-      strlcpy(gwStr, gw.c_str(), sizeof(gwStr));
-      strlcpy(snStr, sn.c_str(), sizeof(snStr));
-    } else {
-      ipStr[0] = '\0';
-      gwStr[0] = '\0';
-      snStr[0] = '\0';
-    }
+      // senha WiFi só se informada
+      if (wifiPass.length() > 0) {
+        strlcpy(wifi_password_buf, wifiPass.c_str(), sizeof(wifi_password_buf));
+      }
 
-    recalcularTopicos();
-    saveConfig();
+      // PasswordWS (opcional)
+      if (wsPass.length() > 0) {
+        strlcpy(PasswordWS, wsPass.c_str(), sizeof(PasswordWS));
+      }
 
-    server.send(200, "text/html",
-                "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
-                "<meta http-equiv='refresh' content='5;url=http://192.168.4.1/start'>"
-                "<style>body{font-family:sans-serif;background:#111827;color:#f9fafb;"
-                "display:flex;align-items:center;justify-content:center;height:100vh;}"
-                "</style></head><body><h2>✅ Salvo! Reiniciando...</h2></body></html>");
+      // grupo MQTT
+      if (grupo.length() > 0) {
+        strlcpy(grupo_buf, grupo.c_str(), sizeof(grupo_buf));
+      }
 
-    unsigned long t = millis();
-    while (millis() - t < 1500) yield();
+      // hostname (sanitizado)
+      if (hostname.length() > 0) {
 
-    ESP.restart();
-  });
+        hostname.replace(" ", "-");
 
-  server.on("/reboot", HTTP_POST, []() {
-    server.send(200, "text/html",
-                "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
-                "<meta http-equiv='refresh' content='5;url=http://192.168.4.1/start'>"
-                "<style>body{font-family:sans-serif;background:#111827;color:#f9fafb;"
-                "display:flex;align-items:center;justify-content:center;height:100vh;}"
-                "</style></head><body><h2>🔄 Reiniciando...</h2></body></html>");
-    unsigned long t = millis();
-    while (millis() - t < 1500) yield();
-    ESP.restart();
-  });
+        for (size_t i = 0; i < hostname.length(); i++) {
+          if (!isalnum(hostname[i]) && hostname[i] != '-') {
+            hostname[i] = '-';
+          }
+        }
 
-  server.onNotFound([&apIP]() {
-    if (!server.uri().startsWith("/api")) {
-      server.sendHeader("Location", String("http://") + apIP.toString() + "/start", true);
-      server.send(302, "text/plain", "");
-    } else {
-      server.send(404, "application/json", "{\"error\":\"not found\"}");
-    }
-  });
+        strlcpy(hostname_buf, hostname.c_str(), sizeof(hostname_buf));
+      }
+
+      String ipMode = server.arg("ip_mode");
+      if (ipMode == "static") {
+        String ip = server.arg("ip");
+        String gw = server.arg("gw");
+        String sn = server.arg("sn");
+        ip.trim();
+        gw.trim();
+        sn.trim();
+        strlcpy(ipStr, ip.c_str(), sizeof(ipStr));
+        strlcpy(gwStr, gw.c_str(), sizeof(gwStr));
+        strlcpy(snStr, sn.c_str(), sizeof(snStr));
+      } else {
+        ipStr[0] = '\0';
+        gwStr[0] = '\0';
+        snStr[0] = '\0';
+      }
+
+      recalcularTopicos();
+      saveConfig();
+
+      server.send(200, "text/html",
+                  "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+                  "<meta http-equiv='refresh' content='5;url=http://192.168.4.1/start'>"
+                  "<style>body{font-family:sans-serif;background:#111827;color:#f9fafb;"
+                  "display:flex;align-items:center;justify-content:center;height:100vh;}"
+                  "</style></head><body><h2>✅ Salvo! Reiniciando...</h2></body></html>");
+
+      unsigned long t = millis();
+      while (millis() - t < 1500) yield();
+
+      ESP.restart();
+    });
+
+    server.on("/reboot", HTTP_POST, []() {
+      server.send(200, "text/html",
+                  "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+                  "<meta http-equiv='refresh' content='5;url=http://192.168.4.1/start'>"
+                  "<style>body{font-family:sans-serif;background:#111827;color:#f9fafb;"
+                  "display:flex;align-items:center;justify-content:center;height:100vh;}"
+                  "</style></head><body><h2>🔄 Reiniciando...</h2></body></html>");
+      unsigned long t = millis();
+      while (millis() - t < 1500) yield();
+      ESP.restart();
+    });
+
+    server.onNotFound([&apIP]() {
+      if (!server.uri().startsWith("/api")) {
+        server.sendHeader("Location", String("http://") + apIP.toString() + "/start", true);
+        server.send(302, "text/plain", "");
+      } else {
+        server.send(404, "application/json", "{\"error\":\"not found\"}");
+      }
+    });
+  }
 
   static bool serverStarted = false;
   if (!serverStarted) {
@@ -320,4 +325,23 @@ void recalcularTopicos() {
 // ==========================
 void printPortalCredentials() {
   debugLogPrintf("[AUTH]", "%-6s | SSID    : %-12s | Senha: %-10s | %s", "Portal", hostname_buf, PasswordPortal, "http://192.168.4.1/start");
+}
+
+void wifi_watchdog() {
+  if (wifiState != WIFI_CONNECTED) return;
+
+  if (WiFi.status() == WL_CONNECTED) return;
+
+  debugLogPrint("[WiFi]", "Conexão perdida. Tentando reconectar...");
+  setLedMode(LED_WIFI_CONNECTING);
+
+  if (tryWiFiConnect()) {
+    setLedMode(LED_IDLE);
+    debugLogPrint("[WiFi]", "Reconectado!");
+    wsSendNetwork();
+  } else {
+    debugLogPrint("[WiFi]", "Falha ao reconectar. Reiniciando...");
+    delay(500);
+    ESP.restart();
+  }
 }

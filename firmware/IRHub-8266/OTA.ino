@@ -53,9 +53,15 @@ void setup_ota() {
                 "</form>");
   });
 
+  static bool otaAuthorized = false;
+
   server.on(
     "/update", HTTP_POST, []() {
-      if (!checkAuth()) return;
+      if (!otaAuthorized) {
+        server.send(401, "text/plain", "Unauthorized");
+        return;
+      }
+      otaAuthorized = false;
       if (Update.hasError()) {
         server.send(500, "text/plain", "Falha na atualização");
         debugLogPrint("[ERROR]", "Falha na atualização");
@@ -73,8 +79,8 @@ void setup_ota() {
 
         case UPLOAD_FILE_START:
           {
-            if (!checkAuth()) return;
-
+            otaAuthorized = checkAuth();
+            if (!otaAuthorized) return;
             String filename = upload.filename;
 
             if (!filename.endsWith(".bin")) {

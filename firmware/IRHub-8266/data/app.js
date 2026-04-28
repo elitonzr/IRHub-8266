@@ -40,7 +40,7 @@ function lsGet(key, fallback = "") {
 function lsSet(key, val) {
   try {
     localStorage.setItem(key, val);
-  } catch {}
+  } catch { }
 }
 
 /* =========================================================
@@ -174,7 +174,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           lsSet("selectedRemote", e.target.value);
-        } catch (_) {}
+        } catch (_) { }
         loadButtons(e.target.value);
       });
     }
@@ -194,15 +194,13 @@ function initPageScript(path) {
     document
       .querySelectorAll("#app-content input, #app-content select")
       .forEach((el) => {
-        el.addEventListener(
-          "change",
-          () => {
-            state._settingsFormDirty = true;
-          },
-          { once: true },
-        );
+        el.addEventListener("change", () => {
+          state._settingsFormDirty = true;
+          el.classList.add("field-dirty");
+        });
       });
   }
+
 }
 
 // Marca o link ativo na navbar e no drawer conforme o path atual.
@@ -366,6 +364,19 @@ function updateSystemWS(data) {
   setText("heap", data.heap);
 
   document.title = `✅ ${data.name}`;
+
+  const knownVersion = lsGet("knownVersion");
+  if (data.buildVersion && data.buildVersion !== knownVersion) {
+    lsSet("knownVersion", data.buildVersion);
+    if (knownVersion !== "") {
+      const badge = document.getElementById("versionBadge");
+      if (badge) {
+        badge.textContent = `✨ v${data.buildVersion}`;
+        badge.style.display = "inline";
+        badge.title = `Firmware atualizado! (anterior: v${knownVersion})`;
+      }
+    }
+  }
 
   if (data.uptime_seconds !== undefined) {
     state.uptimeSeconds = data.uptime_seconds;
@@ -612,9 +623,10 @@ function renderIRHistory() {
     // Click simples: copia hex para clipboard.
     li.onclick = () => {
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(d.hex).catch(() => {});
+        navigator.clipboard.writeText(d.hex)
+          .then(() => showIrToast("✅ Copiado!"))
+          .catch(() => showIrToast("❌ Falha ao copiar", true));
       } else {
-        // Fallback para browsers sem Clipboard API.
         const ta = document.createElement("textarea");
         ta.value = d.hex;
         ta.style.position = "fixed";
@@ -624,6 +636,7 @@ function renderIRHistory() {
         ta.select();
         document.execCommand("copy");
         document.body.removeChild(ta);
+        showIrToast("✅ Copiado!");
       }
     };
 
@@ -687,9 +700,25 @@ function saveLogToHistory(data) {
 // Renderiza o histórico de logs no DOM.
 function renderLogHistory() {
   const el = document.getElementById("log");
-  if (!el) return; // 🔒 evita erro
+  if (!el) return;
 
-  el.innerHTML = state.logHistory.join("<br>");
+  // Rebuild completo ao navegar de volta para /system
+  if (el.childNodes.length === 0 && state.logHistory.length > 0) {
+    el.innerHTML = state.logHistory.join("<br>");
+    el.scrollTop = el.scrollHeight;
+    return;
+  }
+
+  // Append incremental da última linha
+  const last = state.logHistory[state.logHistory.length - 1];
+  if (last === undefined) return;
+  const span = document.createElement("span");
+  span.innerHTML = last + "<br>";
+  el.appendChild(span);
+
+  // Limita nós filhos a 200
+  while (el.childNodes.length > 200) el.removeChild(el.firstChild);
+
   el.scrollTop = el.scrollHeight;
 }
 
@@ -1043,6 +1072,16 @@ function loadButtons(model) {
       return;
     }
 
+    if (btn.type === "label") {
+      const label = document.createElement("div");
+      label.textContent = btn.name || "";
+      label.className = `remote-label${btn.span ? ` span-${btn.span}` : " span-3"}`;
+      container.appendChild(label);
+      return;
+    }
+
+    if (btn.type && btn.type !== "button") return;
+
     if (btn.type && btn.type !== "button") return;
 
     const b = document.createElement("button");
@@ -1266,6 +1305,7 @@ function saveDeviceConfig() {
     mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
     aht10_enabled: get("cfg_aht10_enabled") === "true",
     ws_password: wsPassword.length > 0 ? wsPassword : "__keep__",
+    portal_password: get("cfg_portal_password").length > 0 ? get("cfg_portal_password") : "__keep__",
     ir_receptor: state.irModeIndex,
   });
 
@@ -1288,6 +1328,9 @@ function showCfgStatus(msg, color) {
   if (!el) return;
   el.textContent = msg;
   el.style.color = color;
+  if (color === "#22c55e") {
+    document.querySelectorAll(".field-dirty").forEach((f) => f.classList.remove("field-dirty"));
+  }
   setTimeout(() => (el.textContent = ""), 3000);
 }
 

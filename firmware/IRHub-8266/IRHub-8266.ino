@@ -148,7 +148,7 @@ void loop() {
   static unsigned long tWifi = 0;
   if (now - tWifi > 30000) {  // verifica a cada 30 segundos
     tWifi = now;
-    // wifi_watchdog();
+    wifi_watchdog();
   }
 
   // ---- HEAP WATCHDOG ----

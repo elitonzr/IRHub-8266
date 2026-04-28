@@ -76,11 +76,11 @@ void debugLogPrint(const char* tag, const char* msg, bool newline) {
   buffer[j] = '\0';
 
   char json[600];
-  snprintf(json, sizeof(json),
-           "{\"type\":\"console\",\"log\":\"%s\",\"msg\":\"%s\",\"newline\":\"%d\"}",
-           tag, buffer, newline ? 1 : 0);
-
-  webSocket.broadcastTXT(json);
+  int written = snprintf(json, sizeof(json),
+                         "{\"type\":\"console\",\"log\":\"%s\",\"msg\":\"%s\",\"newline\":\"%d\"}",
+                         tag, buffer, newline ? 1 : 0);
+  if (written > 0 && written < (int)sizeof(json))
+    webSocket.broadcastTXT(json);
 }
 
 // ================================================================

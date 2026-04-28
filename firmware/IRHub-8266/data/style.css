@@ -602,6 +602,22 @@ button:active {
   background: #444;
 }
 
+.remote-label {
+  text-align: center;
+  font-size: 10px;
+  text-transform: uppercase;
+  opacity: 0.4;
+  letter-spacing: 1px;
+  padding: 4px 0 2px;
+  pointer-events: none;
+}
+
+.field-dirty {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
 /* ---------------- MISC ---------------- */
 hr {
   border-color: #374151;
