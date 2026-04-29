@@ -52,7 +52,9 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 - Reconexão automática do WebSocket com overlay visual
 - Controle remoto virtual com modelos configuráveis via `remotes.json`
 - Histórico dos últimos 10 sinais IR recebidos
-- Autenticação HTTP Basic nas rotas destrutivas (`/files`, `/delete`, `/download`, `/upload`)
+- Autenticação HTTP Basic nas rotas de arquivo (`/files`, `/delete`, `/download`, `/upload`, `/update`)
+- Autenticação WebSocket por hash SHA-256 — exigida para ações de configuração e gestão de arquivos
+- Rotas públicas (sem autenticação): `/`, `/ir`, `/system`, `/settings`, `/app.js`, `/style.css`, `/remotes.json`, WebSocket (leitura de estado e envio IR)
 
 ### WiFiManager
 
@@ -95,9 +97,16 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 
 ---
 
-## 🔐 Configuração
+## ⚙️ Configuração
 
 A configuração é feita pelo portal WiFiManager (primeira inicialização ou pressão do botão) ou pela página `/settings` do frontend. Os parâmetros são persistidos em `/config.json` no LittleFS.
+
+### Portal WiFi AP
+
+O portal de configuração WiFi (`irhub8266` / `192.168.4.1`) é protegido por `PasswordPortal`.
+
+- **Padrão:** ChipID em hex (8 dígitos)
+- **Configurável em:** `/settings` → "Senha Portal AP"
 
 ### Parâmetros disponíveis
 
@@ -116,14 +125,80 @@ A configuração é feita pelo portal WiFiManager (primeira inicialização ou p
 
 ### Senhas padrão
 
-| Acesso           | Usuário  | Senha                     |
-|------------------|----------|---------------------------|
-| HTTP Basic Auth  | `admin`  | ChipID em hex (8 dígitos) |
-| OTA (ArduinoOTA) | —        | ChipID em hex (8 dígitos) |
-| OTA (browser)    | `admin`  | ChipID em hex (8 dígitos) |
-| Portal WiFi      | —        | `12345678`                |
+| Acesso            | Usuário | Senha padrão              | Configurável em  |
+|-------------------|---------|---------------------------|------------------|
+| HTTP Basic Auth   | `admin` | ChipID em hex (8 dígitos) | `/settings`      |
+| WebSocket         | —       | ChipID em hex (8 dígitos) | `/settings`      |
+| OTA (ArduinoOTA)  | —       | ChipID em hex (8 dígitos) | não              |
+| OTA (browser)     | `admin` | ChipID em hex (8 dígitos) | `/settings`      |
+| Portal WiFi AP    | —       | ChipID em hex (8 dígitos) | `/settings`      |
 
-> A senha HTTP e OTA pode ser consultada via Telnet com o comando `senha`.
+> O ChipID é exibido no monitor serial durante o boot. Após conectar à rede, consulte as senhas via Telnet com o comando `senha`.
+
+---
+
+## 🔐 Autenticação
+
+### HTTP Basic Auth
+
+Protege as rotas de manipulação de arquivos e atualização OTA.
+
+| Rota        | Método | Protegida |
+|-------------|--------|-----------|
+| `/upload`   | POST   | ✅        |
+| `/delete`   | POST   | ✅        |
+| `/download` | GET    | ✅        |
+| `/update`   | POST   | ✅        |
+| `/files`    | GET    | ✅        |
+
+- **Usuário:** `admin`
+- **Senha:** ChipID em hex por padrão; configurável em `/settings` → "Senha WebSocket"
+- **Exceção:** `/update` usa a senha OTA (ChipID em hex, não configurável via settings)
+
+---
+
+### WebSocket (porta 81)
+
+A conexão WebSocket é aberta sem autenticação. O estado do dispositivo (system, network, MQTT, IR, LED) é transmitido imediatamente ao conectar, permitindo acesso de leitura sem senha.
+
+Comandos que alteram estado ou configuração exigem autenticação prévia:
+
+| Comando           | Requer auth |
+|-------------------|-------------|
+| `sendIR`          | ❌          |
+| `toggleIREmissor` | ❌          |
+| `setIRReceptor`   | ❌          |
+| `toggleLEDB`      | ❌          |
+| `saveConfig`      | ✅          |
+| `wifiPortal`      | ✅          |
+| `resetWifi`       | ✅          |
+| `resetConfig`     | ✅          |
+| `reboot`          | ❌          |
+| `telnetCmd`       | ❌          |
+
+#### Fluxo de autenticação WebSocket
+
+
+```
+Cliente                        Dispositivo
+│                               │
+│── { cmd: "getChipId" } ──────►│
+│◄─ { type: "chipId",           │
+│     value: "AABBCCDD" } ──────│
+│                               │
+│  hash = SHA-256(senha + chipId)
+│                               │
+│── { cmd: "auth",              │
+│     hash: "<sha256>" } ───────►│
+│◄─ { type: "authOk" } ─────────│
+│        ou                     │
+│◄─ { type: "authError" } ──────│
+```
+
+- O hash é calculado como `SHA-256(PasswordWS + ChipID_hex)`
+- O ChipID é obtido em tempo real via `getChipId` para evitar replay attacks
+- A senha (`PasswordWS`) é configurável em `/settings` → "Senha WebSocket"
+- O padrão é o ChipID em hex (8 dígitos), consultável via Telnet: `senha`
 
 ---
 
@@ -236,7 +311,7 @@ data/
 
 1. Grave o firmware via Arduino IDE
 2. Faça upload dos arquivos da pasta `data/` via LittleFS (Arduino IDE → Tools → ESP8266 LittleFS Data Upload)
-3. Na primeira inicialização, conecte-se à rede `irhub8266` (senha: `12345678`) e acesse `192.168.4.1` para configurar WiFi e MQTT
+3. Na primeira inicialização, conecte-se à rede `irhub8266` com a senha padrão (ChipID em hex, 8 dígitos — visível no monitor serial do Arduino IDE durante o boot) e acesse `192.168.4.1` para configurar WiFi e MQTT
 4. Após conectar, acesse `http://irhub8266.local` ou pelo IP atribuído
 5. Use a página `/settings` para ajustar configurações sem precisar do portal
 

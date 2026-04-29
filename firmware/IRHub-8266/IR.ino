@@ -9,7 +9,7 @@ IRrecv irrecv(kRecvPin);
 decode_results results;
 
 unsigned long lastIRTime = 0;
-const unsigned long IR_DEBOUNCE_MS = 300;
+const unsigned long IR_DEBOUNCE_MS = 150;
 
 boolean enviandoCod = false;      // bloqueia recepção durante transmissão
 boolean IR_EmissorTeste = false;  // ativa ciclo de teste do emissor
@@ -20,6 +20,9 @@ static uint64_t irPostSendCode = 0;
 static decode_type_t irPostSendProtocol = UNKNOWN;
 static uint8_t irPostSendBits = 0;
 static char irPostSendOrigem[16] = "";
+
+static uint64_t lastSentCode = 0;
+static unsigned long lastSendTime = 0;
 
 // ================================================================
 // IR — ÚLTIMO SINAL RECEBIDO
@@ -60,7 +63,7 @@ void setup_IR() {
 
   irsend.begin();       // Inicializa emissor
   irrecv.enableIRIn();  // Inicializa receptor
-  
+
   debugsendInfoIR();
   debugLogPrint("[IR]", "=================================", true);
 }
@@ -102,6 +105,13 @@ void myIRdecoder() {
   if (enviandoCod) return;
 
   if (!irrecv.decode(&results)) return;
+
+// ignora o próprio envio
+if (results.value == lastSentCode &&
+    (millis() - lastSendTime) < 120) {
+  irrecv.resume();
+  return;
+}
 
   // Descarta códigos inválidos e repeat
   if (results.value == 0 || results.value == 0xFFFFFFFF || results.value == 0xFFFFFFFFFFFFFFFF) {
@@ -301,7 +311,7 @@ void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, co
       return;
   }
 
-  startFeedbackLED(1, 200);  // pisca o led A 1x
+  startFeedbackLED(1, 100);  // pisca o led A 1x
   irPostSendMillis = millis();
   irPostSendPending = true;
   irPostSendCode = code;
@@ -309,11 +319,9 @@ void handleIRCommand(const char* codeStr, const char* protoStr, uint8_t bits, co
   irPostSendBits = bits;
   strlcpy(irPostSendOrigem, origem, sizeof(irPostSendOrigem));
 
-  // delay(200);                // aguarda eco dissipar
-  // enviandoCod = false;       // reativa receptor
-  // irrecv.resume();           // descarta qualquer eco acumulado no buffer
-  // yield();                   // cede controle ao SDK do ESP8266 — processa WiFi e reseta o watchdog
-  // sendIRFeedback(code, protocol, bits, "ok", origem);
+  // guarda último envio
+  lastSentCode = code;
+  lastSendTime = millis();
 }
 
 void debugSendIREmissor(uint64_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
@@ -431,7 +439,7 @@ void desligamentoUniversal() {
 
 void handleIRPostSend() {
   if (!irPostSendPending) return;
-  if (millis() - irPostSendMillis < 100) return;
+  if (millis() - irPostSendMillis < 20) return;
 
   irPostSendPending = false;
   enviandoCod = false;

@@ -29,6 +29,7 @@ const state =
     selectedRemote: lsGet("selectedRemote") || null, // último modelo selecionado
     wsPassword: lsGet("wsPassword"),
     wsChipId: null,
+    wsAuthenticated: false,
   });
 
 function lsGet(key, fallback = "") {
@@ -41,7 +42,7 @@ function lsGet(key, fallback = "") {
 function lsSet(key, val) {
   try {
     localStorage.setItem(key, val);
-  } catch { }
+  } catch {}
 }
 
 /* =========================================================
@@ -72,11 +73,12 @@ function connectWS() {
       clearTimeout(state.reconnectTimer);
       state.reconnectTimer = null;
     }
-    wsSend({ cmd: "getChipId" });
+    flushQueue();
   };
 
   state.ws.onclose = () => {
     updateWSStatus(false);
+    state.wsAuthenticated = false;
     state.configPopulated = false;
     scheduleReconnect();
   };
@@ -107,11 +109,9 @@ function wsSend(msg) {
 function showWSAuthModal() {
   const pass = prompt("🔐 Informe a senha para continuar:");
   if (pass === null) return;
-
   lsSet("wsPassword", pass);
-
   state.wsPassword = pass;
-  wsSend({ cmd: "auth", password: pass });
+  wsSend({ cmd: "getChipId" });
 }
 
 // function showWSAuthModal() {
@@ -132,10 +132,29 @@ function flushQueue() {
 
 async function hashPassword(password, chipId) {
   const msg = password + chipId;
+  console.log(`msg: ${msg}`);
   const encoded = new TextEncoder().encode(msg);
   const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function authenticateWS() {
+  return new Promise((resolve) => {
+    if (state.wsAuthenticated) {
+      resolve(true);
+      return;
+    }
+    const pass = prompt("🔐 Informe a senha para continuar:");
+    if (!pass) {
+      resolve(false);
+      return;
+    }
+    lsSet("wsPassword", pass);
+    state.wsPassword = pass;
+    state._authResolve = resolve;
+    wsSend({ cmd: "getChipId" });
+  });
 }
 
 /* =========================================================
@@ -201,7 +220,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           lsSet("selectedRemote", e.target.value);
-        } catch (_) { }
+        } catch (_) {}
         loadButtons(e.target.value);
       });
     }
@@ -321,17 +340,26 @@ function handleWSMessage(event) {
       break;
 
     case "authOk":
+      state.wsAuthenticated = true;
       flushQueue();
       state.configPopulated = false;
       replayLastPayloads();
-      break;
-
-    case "authRequired":
-      wsSend({ cmd: "getChipId" });
+      if (state._authResolve) {
+        state._authResolve(true);
+        state._authResolve = null;
+      }
       break;
 
     case "authError":
-      showWSAuthModal();
+      state.wsAuthenticated = false;
+      if (state._authResolve) {
+        state._authResolve(false);
+        state._authResolve = null;
+      } else showWSAuthModal();
+      break;
+
+    case "authRequired":
+      // não faz nada — auth é iniciado explicitamente pelo usuário
       break;
   }
 }
@@ -863,8 +891,7 @@ async function importConfig() {
   if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?"))
     return;
 
-  const pass = prompt("🔐 Informe a senha para continuar:");
-  if (!pass) return;
+  if (!(await authenticateWS())) return;
 
   const file = document.getElementById("configFile")?.files[0];
   if (!file) return alert("Selecione um arquivo .json");
@@ -883,7 +910,10 @@ async function importConfig() {
   const xhr = new XMLHttpRequest();
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
-  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + pass));
+  xhr.setRequestHeader(
+    "Authorization",
+    "Basic " + btoa("admin:" + state.wsPassword),
+  );
   xhr.onload = () => {
     if (xhr.status === 401) {
       showConfigStatus("❌ Senha incorreta.", "#ef4444");
@@ -928,6 +958,10 @@ async function exportRemotes() {
 async function importRemotes() {
   const file = document.getElementById("remotesFile")?.files[0];
   if (!file) return alert("Selecione um arquivo .json");
+  if (file.name !== "remotes.json") {
+    showRemotesStatus("❌ O arquivo deve se chamar remotes.json", "#ef4444");
+    return;
+  }
 
   try {
     JSON.parse(await file.text());
@@ -936,8 +970,7 @@ async function importRemotes() {
     return;
   }
 
-  const pass = prompt("🔐 Informe a senha para continuar:");
-  if (!pass) return;
+  if (!(await authenticateWS())) return;
 
   const formData = new FormData();
   formData.append("upload", file);
@@ -945,7 +978,10 @@ async function importRemotes() {
   const xhr = new XMLHttpRequest();
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
-  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + pass));
+  xhr.setRequestHeader(
+    "Authorization",
+    "Basic " + btoa("admin:" + state.wsPassword),
+  );
   xhr.onload = () => {
     if (xhr.status === 401) {
       showRemotesStatus("❌ Senha incorreta.", "#ef4444");
@@ -973,7 +1009,7 @@ function showOtaStatus(msg, color) {
   el.style.color = color;
 }
 
-function startOTAUpdate() {
+async function startOTAUpdate() {
   const file = document.getElementById("otaFile")?.files[0];
   if (!file) return alert("Selecione um arquivo .bin");
 
@@ -989,8 +1025,7 @@ function startOTAUpdate() {
   )
     return;
 
-  const pass = prompt("🔐 Informe a senha para continuar:");
-  if (!pass) return;
+  if (!(await authenticateWS())) return;
 
   const formData = new FormData();
   // formData.append("firmware", file);
@@ -1028,7 +1063,10 @@ function startOTAUpdate() {
   showOtaStatus("⏳ Enviando firmware...", "#facc15");
 
   xhr.open("POST", "/update", true);
-  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + pass));
+  xhr.setRequestHeader(
+    "Authorization",
+    "Basic " + btoa("admin:" + state.wsPassword),
+  );
   xhr.send(formData);
 }
 
@@ -1255,26 +1293,23 @@ function rebootDevice() {
   wsSend({ cmd: "reboot" });
 }
 
-function openWifiPortal() {
+async function openWifiPortal() {
   if (!confirm("Abrir portal de configuração WiFi?")) return;
-  const pass = prompt("🔐 Informe a senha para continuar:");
-  if (!pass) return;
-  wsSend({ cmd: "wifiPortal", password: pass });
+  if (!(await authenticateWS())) return;
+  wsSend({ cmd: "wifiPortal", password: state.wsPassword });
 }
 
-function resetWifi() {
+async function resetWifi() {
   if (!confirm("Resetar configurações WiFi?")) return;
-  const pass = prompt("🔐 Informe a senha para continuar:");
-  if (!pass) return;
-  wsSend({ cmd: "resetWifi", password: pass });
+  if (!(await authenticateWS())) return;
+  wsSend({ cmd: "resetWifi", password: state.wsPassword });
 }
 
-function resetConfig() {
+async function resetConfig() {
   if (!confirm("Apagar config.json? Isso apagará todas as configurações!"))
     return;
-  const pass = prompt("🔐 Informe a senha para continuar:");
-  if (!pass) return;
-  wsSend({ cmd: "resetConfig", password: pass });
+  if (!(await authenticateWS())) return;
+  wsSend({ cmd: "resetConfig", password: state.wsPassword });
 }
 
 /* =========================================================
@@ -1318,7 +1353,8 @@ function populateConfig(data) {
 }
 
 // Valida e envia o payload de configuração para o backend.
-function saveDeviceConfig() {
+async function saveDeviceConfig() {
+  if (!(await authenticateWS())) return;
   state._settingsFormDirty = false;
   const get = (id) => document.getElementById(id)?.value ?? "";
   const mqttPassword = get("cfg_mqtt_password");

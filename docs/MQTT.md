@@ -262,7 +262,7 @@ Valores: `ON`, `OFF`
 
 ### `IRHub-8266-Sala/sensor/aht10/state`
 
-Publicado a cada 5 minutos quando o sensor está online e habilitado.
+Publicado a cada 5 minutos quando o sensor está online e `aht10_enabled = true`. Não publicado quando desabilitado — nenhum payload de "ausência" é emitido.
 
 > Não publicado quando `aht10_enabled = false`.
 

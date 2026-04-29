@@ -19,7 +19,20 @@
     <header>Controles Remotos</header>
     <div class="item">
       <div class="upload-row">
-        <input type="file" id="remotesFile" accept=".json" />
+        <input
+          type="file"
+          id="remotesFile"
+          accept=".json"
+          onchange="
+            if (this.files[0] && this.files[0].name !== 'remotes.json') {
+              showRemotesStatus(
+                '❌ O arquivo deve se chamar remotes.json',
+                '#ef4444',
+              );
+              this.value = '';
+            }
+          "
+        />
         <button class="btn-send" onclick="importRemotes()">📤 Importar</button>
       </div>
       <div class="item">
