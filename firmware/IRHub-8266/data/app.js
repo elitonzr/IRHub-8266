@@ -27,8 +27,6 @@ const state =
     remotesData: {}, // dados do remotes.json carregados em memória
     lastPayloads: {}, // cache dos últimos payloads recebidos por type
     selectedRemote: lsGet("selectedRemote") || null, // último modelo selecionado
-    wsPassword: lsGet("wsPassword"),
-    wsChipId: null,
     wsAuthenticated: false,
   });
 
@@ -64,9 +62,6 @@ function connectWS() {
       clearTimeout(state.reconnectTimer);
       state.reconnectTimer = null;
     }
-    if (state.wsPassword) {
-      wsSend({ cmd: "getChipId" });
-    }
     flushQueue();
   };
 
@@ -100,23 +95,6 @@ function wsSend(msg) {
   }
 }
 
-function showWSAuthModal() {
-  const pass = prompt("🔐 Informe a senha para continuar:");
-  if (pass === null) return;
-  lsSet("wsPassword", pass);
-  state.wsPassword = pass;
-  wsSend({ cmd: "getChipId" });
-}
-
-// function showWSAuthModal() {
-//   const pass = prompt("🔐 Informe a senha para continuar:");
-//   if (pass === null) return;
-
-//   lsSet("wsPassword", pass);
-//   state.wsPassword = pass;
-//   wsSend({ cmd: "getChipId" });
-// }
-
 // Envia todas as mensagens enfileiradas após reconexão.
 function flushQueue() {
   while (state.wsQueue.length && state.ws.readyState === WebSocket.OPEN) {
@@ -124,31 +102,32 @@ function flushQueue() {
   }
 }
 
-async function hashPassword(password, chipId) {
-  const msg = password + chipId;
-  console.log(`msg: ${msg}`);
-  const encoded = new TextEncoder().encode(msg);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+function showLoginModal() {
+  const modal = document.getElementById("loginModal");
+  if (modal) modal.style.display = "flex";
 }
 
-function authenticateWS() {
-  return new Promise((resolve) => {
-    if (state.wsAuthenticated) {
-      resolve(true);
-      return;
-    }
-    const pass = prompt("🔐 Informe a senha para continuar:");
-    if (!pass) {
-      resolve(false);
-      return;
-    }
-    lsSet("wsPassword", pass);
-    state.wsPassword = pass;
-    state._authResolve = resolve;
-    wsSend({ cmd: "getChipId" });
-  });
+function hideLoginModal() {
+  const modal = document.getElementById("loginModal");
+  if (modal) modal.style.display = "none";
+}
+
+function submitLogin() {
+  const user = document.getElementById("loginUser")?.value || "";
+  const pass = document.getElementById("loginPass")?.value || "";
+  if (!user || !pass) return;
+  wsSend({ cmd: "login", user, password: pass });
+}
+
+function doLogout() {
+  wsSend({ cmd: "logout" });
+}
+
+function updateAuthUI(authenticated) {
+  const btn = document.getElementById("btnLogin");
+  if (btn) btn.textContent = authenticated ? "Logoff" : "Login";
+  // Recarrega a rota atual para aplicar visibilidade
+  navigateTo(window.location.pathname);
 }
 
 /* =========================================================
@@ -168,6 +147,12 @@ async function navigateTo(path) {
   if (!contentArea) return;
 
   window.history.pushState({}, "", path);
+
+  const protectedRoutes = ["/ir", "/system", "/settings"];
+  if (!state.wsAuthenticated && protectedRoutes.includes(path)) {
+    window.history.pushState({}, "", "/");
+    path = "/";
+  }
 
   try {
     const file = routes[path];
@@ -220,6 +205,11 @@ function initPageScript(path) {
       });
     }
     loadRemotes();
+
+    // Ocultar seções protegidas se não autenticado
+    const fileManager = document.querySelector(".card-file-manager");
+    if (fileManager)
+      fileManager.style.display = state.wsAuthenticated ? "" : "none";
   }
 
   if (path === "/system") {
@@ -258,6 +248,14 @@ function updateActiveLinks(path) {
    Roteador central — cada type dispara um updater de UI.
 ========================================================= */
 
+function handleLoginBtn() {
+  if (state.wsAuthenticated) {
+    doLogout();
+  } else {
+    showLoginModal();
+  }
+}
+
 function handleWSMessage(event) {
   let data;
   try {
@@ -271,12 +269,27 @@ function handleWSMessage(event) {
   if (!data.type) return;
 
   switch (data.type) {
-    case "chipId":
-      state.wsChipId = data.value;
-      hashPassword(state.wsPassword || "", data.value).then((hash) => {
-        wsSend({ cmd: "auth", hash });
-      });
+    case "loginOk":
+      state.wsAuthenticated = true;
+      hideLoginModal();
+      state.configPopulated = false;
+      replayLastPayloads();
+      updateAuthUI(true);
       break;
+
+    case "loginError":
+      state.wsAuthenticated = false;
+      document
+        .getElementById("loginError")
+        ?.style.setProperty("display", "block");
+      break;
+
+    case "logoutOk":
+      state.wsAuthenticated = false;
+      updateAuthUI(false);
+      navigateTo("/");
+      break;
+
     case "system":
       updateSystemWS(data);
       break;
@@ -333,29 +346,6 @@ function handleWSMessage(event) {
 
     case "console":
       saveLogToHistory(data);
-      break;
-
-    case "authOk":
-      state.wsAuthenticated = true;
-      flushQueue();
-      state.configPopulated = false;
-      replayLastPayloads();
-      if (state._authResolve) {
-        state._authResolve(true);
-        state._authResolve = null;
-      }
-      break;
-
-    case "authError":
-      state.wsAuthenticated = false;
-      if (state._authResolve) {
-        state._authResolve(false);
-        state._authResolve = null;
-      } else showWSAuthModal();
-      break;
-
-    case "authRequired":
-      // não faz nada — auth é iniciado explicitamente pelo usuário
       break;
   }
 }
@@ -441,6 +431,7 @@ function updateSystemWS(data) {
 
   // Popula o form de configurações apenas uma vez por conexão.
   if (data.config && !state.configPopulated) {
+    setVal("cfg_admin_user", cfg.admin_user);
     populateConfig(data.config);
     state.configPopulated = true;
   }
@@ -777,30 +768,6 @@ function renderLogHistory() {
   el.scrollTop = el.scrollHeight;
 }
 
-// function renderLogHistory() {
-//   const el = document.getElementById("log");
-//   if (!el) return;
-
-//   // Rebuild completo ao navegar de volta para /system
-//   if (el.childNodes.length === 0 && state.logHistory.length > 0) {
-//     el.innerHTML = state.logHistory.join("<br>");
-//     el.scrollTop = el.scrollHeight;
-//     return;
-//   }
-
-//   // Append incremental da última linha
-//   const last = state.logHistory[state.logHistory.length - 1];
-//   if (last === undefined) return;
-//   const span = document.createElement("span");
-//   span.innerHTML = last + "<br>";
-//   el.appendChild(span);
-
-//   // Limita nós filhos a 200
-//   while (el.childNodes.length > 200) el.removeChild(el.firstChild);
-
-//   el.scrollTop = el.scrollHeight;
-// }
-
 // Limpa o histórico de logs.
 function clearLogs() {
   state.logHistory = [];
@@ -887,7 +854,7 @@ async function importConfig() {
   if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?"))
     return;
 
-  if (!(await authenticateWS())) return;
+  // if (!(await authenticateWS())) return;
 
   const file = document.getElementById("configFile")?.files[0];
   if (!file) return alert("Selecione um arquivo .json");
@@ -906,10 +873,7 @@ async function importConfig() {
   const xhr = new XMLHttpRequest();
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
-  xhr.setRequestHeader(
-    "Authorization",
-    "Basic " + btoa("admin:" + state.wsPassword),
-  );
+  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + PasswordWS));
   xhr.onload = () => {
     if (xhr.status === 401) {
       showConfigStatus("❌ Senha incorreta.", "#ef4444");
@@ -966,18 +930,13 @@ async function importRemotes() {
     return;
   }
 
-  if (!(await authenticateWS())) return;
-
   const formData = new FormData();
   formData.append("upload", file);
 
   const xhr = new XMLHttpRequest();
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
-  xhr.setRequestHeader(
-    "Authorization",
-    "Basic " + btoa("admin:" + state.wsPassword),
-  );
+  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + PasswordWS));
   xhr.onload = () => {
     if (xhr.status === 401) {
       showRemotesStatus("❌ Senha incorreta.", "#ef4444");
@@ -1021,8 +980,6 @@ async function startOTAUpdate() {
   )
     return;
 
-  if (!(await authenticateWS())) return;
-
   const formData = new FormData();
   // formData.append("firmware", file);
   formData.append("update", file);
@@ -1059,10 +1016,7 @@ async function startOTAUpdate() {
   showOtaStatus("⏳ Enviando firmware...", "#facc15");
 
   xhr.open("POST", "/update", true);
-  xhr.setRequestHeader(
-    "Authorization",
-    "Basic " + btoa("admin:" + state.wsPassword),
-  );
+  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + PasswordWS));
   xhr.send(formData);
 }
 
@@ -1291,21 +1245,18 @@ function rebootDevice() {
 
 async function openWifiPortal() {
   if (!confirm("Abrir portal de configuração WiFi?")) return;
-  if (!(await authenticateWS())) return;
-  wsSend({ cmd: "wifiPortal", password: state.wsPassword });
+  wsSend({ cmd: "wifiPortal" });
 }
 
 async function resetWifi() {
   if (!confirm("Resetar configurações WiFi?")) return;
-  if (!(await authenticateWS())) return;
-  wsSend({ cmd: "resetWifi", password: state.wsPassword });
+  wsSend({ cmd: "resetWifi" });
 }
 
 async function resetConfig() {
   if (!confirm("Apagar config.json? Isso apagará todas as configurações!"))
     return;
-  if (!(await authenticateWS())) return;
-  wsSend({ cmd: "resetConfig", password: state.wsPassword });
+  wsSend({ cmd: "resetConfig" });
 }
 
 /* =========================================================
@@ -1350,7 +1301,7 @@ function populateConfig(data) {
 
 // Valida e envia o payload de configuração para o backend.
 async function saveDeviceConfig() {
-  if (!(await authenticateWS())) return;
+  // if (!(await authenticateWS())) return;
   state._settingsFormDirty = false;
   const get = (id) => document.getElementById(id)?.value ?? "";
   const mqttPassword = get("cfg_mqtt_password");
@@ -1390,6 +1341,8 @@ async function saveDeviceConfig() {
     mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
     aht10_enabled: get("cfg_aht10_enabled") === "true",
     ws_password: wsPassword.length > 0 ? wsPassword : "__keep__",
+    admin_user:
+      get("cfg_admin_user").length > 0 ? get("cfg_admin_user") : "__keep__",
     ir_receptor: state.irModeIndex,
   });
 

@@ -1,5 +1,5 @@
 #include "webpage.h"
-#include <bearssl/bearssl_hash.h>
+// #include <bearssl/bearssl_hash.h>
 
 static bool wsAuthenticated[WEBSOCKETS_SERVER_CLIENT_MAX] = {};
 
@@ -289,20 +289,20 @@ void redirectToFiles(const char* motivo) {
   server.send(200, "text/html", html);
 }
 
-/*********************************************************
-* UTIL
-*********************************************************/
-void sha256Hex(const char* input, char* outHex64) {
-  br_sha256_context ctx;
-  br_sha256_init(&ctx);
-  br_sha256_update(&ctx, input, strlen(input));
-  uint8_t hash[32];
-  br_sha256_out(&ctx, hash);
-  for (int i = 0; i < 32; i++) {
-    sprintf(outHex64 + i * 2, "%02x", hash[i]);
-  }
-  outHex64[64] = '\0';
-}
+// /*********************************************************
+// * UTIL
+// *********************************************************/
+// void sha256Hex(const char* input, char* outHex64) {
+//   br_sha256_context ctx;
+//   br_sha256_init(&ctx);
+//   br_sha256_update(&ctx, input, strlen(input));
+//   uint8_t hash[32];
+//   br_sha256_out(&ctx, hash);
+//   for (int i = 0; i < 32; i++) {
+//     sprintf(outHex64 + i * 2, "%02x", hash[i]);
+//   }
+//   outHex64[64] = '\0';
+// }
 
 /*********************************************************
 * WEBSOCKET EVENT
@@ -338,41 +338,39 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 
         if (!cmd) return;
 
-        if (strcmp(cmd, "auth") != 0) {
+        // if (strcmp(cmd, "auth") != 0) {
           debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
-        }
+        // }
 
-        if (strcmp(cmd, "getChipId") == 0) {
-          char resp[64];
-          snprintf(resp, sizeof(resp), "{\"type\":\"chipId\",\"value\":\"%08X\"}", ESP.getChipId());
-          debugLogPrintf("[DEBUG]", "{\"type\":\"chipId\",\"value\":\"%08X\"}", ESP.getChipId());
-          webSocket.sendTXT(num, resp);
-          return;
-        }
-
-        if (strcmp(cmd, "auth") == 0) {
-          const char* provided = doc["hash"] | "";
-          char expected[65];
-          char toHash[48];
-          snprintf(toHash, sizeof(toHash), "%s%08X", PasswordWS, ESP.getChipId());
-          sha256Hex(toHash, expected);
-          if (strcmp(provided, expected) == 0) {
+        if (strcmp(cmd, "login") == 0) {
+          const char* user = doc["user"] | "";
+          const char* pass = doc["password"] | "";
+          if (strcmp(user, admin_user) == 0 && strcmp(pass, PasswordWS) == 0) {
             wsAuthenticated[num] = true;
-            debugLogPrint("[AUTH]", "Autenticação ok!");
-            webSocket.sendTXT(num, "{\"type\":\"authOk\"}");
-            wsSendSystem();  // broadcast com config (configDirty já controla)
+            debugLogPrint("[AUTH]", "Login ok!");
+            webSocket.sendTXT(num, "{\"type\":\"loginOk\"}");
+            configDirty = true;
+            wsSendSystem();
             wsSendNetwork();
             wsSendMQTT();
             wsSendInfoIR();
             wsSendInfoIR_Receptor();
             wsSendLEDB();
           } else {
-            debugLogPrint("[AUTH]", "Não autenticado");
+            debugLogPrint("[AUTH]", "Login falhou");
             wsAuthenticated[num] = false;
-            webSocket.sendTXT(num, "{\"type\":\"authError\"}");
+            webSocket.sendTXT(num, "{\"type\":\"loginError\"}");
           }
           return;
         }
+
+        if (strcmp(cmd, "logout") == 0) {
+          wsAuthenticated[num] = false;
+          debugLogPrint("[AUTH]", "Logout");
+          webSocket.sendTXT(num, "{\"type\":\"logoutOk\"}");
+          return;
+        }
+
         const bool isPublicCmd =
           strcmp(cmd, "sendIR") == 0 || strcmp(cmd, "toggleIREmissor") == 0 || strcmp(cmd, "setIRReceptor") == 0 || strcmp(cmd, "toggleLEDB") == 0;
         if (!wsAuthenticated[num] && !isPublicCmd) {
@@ -426,18 +424,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
             sendIRFeedback(0, UNKNOWN, 0, "code vazio", "[WS]");
             return;
           }
-          
+
           handleIRCommand(codeStr, protoStr, bits, "[WS]");
           return;
         }
+
         if (strcmp(cmd, "wifiPortal") == 0) {
-          // CORRIGIDO
-          const char* provided = doc["password"] | "";
-          if (strcmp(provided, PasswordWS) != 0) {
-            debugLogPrint("[ERROR]", "Erro de autenticação");
-            webSocket.sendTXT(num, "{\"type\":\"authError\"}");
-            return;
-          }
           debugLogPrint("[WS]", "Abrindo portal WiFi");
           printPortalCredentials();
           webSocket.broadcastTXT("{\"type\":\"wifiPortal\"}");
@@ -445,18 +437,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           startConfigPortal();
           return;
         }
+
         if (strcmp(cmd, "resetWifi") == 0) {
-          const char* provided = doc["password"] | "";
-          if (strcmp(provided, PasswordWS) != 0) {
-            webSocket.sendTXT(num, "{\"type\":\"authError\"}");
-            return;
-          }
           debugLogPrint("[WS]", "Reset WiFi solicitado");
           webSocket.broadcastTXT("{\"type\":\"resetWifi\"}");
           delay(500);
           resetWifi();
           return;
         }
+
         if (strcmp(cmd, "saveConfig") == 0) {
           debugLogPrint("[WS]", "saveConfig recebido");
           const char* provided = doc["password"] | "";
@@ -480,9 +469,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           if (mqtt_port == 0) mqtt_port = 1883;
           const char* v_mqtt_user = doc["mqtt_user"] | mqtt_user_buf;
           const char* v_mqtt_password = doc["mqtt_password"] | "";
+
           const char* v_ws_password = doc["ws_password"] | "";
           if (strcmp(v_ws_password, "__keep__") != 0 && strlen(v_ws_password) > 0) {
             strlcpy(PasswordWS, v_ws_password, sizeof(PasswordWS));
+          }
+          const char* v_admin_user = doc["admin_user"] | "";
+          if (strcmp(v_admin_user, "__keep__") != 0 && strlen(v_admin_user) > 0) {
+            strlcpy(admin_user, v_admin_user, sizeof(admin_user));
           }
 
           strlcpy(hostname_buf, v_hostname, sizeof(hostname_buf));
@@ -585,6 +579,7 @@ void wsSendSystem() {
     cfg["mqtt_enabled"] = mqtt_enabled;
     cfg["aht10_enabled"] = aht10_enabled;
     cfg["ir_receptor"] = (int)IR_ReceptorEstado;
+    cfg["admin_user"] = admin_user;
     configDirty = false;
   }
   char buffer[1024];

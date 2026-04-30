@@ -146,6 +146,11 @@ void sendPortalPage() {
   server.sendContent(grupo_buf);  // grupo
 
   server.sendContent_P(PAGE_PORTAL_2C);
+  server.sendContent(admin_user);
+  server.sendContent_P(PAGE_PORTAL_2E);
+  server.sendContent(hostname_buf);
+  server.sendContent_P(PAGE_PORTAL_3);
+
   String safeHost = hostname_buf;
   safeHost.replace("\"", "&quot;");
   server.sendContent(safeHost);  // hostname
@@ -212,6 +217,7 @@ void startConfigPortal() {
       String wsPass = server.arg("ws_pass");
 
       String grupo = server.arg("grupo");
+      String adminUser = server.arg("admin_user");
       String hostname = server.arg("hostname");
 
       // prioridade: manual > select
@@ -240,6 +246,10 @@ void startConfigPortal() {
       // grupo MQTT
       if (grupo.length() > 0) {
         strlcpy(grupo_buf, grupo.c_str(), sizeof(grupo_buf));
+      }
+
+      if (adminUser.length() > 0) {
+        strlcpy(admin_user, adminUser.c_str(), sizeof(admin_user));
       }
 
       // hostname (sanitizado)

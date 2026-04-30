@@ -50,7 +50,7 @@ const String buildVersion = "0.7.14";
 // ================================================================
 // PASSWORD
 // ================================================================
-// char Password[16];
+char admin_user[32] = "admin";
 char PasswordWS[16] = "";
 
 void initPassword() {

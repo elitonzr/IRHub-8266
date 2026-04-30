@@ -12,6 +12,17 @@
   </head>
 
   <body>
+    <div id="loginModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+      <div style="background:#1f2937;padding:28px;border-radius:12px;width:300px;display:flex;flex-direction:column;gap:12px;">
+        <h3 style="margin:0;text-align:center;font-size:15px;">Login</h3>
+        <input id="loginUser" type="text" placeholder="Usuário" value="admin" />
+        <input id="loginPass" type="password" placeholder="Senha" onkeydown="if(event.key==='Enter')submitLogin()" />
+        <span id="loginError" style="display:none;color:#ef4444;font-size:12px;text-align:center;">Usuário ou senha incorretos</span>
+        <button class="btn-primary" onclick="submitLogin()">Entrar</button>
+        <button onclick="hideLoginModal()" style="background:#374151;">Cancelar</button>
+      </div>
+    </div>
+
     <div id="wsOverlay">
       <div class="ws-overlay-icon">⚡</div>
       <div class="ws-overlay-title">Reconectando...</div>
@@ -28,10 +39,27 @@
         <a href="/ir" data-link>IR</a>
         <a href="/system" data-link>System</a>
       </div>
-      <span id="versionBadge" style="display:none;font-size:11px;background:#16a34a;padding:3px 8px;border-radius:999px;cursor:default"></span>
+      <span
+        id="versionBadge"
+        style="
+          display: none;
+          font-size: 11px;
+          background: #16a34a;
+          padding: 3px 8px;
+          border-radius: 999px;
+          cursor: default;
+        "
+      ></span>
       <span class="navbar-ws" id="wsStatus">
         <span class="status offline">⚡ Desconectado</span>
       </span>
+      <button
+        id="btnLogin"
+        onclick="handleLoginBtn()"
+        style="width: auto; margin-top: 0; padding: 6px 14px; font-size: 13px"
+      >
+        Login
+      </button>
     </nav>
 
     <div

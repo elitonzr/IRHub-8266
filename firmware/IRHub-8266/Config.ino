@@ -41,6 +41,7 @@ void loadConfig() {
     aht10_enabled = doc["aht10_enabled"] | false;
 
     strlcpy(PasswordWS, doc["ws_password"] | PasswordWS, sizeof(PasswordWS));
+    strlcpy(admin_user, doc["admin_user"] | admin_user, sizeof(admin_user));
 
     int ir_receptor = doc["ir_receptor"] | (int)IR_PROTOCOL_KNOWN;
     if (ir_receptor >= 0 && ir_receptor <= 11) {
@@ -80,6 +81,7 @@ void saveConfig() {
 
   doc["aht10_enabled"] = aht10_enabled;
   doc["ws_password"] = PasswordWS;
+  doc["admin_user"] = admin_user;
   doc["ir_receptor"] = (int)IR_ReceptorEstado;
 
   // Backup do config anterior

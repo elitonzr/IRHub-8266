@@ -64,6 +64,11 @@ const char PAGE_PORTAL_2D[] PROGMEM = R"rawliteral(' style='margin-top:0'>
 
 const char PAGE_PORTAL_2C[] PROGMEM = R"rawliteral('>
 
+<label>Usuário Admin</label>
+<input type='text' name='admin_user' value=')rawliteral";
+
+const char PAGE_PORTAL_2E[] PROGMEM = R"rawliteral('>
+
 <label>Hostname</label>
 <input type='text' name='hostname' value=")rawliteral";
 
