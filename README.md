@@ -53,8 +53,8 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 - Controle remoto virtual com modelos configuráveis via `remotes.json`
 - Histórico dos últimos 10 sinais IR recebidos
 - Autenticação HTTP Basic nas rotas de arquivo (`/files`, `/delete`, `/download`, `/upload`, `/update`)
-- Autenticação WebSocket por hash SHA-256 — exigida para ações de configuração e gestão de arquivos
-- Rotas públicas (sem autenticação): `/`, `/ir`, `/system`, `/settings`, `/app.js`, `/style.css`, `/remotes.json`, WebSocket (leitura de estado e envio IR)
+- Autenticação WebSocket por login com usuário e senha — exigida para acesso às páginas `/ir`, `/system` e `/settings` e para ações de configuração
+- Rotas públicas (sem autenticação): `/` (apenas card Controle IR), `/app.js`, `/style.css`, `/remotes.json`, WebSocket (leitura de estado e envio IR)
 
 ### WiFiManager
 
@@ -103,10 +103,10 @@ A configuração é feita pelo portal WiFiManager (primeira inicialização ou p
 
 ### Portal WiFi AP
 
-O portal de configuração WiFi (`irhub8266` / `192.168.4.1`) é protegido por `PasswordPortal`.
+O portal de configuração WiFi (`irhub8266` / `192.168.4.1`) é protegido por `PasswordWS` (mesma senha do WebSocket).
 
 - **Padrão:** ChipID em hex (8 dígitos)
-- **Configurável em:** `/settings` → "Senha Portal AP"
+- **Configurável em:** `/settings` → "Senha WebSocket"
 
 ### Parâmetros disponíveis
 
@@ -122,17 +122,19 @@ O portal de configuração WiFi (`irhub8266` / `192.168.4.1`) é protegido por `
 | MQTT Password | —            | Senha MQTT                       |
 | MQTT Enabled  | `no`         | Habilita/desabilita MQTT         |
 | AHT10 Enabled | `false`      | Habilita/desabilita sensor AHT10 |
+| Admin User    | `admin`      | Usuário de login do dashboard    |
 
 ### Senhas padrão
 
-| Acesso            | Usuário | Senha padrão              | Configurável em  |
-|-------------------|---------|---------------------------|------------------|
-| HTTP Basic Auth   | `admin` | ChipID em hex (8 dígitos) | `/settings`      |
-| WebSocket         | —       | ChipID em hex (8 dígitos) | `/settings`      |
-| OTA (ArduinoOTA)  | —       | ChipID em hex (8 dígitos) | não              |
-| OTA (browser)     | `admin` | ChipID em hex (8 dígitos) | `/settings`      |
-| Portal WiFi AP    | —       | ChipID em hex (8 dígitos) | `/settings`      |
+| Acesso            | Usuário        | Senha padrão              | Configurável em  |
+|-------------------|----------------|---------------------------|------------------|
+| HTTP Basic Auth   | `admin`        | ChipID em hex (8 dígitos) | `/settings`      |
+| WebSocket / Login | `admin`        | ChipID em hex (8 dígitos) | `/settings`      |
+| OTA (ArduinoOTA)  | —              | ChipID em hex (8 dígitos) | não              |
+| OTA (browser)     | `admin`        | ChipID em hex (8 dígitos) | `/settings`      |
+| Portal WiFi AP    | —              | ChipID em hex (8 dígitos) | `/settings`      |
 
+> O usuário padrão é `admin` e pode ser alterado em `/settings` → "Usuário Admin".  
 > O ChipID é exibido no monitor serial durante o boot. Após conectar à rede, consulte as senhas via Telnet com o comando `senha`.
 
 ---
@@ -151,9 +153,8 @@ Protege as rotas de manipulação de arquivos e atualização OTA.
 | `/update`   | POST   | ✅        |
 | `/files`    | GET    | ✅        |
 
-- **Usuário:** `admin`
+- **Usuário:** `admin` (configurável em `/settings` → "Usuário Admin")
 - **Senha:** ChipID em hex por padrão; configurável em `/settings` → "Senha WebSocket"
-- **Exceção:** `/update` usa a senha OTA (ChipID em hex, não configurável via settings)
 
 ---
 

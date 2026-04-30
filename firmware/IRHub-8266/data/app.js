@@ -430,8 +430,7 @@ function updateSystemWS(data) {
   }
 
   // Popula o form de configurações apenas uma vez por conexão.
-  if (data.config && !state.configPopulated) {
-    setVal("cfg_admin_user", cfg.admin_user);
+if (data.config && !state.configPopulated) {
     populateConfig(data.config);
     state.configPopulated = true;
   }
@@ -871,9 +870,13 @@ async function importConfig() {
   formData.append("upload", file);
 
   const xhr = new XMLHttpRequest();
+
+    const httpPass = prompt("🔐 Senha para continuar:");
+  if (!httpPass) return;
+
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
-  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + PasswordWS));
+  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + httpPass));
   xhr.onload = () => {
     if (xhr.status === 401) {
       showConfigStatus("❌ Senha incorreta.", "#ef4444");
@@ -934,9 +937,13 @@ async function importRemotes() {
   formData.append("upload", file);
 
   const xhr = new XMLHttpRequest();
+
+    const httpPass = prompt("🔐 Senha para continuar:");
+  if (!httpPass) return;
+
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
-  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + PasswordWS));
+  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + httpPass));
   xhr.onload = () => {
     if (xhr.status === 401) {
       showRemotesStatus("❌ Senha incorreta.", "#ef4444");
@@ -1013,10 +1020,13 @@ async function startOTAUpdate() {
     showOtaStatus("❌ Falha na conexão.", "#ef4444");
   };
 
+  const httpPass = prompt("🔐 Senha para continuar:");
+  if (!httpPass) return;
+  
   showOtaStatus("⏳ Enviando firmware...", "#facc15");
 
   xhr.open("POST", "/update", true);
-  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + PasswordWS));
+  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + httpPass));
   xhr.send(formData);
 }
 
@@ -1279,6 +1289,7 @@ function populateConfig(data) {
     cfg_mqtt_enabled: data.mqtt_enabled ? "true" : "false",
     cfg_aht10_enabled: data.aht10_enabled ? "true" : "false",
     cfg_wifi_ssid: data.wifi_ssid,
+    cfg_admin_user: data.admin_user,
     // cfg_mqtt_password omitido — backend não envia a senha
   };
 
