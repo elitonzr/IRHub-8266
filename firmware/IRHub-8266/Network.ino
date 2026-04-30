@@ -141,8 +141,7 @@ void sendPortalPage() {
   server.sendContent_P(PAGE_PORTAL_2);
   server.sendContent(PasswordWS);  // ws_pass
 
-  server.sendContent_P(PAGE_PORTAL_2B);
-  server.sendContent(PasswordPortal);  // portal_pass
+  server.sendContent(PasswordWS);  // portal_pass
   server.sendContent_P(PAGE_PORTAL_2D);
   server.sendContent(grupo_buf);  // grupo
 
@@ -186,7 +185,7 @@ void startConfigPortal() {
   debugLogPrint("[Portal]", "Modo AP - Portal config");
 
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(hostname_buf, PasswordPortal);
+  WiFi.softAP(hostname_buf, PasswordWS);
 
   delay(300);
 
@@ -211,10 +210,7 @@ void startConfigPortal() {
       hasActivity = true;
       String wifiPass = server.arg("wifi_pass");
       String wsPass = server.arg("ws_pass");
-      String portalPass = server.arg("portal_pass");
-      if (portalPass.length() > 0) {
-        strlcpy(PasswordPortal, portalPass.c_str(), sizeof(PasswordPortal));
-      }
+
       String grupo = server.arg("grupo");
       String hostname = server.arg("hostname");
 
@@ -356,5 +352,5 @@ void recalcularTopicos() {
 // LOG PORTAL
 // ==========================
 void printPortalCredentials() {
-  debugLogPrintf("[AUTH]", "%-6s | SSID    : %-12s | Senha: %-10s | %s", "Portal", hostname_buf, PasswordPortal, "http://192.168.4.1/start");
+  debugLogPrintf("[AUTH]", "%-6s | SSID    : %-12s | Senha: %-10s | %s", "Portal", hostname_buf, PasswordWS, "http://192.168.4.1/start");
 }

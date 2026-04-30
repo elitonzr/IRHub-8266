@@ -51,15 +51,11 @@ const String buildVersion = "0.7.14";
 // PASSWORD
 // ================================================================
 // char Password[16];
-char PasswordPortal[16] = "";
 char PasswordWS[16] = "";
 
 void initPassword() {
   if (strlen(PasswordWS) == 0) {
     snprintf(PasswordWS, sizeof(PasswordWS), "%08X", ESP.getChipId());
-  }
-  if (strlen(PasswordPortal) == 0) {
-    snprintf(PasswordPortal, sizeof(PasswordPortal), "%08X", ESP.getChipId());
   }
 }
 

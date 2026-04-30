@@ -58,20 +58,14 @@ function connectWS() {
 
   state.ws = new WebSocket(`ws://${location.hostname}:81`);
 
-  // state.ws.onopen = () => {
-  //   updateWSStatus(true);
-  //   if (state.reconnectTimer) {
-  //     clearTimeout(state.reconnectTimer);
-  //     state.reconnectTimer = null;
-  //   }
-  //   wsSend({ cmd: "auth", password: state.wsPassword || "" });
-  // };
-
   state.ws.onopen = () => {
     updateWSStatus(true);
     if (state.reconnectTimer) {
       clearTimeout(state.reconnectTimer);
       state.reconnectTimer = null;
+    }
+    if (state.wsPassword) {
+      wsSend({ cmd: "getChipId" });
     }
     flushQueue();
   };
@@ -191,6 +185,7 @@ async function navigateTo(path) {
     }
 
     contentArea.innerHTML = await response.text();
+    await Promise.resolve();
     initPageScript(path);
     updateActiveLinks(path);
     replayLastPayloads();
@@ -228,6 +223,7 @@ function initPageScript(path) {
   }
 
   if (path === "/system") {
+    state.logRenderedIndex = 0;
     renderLogHistory();
   }
 
@@ -1394,10 +1390,6 @@ async function saveDeviceConfig() {
     mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
     aht10_enabled: get("cfg_aht10_enabled") === "true",
     ws_password: wsPassword.length > 0 ? wsPassword : "__keep__",
-    portal_password:
-      get("cfg_portal_password").length > 0
-        ? get("cfg_portal_password")
-        : "__keep__",
     ir_receptor: state.irModeIndex,
   });
 

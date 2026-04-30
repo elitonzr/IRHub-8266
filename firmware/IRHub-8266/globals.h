@@ -35,7 +35,6 @@ extern char snStr[16];
 // PASSWORD
 // ================================================================
 // extern char Password[16];
-extern char PasswordPortal[16];
 extern char PasswordWS[16];
 void initPassword();
 

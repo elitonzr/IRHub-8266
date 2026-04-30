@@ -433,7 +433,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         if (strcmp(cmd, "wifiPortal") == 0) {
           // CORRIGIDO
           const char* provided = doc["password"] | "";
-          if (strcmp(provided, PasswordPortal) != 0) {
+          if (strcmp(provided, PasswordWS) != 0) {
             debugLogPrint("[ERROR]", "Erro de autenticação");
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
@@ -447,7 +447,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         }
         if (strcmp(cmd, "resetWifi") == 0) {
           const char* provided = doc["password"] | "";
-          if (strcmp(provided, PasswordPortal) != 0) {
+          if (strcmp(provided, PasswordWS) != 0) {
             webSocket.sendTXT(num, "{\"type\":\"authError\"}");
             return;
           }
@@ -484,10 +484,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           if (strcmp(v_ws_password, "__keep__") != 0 && strlen(v_ws_password) > 0) {
             strlcpy(PasswordWS, v_ws_password, sizeof(PasswordWS));
           }
-          const char* v_portal_password = doc["portal_password"] | "";
-          if (strcmp(v_portal_password, "__keep__") != 0 && strlen(v_portal_password) > 0) {
-            strlcpy(PasswordPortal, v_portal_password, sizeof(PasswordPortal));
-          }
+
           strlcpy(hostname_buf, v_hostname, sizeof(hostname_buf));
           strlcpy(mqtt_id_buf, v_mqtt_id, sizeof(mqtt_id_buf));
           strlcpy(grupo_buf, v_grupo, sizeof(grupo_buf));
@@ -519,9 +516,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           }
           recalcularTopicos();
           saveConfig();
+          configDirty = true;
           if (mqtt_enabled) {
             mqtt_client.disconnect();
             mqtt_client.setServer(mqtt_server, mqtt_port);
+            wsSendSystem();
             debugLogPrint("[MQTT]", "Reconectando com novas configurações...");
           } else {
             mqtt_client.disconnect();
