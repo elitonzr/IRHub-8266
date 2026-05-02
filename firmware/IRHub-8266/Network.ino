@@ -141,7 +141,6 @@ void sendPortalPage() {
   server.sendContent_P(PAGE_PORTAL_2);
   server.sendContent(PasswordWS);  // ws_pass
 
-  server.sendContent(PasswordWS);  // portal_pass
   server.sendContent_P(PAGE_PORTAL_2D);
   server.sendContent(grupo_buf);  // grupo
 
@@ -150,10 +149,6 @@ void sendPortalPage() {
   server.sendContent_P(PAGE_PORTAL_2E);
   server.sendContent(hostname_buf);
   server.sendContent_P(PAGE_PORTAL_3);
-
-  String safeHost = hostname_buf;
-  safeHost.replace("\"", "&quot;");
-  server.sendContent(safeHost);  // hostname
 
   bool hasStaticIP = strlen(ipStr) > 6;
 
@@ -165,7 +160,6 @@ void sendPortalPage() {
   ipModeScript += hasStaticIP ? "static" : "dhcp";
   ipModeScript += "');</script>";
 
-  server.sendContent_P(PAGE_PORTAL_3);
   server.sendContent(hasStaticIP ? ipStr : "");
 
   server.sendContent_P(PAGE_PORTAL_4);

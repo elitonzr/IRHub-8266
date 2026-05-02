@@ -339,7 +339,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
         if (!cmd) return;
 
         // if (strcmp(cmd, "auth") != 0) {
-          debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
+        debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
         // }
 
         if (strcmp(cmd, "login") == 0) {
@@ -522,6 +522,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           }
           webSocket.broadcastTXT("{\"type\":\"configSaved\"}");
         }
+
+        if (strcmp(cmd, "getSystem") == 0) {
+          configDirty = true;
+          wsSendSystemTo_withConfig(num);
+          return;
+        }
+
         if (strcmp(cmd, "resetConfig") == 0) {
           debugLogPrint("[WS]", "Reset Config solicitado");
           webSocket.broadcastTXT("{\"type\":\"resetConfig\"}");
@@ -603,6 +610,7 @@ void wsSendLEDB() {
   }
   webSocket.broadcastTXT(buffer, len);
 }
+
 void wsSendAHT10() {
   lerSensorAHT10();
   StaticJsonDocument<128> doc;
@@ -621,6 +629,7 @@ void wsSendAHT10() {
   }
   webSocket.broadcastTXT(buffer, len);
 }
+
 void wsSendNetwork() {
   StaticJsonDocument<256> doc;
   doc["type"] = "network";
@@ -638,6 +647,7 @@ void wsSendNetwork() {
   }
   webSocket.broadcastTXT(buffer, len);
 }
+
 void wsSendMQTT() {
   StaticJsonDocument<384> doc;
   doc["type"] = "mqtt";
@@ -657,6 +667,7 @@ void wsSendMQTT() {
   }
   webSocket.broadcastTXT(buffer, len);
 }
+
 void wsSendInfoIR() {
   StaticJsonDocument<128> doc;
   doc["type"] = "ir";
@@ -670,6 +681,7 @@ void wsSendInfoIR() {
   }
   webSocket.broadcastTXT(buffer, len);
 }
+
 void wsSendInfoIR_Receptor() {
   if (!lastIR.valido) return;
   StaticJsonDocument<192> doc;
@@ -688,6 +700,7 @@ void wsSendInfoIR_Receptor() {
   }
   webSocket.broadcastTXT(buffer, len);
 }
+
 void wsSendIREmissor(uint64_t code, decode_type_t protocol, uint8_t bits, const char* status, const char* origem) {
   char payload[256];
   size_t len = buildIRJson(payload, sizeof(payload), code, protocol, bits, status, origem);
@@ -697,6 +710,37 @@ void wsSendIREmissor(uint64_t code, decode_type_t protocol, uint8_t bits, const 
   }
   webSocket.broadcastTXT(payload, len);
 }
+
+void wsSendSystemTo_withConfig(uint8_t num) {
+  StaticJsonDocument<1024> doc;
+  doc["type"] = "system";
+  doc["name"] = mqtt_id_buf;
+  doc["buildDateTime"] = buildDateTime;
+  doc["buildVersion"] = buildVersion;
+  doc["uptime"] = getFormattedUptime();
+  doc["uptime_seconds"] = uptimeSeconds;
+  doc["heap"] = ESP.getFreeHeap();
+  JsonObject cfg = doc.createNestedObject("config");
+  cfg["hostname"] = hostname_buf;
+  cfg["mqtt_id"] = mqtt_id_buf;
+  cfg["grupo"] = grupo_buf;
+  cfg["wifi_ssid"] = wifi_ssid_buf;
+  cfg["ip"] = ipStr;
+  cfg["gw"] = gwStr;
+  cfg["sn"] = snStr;
+  cfg["mqtt_server"] = mqtt_server;
+  cfg["mqtt_port"] = mqtt_port;
+  cfg["mqtt_user"] = mqtt_user_buf;
+  cfg["mqtt_enabled"] = mqtt_enabled;
+  cfg["aht10_enabled"] = aht10_enabled;
+  cfg["ir_receptor"] = (int)IR_ReceptorEstado;
+  cfg["admin_user"] = admin_user;
+  char buffer[1024];
+  size_t len = serializeJson(doc, buffer, sizeof(buffer));
+  if (len == 0 || len >= sizeof(buffer)) return;
+  webSocket.sendTXT(num, buffer, len);
+}
+
 void wsSendSystemTo(uint8_t num) {
   StaticJsonDocument<1024> doc;
   doc["type"] = "system";
@@ -712,6 +756,7 @@ void wsSendSystemTo(uint8_t num) {
   if (len == 0 || len >= sizeof(buffer)) return;
   webSocket.sendTXT(num, buffer, len);
 }
+
 void wsSendLEDBTo(uint8_t num) {
   StaticJsonDocument<64> doc;
   doc["type"] = "ledb";
@@ -724,6 +769,7 @@ void wsSendLEDBTo(uint8_t num) {
   }
   webSocket.sendTXT(num, buffer, len);
 }
+
 void wsSendAHT10To(uint8_t num) {
   lerSensorAHT10();
   StaticJsonDocument<128> doc;
@@ -742,6 +788,7 @@ void wsSendAHT10To(uint8_t num) {
   }
   webSocket.sendTXT(num, buffer, len);
 }
+
 void wsSendNetworkTo(uint8_t num) {
   StaticJsonDocument<256> doc;
   doc["type"] = "network";
@@ -756,6 +803,7 @@ void wsSendNetworkTo(uint8_t num) {
   if (len == 0 || len >= sizeof(buffer)) return;
   webSocket.sendTXT(num, buffer, len);
 }
+
 void wsSendMQTTTo(uint8_t num) {
   StaticJsonDocument<384> doc;
   doc["type"] = "mqtt";
@@ -772,6 +820,7 @@ void wsSendMQTTTo(uint8_t num) {
   if (len == 0 || len >= sizeof(buffer)) return;
   webSocket.sendTXT(num, buffer, len);
 }
+
 void wsSendInfoIRTo(uint8_t num) {
   StaticJsonDocument<128> doc;
   doc["type"] = "ir";

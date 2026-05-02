@@ -175,6 +175,11 @@ void loop() {
 
   // ---- UPTIME ----
   static unsigned long lastUptimeMillis = 0;
+  static bool uptimeInit = false;
+  if (!uptimeInit) {
+    lastUptimeMillis = now;
+    uptimeInit = true;
+  }
   if (now - lastUptimeMillis >= 1000) {
     lastUptimeMillis += 1000;
     uptimeSeconds++;

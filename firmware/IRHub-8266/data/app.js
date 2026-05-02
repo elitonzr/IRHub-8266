@@ -40,7 +40,7 @@ function lsGet(key, fallback = "") {
 function lsSet(key, val) {
   try {
     localStorage.setItem(key, val);
-  } catch {}
+  } catch { }
 }
 
 /* =========================================================
@@ -200,7 +200,7 @@ function initPageScript(path) {
         state.selectedRemote = e.target.value;
         try {
           lsSet("selectedRemote", e.target.value);
-        } catch (_) {}
+        } catch (_) { }
         loadButtons(e.target.value);
       });
     }
@@ -220,6 +220,10 @@ function initPageScript(path) {
   if (path === "/settings") {
     if (!state._settingsFormDirty) {
       state.configPopulated = false;
+      if (state.lastConfig) {
+        populateConfig(state.lastConfig);
+        state.configPopulated = true;
+      }
     }
     state._settingsFormDirty = false;
 
@@ -424,13 +428,22 @@ function updateSystemWS(data) {
     }
   }
 
+  if (data.config) {
+    state.lastConfig = data.config;
+  }
+
+  if (data.config && !state.configPopulated) {
+    populateConfig(data.config);
+    state.configPopulated = true;
+  }
+
   if (data.uptime_seconds !== undefined) {
     state.uptimeSeconds = data.uptime_seconds;
     restartUptimeInterval();
   }
 
   // Popula o form de configurações apenas uma vez por conexão.
-if (data.config && !state.configPopulated) {
+  if (data.config && !state.configPopulated) {
     populateConfig(data.config);
     state.configPopulated = true;
   }
@@ -730,9 +743,9 @@ function saveLogToHistory(data) {
 
   state.logHistory.push(line);
 
-  if (newline) {
-    state.logHistory.push("");
-  }
+  // if (newline) {
+  //   state.logHistory.push("");
+  //}
 
   if (state.logHistory.length > 200) {
     state.logHistory.splice(0, state.logHistory.length - 200);
@@ -871,7 +884,7 @@ async function importConfig() {
 
   const xhr = new XMLHttpRequest();
 
-    const httpPass = prompt("🔐 Senha para continuar:");
+  const httpPass = prompt("🔐 Senha para continuar:");
   if (!httpPass) return;
 
   xhr.withCredentials = true;
@@ -938,7 +951,7 @@ async function importRemotes() {
 
   const xhr = new XMLHttpRequest();
 
-    const httpPass = prompt("🔐 Senha para continuar:");
+  const httpPass = prompt("🔐 Senha para continuar:");
   if (!httpPass) return;
 
   xhr.withCredentials = true;
@@ -1022,7 +1035,7 @@ async function startOTAUpdate() {
 
   const httpPass = prompt("🔐 Senha para continuar:");
   if (!httpPass) return;
-  
+
   showOtaStatus("⏳ Enviando firmware...", "#facc15");
 
   xhr.open("POST", "/update", true);
@@ -1403,6 +1416,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const currentPath = window.location.pathname;
   navigateTo(routes[currentPath] ? currentPath : "/");
 
+  updateWSStatus(false);
   connectWS();
 
   // Se WS já estava aberto (navegação SPA), atualiza badge imediatamente.
