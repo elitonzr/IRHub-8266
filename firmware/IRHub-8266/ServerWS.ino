@@ -5,7 +5,7 @@ static bool wsAuthenticated[WEBSOCKETS_SERVER_CLIENT_MAX] = {};
 
 void getHttpCredentials(char* user, size_t userSize, char* pass, size_t passSize) {
   initPassword();
-  strlcpy(user, "admin", userSize);
+  strlcpy(user, admin_user, userSize);
   strlcpy(pass, PasswordWS, passSize);
 }
 
@@ -519,6 +519,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
           } else {
             mqtt_client.disconnect();
             debugLogPrint("[MQTT]", "Desabilitado, desconectando.");
+            wsSendSystem();
           }
           webSocket.broadcastTXT("{\"type\":\"configSaved\"}");
         }

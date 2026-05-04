@@ -77,7 +77,7 @@ const char PAGE_PORTAL_3[] PROGMEM = R"rawliteral(">
 <label>Modo de IP</label>
 <div style='display:flex;gap:20px;margin-top:10px'>
   <label style='display:flex;align-items:center;gap:6px;cursor:pointer'>
-    <input type='radio' name='ip_mode' id='ip_dhcp' value='dhcp' onchange="toggleIP(this.value)" checked> DHCP
+    <input type='radio' name='ip_mode' id='ip_dhcp' value='dhcp' onchange="toggleIP(this.value)"> DHCP
   </label>
   <label style='display:flex;align-items:center;gap:6px;cursor:pointer'>
     <input type='radio' name='ip_mode' id='ip_static' value='static' onchange="toggleIP(this.value)"> IP Fixo

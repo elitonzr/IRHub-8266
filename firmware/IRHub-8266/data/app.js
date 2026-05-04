@@ -18,7 +18,7 @@ const state =
     wsQueue: [], // fila de mensagens pendentes enquanto WS está offline
     uptimeSeconds: 0, // segundos de uptime sincronizados com o backend
     irHistory: [], // histórico de sinais IR recebidos (máx 10)
-    logHistory: [], // histórico de logs em tempo real (máx 50)
+    logHistory: [], // histórico de logs em tempo real (máx 200)
     configPopulated: false, // evita repopular o form de config a cada mensagem
     irModeIndex: 0, // índice do modo de recepção IR atual
     irDotTimer: null, // timer do dot de atividade IR
@@ -26,8 +26,11 @@ const state =
     saveConfigTimer: null, // timeout de confirmação de saveConfig
     remotesData: {}, // dados do remotes.json carregados em memória
     lastPayloads: {}, // cache dos últimos payloads recebidos por type
-    selectedRemote: lsGet("selectedRemote") || null, // último modelo selecionado
-    wsAuthenticated: false,
+    lastConfig: null, // última config recebida via WS (type: system)
+    logRenderedIndex: 0, // índice de renderização incremental do console
+    _settingsFormDirty: false, // true se o usuário editou o form antes de salvar
+    selectedRemote: lsGet("selectedRemote") || null, // último modelo de controle remoto selecionado
+    wsAuthenticated: false, // true após login WS bem-sucedido
   });
 
 function lsGet(key, fallback = "") {
@@ -40,7 +43,7 @@ function lsGet(key, fallback = "") {
 function lsSet(key, val) {
   try {
     localStorage.setItem(key, val);
-  } catch { }
+  } catch {}
 }
 
 /* =========================================================
@@ -102,6 +105,12 @@ function flushQueue() {
   }
 }
 
+/* =========================================================
+   2a. AUTENTICAÇÃO
+   Login/logout via WS. Modal exibido ao clicar em "Login"
+   na navbar. Credenciais: admin_user + PasswordWS do backend.
+========================================================= */
+
 function showLoginModal() {
   const modal = document.getElementById("loginModal");
   if (modal) modal.style.display = "flex";
@@ -112,6 +121,7 @@ function hideLoginModal() {
   if (modal) modal.style.display = "none";
 }
 
+// Envia credenciais ao backend via WS para autenticação.
 function submitLogin() {
   const user = document.getElementById("loginUser")?.value || "";
   const pass = document.getElementById("loginPass")?.value || "";
@@ -123,16 +133,19 @@ function doLogout() {
   wsSend({ cmd: "logout" });
 }
 
+// Atualiza o botão Login/Logoff na navbar e recarrega a rota atual
+// para aplicar restrições de visibilidade conforme estado de autenticação.
 function updateAuthUI(authenticated) {
   const btn = document.getElementById("btnLogin");
   if (btn) btn.textContent = authenticated ? "Logoff" : "Login";
-  // Recarrega a rota atual para aplicar visibilidade
   navigateTo(window.location.pathname);
 }
 
 /* =========================================================
    3. ROTEAMENTO SPA
    Carrega partials HTML por rota sem recarregar a página.
+   Rotas protegidas (/ir, /system, /settings) redirecionam
+   para / se o usuário não estiver autenticado.
 ========================================================= */
 
 const routes = {
@@ -146,13 +159,12 @@ async function navigateTo(path) {
   const contentArea = document.getElementById("app-content");
   if (!contentArea) return;
 
-  window.history.pushState({}, "", path);
-
+  // Bloqueia acesso a rotas protegidas sem autenticação.
   const protectedRoutes = ["/ir", "/system", "/settings"];
   if (!state.wsAuthenticated && protectedRoutes.includes(path)) {
-    window.history.pushState({}, "", "/");
     path = "/";
   }
+  window.history.pushState({}, "", path);
 
   try {
     const file = routes[path];
@@ -170,7 +182,7 @@ async function navigateTo(path) {
     }
 
     contentArea.innerHTML = await response.text();
-    await Promise.resolve();
+    await Promise.resolve(); // garante que o DOM foi atualizado antes de initPageScript
     initPageScript(path);
     updateActiveLinks(path);
     replayLastPayloads();
@@ -194,30 +206,33 @@ document.addEventListener("click", (e) => {
 // Inicializa scripts específicos de cada rota após injeção do HTML.
 function initPageScript(path) {
   if (path === "/" || path === "/index.html") {
+    // Vincula evento de troca de modelo ao select de controles remotos.
     const select = document.getElementById("remoteSelect");
     if (select) {
       select.addEventListener("change", (e) => {
         state.selectedRemote = e.target.value;
         try {
           lsSet("selectedRemote", e.target.value);
-        } catch (_) { }
+        } catch (_) {}
         loadButtons(e.target.value);
       });
     }
     loadRemotes();
 
-    // Ocultar seções protegidas se não autenticado
+    // Oculta o gerenciador de arquivos se não autenticado.
     const fileManager = document.querySelector(".card-file-manager");
     if (fileManager)
       fileManager.style.display = state.wsAuthenticated ? "" : "none";
   }
 
   if (path === "/system") {
+    // Reinicia o índice de renderização para exibir o histórico completo.
     state.logRenderedIndex = 0;
     renderLogHistory();
   }
 
   if (path === "/settings") {
+    // Repopula o form apenas se não houver edições pendentes do usuário.
     if (!state._settingsFormDirty) {
       state.configPopulated = false;
       if (state.lastConfig) {
@@ -227,6 +242,7 @@ function initPageScript(path) {
     }
     state._settingsFormDirty = false;
 
+    // Marca o form como sujo ao primeiro input do usuário.
     document
       .querySelectorAll("#app-content input, #app-content select")
       .forEach((el) => {
@@ -252,6 +268,7 @@ function updateActiveLinks(path) {
    Roteador central — cada type dispara um updater de UI.
 ========================================================= */
 
+// Alterna entre exibir o modal de login ou enviar logout conforme estado atual.
 function handleLoginBtn() {
   if (state.wsAuthenticated) {
     doLogout();
@@ -268,6 +285,7 @@ function handleWSMessage(event) {
     return;
   }
 
+  // Armazena o último payload de cada type para replayLastPayloads().
   if (data.type) state.lastPayloads[data.type] = data;
 
   if (!data.type) return;
@@ -276,16 +294,16 @@ function handleWSMessage(event) {
     case "loginOk":
       state.wsAuthenticated = true;
       hideLoginModal();
-      state.configPopulated = false;
+      // Só reseta configPopulated se o form não tiver edições pendentes.
+      if (!state._settingsFormDirty) state.configPopulated = false;
       replayLastPayloads();
       updateAuthUI(true);
       break;
 
     case "loginError":
       state.wsAuthenticated = false;
-      document
-        .getElementById("loginError")
-        ?.style.setProperty("display", "block");
+      const errEl = document.getElementById("loginError");
+      if (errEl) errEl.style.display = "block";
       break;
 
     case "logoutOk":
@@ -343,10 +361,6 @@ function handleWSMessage(event) {
     case "configReset":
       alert("Configurações resetadas!");
       break;
-
-    // case "log":
-    //   saveLogToHistory(data);
-    //   break;
 
     case "console":
       saveLogToHistory(data);
@@ -415,6 +429,7 @@ function updateSystemWS(data) {
 
   document.title = `✅ ${data.name}`;
 
+  // Exibe badge de "firmware atualizado" se a versão mudou desde a última visita.
   const knownVersion = lsGet("knownVersion");
   if (data.buildVersion && data.buildVersion !== knownVersion) {
     lsSet("knownVersion", data.buildVersion);
@@ -428,10 +443,12 @@ function updateSystemWS(data) {
     }
   }
 
+  // Armazena config para uso em navegações futuras (ex: ao abrir /settings).
   if (data.config) {
     state.lastConfig = data.config;
   }
 
+  // Popula o form de configurações apenas uma vez por conexão.
   if (data.config && !state.configPopulated) {
     populateConfig(data.config);
     state.configPopulated = true;
@@ -440,12 +457,6 @@ function updateSystemWS(data) {
   if (data.uptime_seconds !== undefined) {
     state.uptimeSeconds = data.uptime_seconds;
     restartUptimeInterval();
-  }
-
-  // Popula o form de configurações apenas uma vez por conexão.
-  if (data.config && !state.configPopulated) {
-    populateConfig(data.config);
-    state.configPopulated = true;
   }
 
   // Mostra/oculta card AHT10 conforme configuração.
@@ -461,7 +472,7 @@ function updateLEDBWS(data) {
   if (dot) dot.className = "dot " + (data.state ? "yellow" : "gray");
 }
 
-// Mapa de nome de protocolo IR para índice numérico (espelhado no backend).
+// Mapa de nome de protocolo IR para índice numérico (espelhado no backend enum IR_ReceptorMode).
 const irModeMap = {
   ALL: 0,
   KNOWN: 1,
@@ -491,7 +502,7 @@ function updateIRWS(data) {
     if (sel) sel.value = irModeMap[data.receptor_protocol];
   }
 
-  // Atualiza dot apenas se não há timer ativo (evita conflito com flash).
+  // Atualiza dot apenas se não há timer ativo (evita conflito com flash de sinal recebido).
   if (!state.irDotTimer) {
     const dot = document.getElementById("irDot");
     if (dot)
@@ -521,7 +532,7 @@ function updateSensorWS(data) {
   status.textContent = "online";
 }
 
-// Trata sinal IR recebido: pisca dot e adiciona ao histórico.
+// Trata sinal IR recebido em tempo real: pisca dot e adiciona ao histórico.
 function updateIRReceptorWS(data) {
   flashIRDot();
   saveIRToHistory({
@@ -542,7 +553,7 @@ function flashIRDot() {
 
   dot.className = "dot green";
   state.irDotTimer = setTimeout(() => {
-    const d = document.getElementById("irDot"); // re-busca após possível navegação
+    const d = document.getElementById("irDot"); // re-busca após possível navegação SPA
     if (d) d.className = "dot yellow";
     state.irDotTimer = null;
   }, 300);
@@ -582,6 +593,9 @@ function updateMQTTWS(data) {
   }
 }
 
+// Reaaplica estado do receptor IR ao navegar entre páginas, sem acionar o flash do dot.
+// Diferente de updateIRReceptorWS (que trata sinais ao vivo), esta função apenas
+// restaura o select e o dot para o último estado conhecido.
 function applyIRReceptorState(data) {
   if (
     data.receptor_protocol &&
@@ -601,7 +615,9 @@ function applyIRReceptorState(data) {
   }
 }
 
-// Reaplica o último estado conhecido de cada tipo ao navegar entre páginas.
+// Reaplica o último estado conhecido de cada type ao navegar entre páginas.
+// ir_receptor usa applyIRReceptorState (restauração silenciosa) em vez de
+// updateIRReceptorWS (que aciona flash e adiciona ao histórico).
 function replayLastPayloads() {
   const updaters = {
     system: (data) => updateSystemWS(data),
@@ -720,18 +736,17 @@ function renderIRHistory() {
 
 /* =========================================================
    11. HISTÓRICO DE LOGS (Console)
-   Armazena as últimas 50 mensagens recebidas via WS "log".
+   Armazena as últimas 200 mensagens recebidas via WS "console".
+   Renderização incremental: só acrescenta novas linhas ao DOM,
+   sem re-renderizar o histórico completo a cada mensagem.
 ========================================================= */
 
-// Adiciona mensagem ao histórico e re-renderiza.
+// Adiciona mensagem ao histórico e re-renderiza incrementalmente.
 function saveLogToHistory(data) {
   if (!data.msg) return;
 
   const timestamp = new Date().toLocaleTimeString("pt-BR");
-
   const logTag = data.log || "[LOG]";
-  const newline = data.newline == 1 || data.newline === "1";
-
   const color = getLogColor(logTag);
   const safeMsg = escapeHtml(data.msg);
   const tagFormatted = logTag.padEnd(10, " ");
@@ -743,10 +758,6 @@ function saveLogToHistory(data) {
 
   state.logHistory.push(line);
 
-  // if (newline) {
-  //   state.logHistory.push("");
-  //}
-
   if (state.logHistory.length > 200) {
     state.logHistory.splice(0, state.logHistory.length - 200);
   }
@@ -754,8 +765,8 @@ function saveLogToHistory(data) {
   renderLogHistory();
 }
 
-// Renderiza o histórico de logs no DOM.
-
+// Renderiza incrementalmente o histórico de logs no DOM.
+// Ao navegar para /system, logRenderedIndex é zerado para exibir o histórico completo.
 function renderLogHistory() {
   const el = document.getElementById("log");
   if (!el) return;
@@ -776,6 +787,7 @@ function renderLogHistory() {
   el.appendChild(frag);
   state.logRenderedIndex = state.logHistory.length;
 
+  // Limita o DOM a 200 nós para evitar crescimento ilimitado.
   while (el.childNodes.length > 200) el.removeChild(el.firstChild);
   el.scrollTop = el.scrollHeight;
 }
@@ -797,6 +809,7 @@ function sendTelnetCmd() {
   input.value = "";
 }
 
+// Retorna a cor associada à tag de log para colorização do console.
 function getLogColor(tag) {
   if (!tag) return "#ffffff";
 
@@ -813,9 +826,9 @@ function getLogColor(tag) {
   if (tag.includes("BTN")) return "#fb923c"; // laranja claro
   if (tag.includes("OTA")) return "#facc15"; // amarelo
   if (tag.includes("LED A")) return "#009dff"; // azul
-  if (tag.includes("LED B")) return "#FFD700"; // amarelo
+  if (tag.includes("LED B")) return "#FFD700"; // dourado
   if (tag.includes("ERROR")) return "#FF4C4C"; // vermelho
-  if (tag.includes("WARN")) return "#FFD700"; // amarelo
+  if (tag.includes("WARN")) return "#FFD700"; // dourado
   if (tag.includes("INFO")) return "#87CEFA"; // azul claro
   if (tag.includes("TELNET")) return "#94a3b8"; // cinza azulado
   if (tag.includes("AUTH")) return "#f87171"; // vermelho claro
@@ -838,6 +851,8 @@ function escapeHtml(str) {
 
 /* =========================================================
    12. GERENCIAMENTO DE ARQUIVOS (config.json / remotes.json)
+   Upload via POST /upload com autenticação HTTP Basic.
+   Download via GET /download?file=<path> com autenticação HTTP Basic.
 ========================================================= */
 
 async function exportConfig() {
@@ -865,8 +880,6 @@ async function exportConfig() {
 async function importConfig() {
   if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?"))
     return;
-
-  // if (!(await authenticateWS())) return;
 
   const file = document.getElementById("configFile")?.files[0];
   if (!file) return alert("Selecione um arquivo .json");
@@ -1001,7 +1014,6 @@ async function startOTAUpdate() {
     return;
 
   const formData = new FormData();
-  // formData.append("firmware", file);
   formData.append("update", file);
 
   const xhr = new XMLHttpRequest();
@@ -1061,7 +1073,7 @@ function toggleMQTTFields() {
   if (fields) fields.style.display = enabled === "true" ? "block" : "none";
 }
 
-// Valida formato de endereço IP (string vazia = DHCP, aceito).
+// Valida formato de endereço IP. String vazia é aceita (indica modo DHCP).
 function validarIP(ip) {
   if (ip === "") return true;
   const partes = ip.split(".");
@@ -1075,6 +1087,8 @@ function validarIP(ip) {
 /* =========================================================
    14. CONTROLES REMOTOS (remotes.json)
    Carrega lista de modelos e renderiza botões dinamicamente.
+   O JSON suporta: type "button", "space", "label" e campos
+   opcionais: span, rowSpan, background, color, fontSize.
 ========================================================= */
 
 // Busca remotes.json do dispositivo e popula o select de modelos.
@@ -1175,6 +1189,8 @@ function loadButtons(model) {
 ========================================================= */
 
 // Envia código IR de um botão do controle remoto.
+// O código é passado como string para preservar o prefixo 0x e evitar
+// perda de precisão em inteiros de 64 bits no JSON.
 function sendIR(protocol, code, bits, element = null) {
   if (element) {
     element.classList.add("btn-active-feedback");
@@ -1188,7 +1204,6 @@ function sendIR(protocol, code, bits, element = null) {
   }
 
   showIrToast(`Enviando ${protocol}...`);
-  // wsSend({ cmd: "sendIR", code, protocol, bits: parseInt(bits) || 32 });
   wsSend({
     cmd: "sendIR",
     code: String(code),
@@ -1212,6 +1227,8 @@ function showIrToast(message, isError = false) {
 }
 
 // Envia código IR digitado manualmente no form.
+// Hex sem prefixo 0x é auto-prefixado antes do envio para garantir
+// interpretação correta pelo backend (strtoull com base 0).
 function sendIRManual() {
   const code = document.getElementById("irCode")?.value.trim();
   const proto = document.getElementById("irProto")?.value;
@@ -1229,7 +1246,8 @@ function sendIRManual() {
     );
   }
 
-  wsSend({ cmd: "sendIR", code, protocol: proto, bits });
+  const finalCode = isHexRaw ? "0x" + code : code;
+  wsSend({ cmd: "sendIR", code: finalCode, protocol: proto, bits });
 }
 
 /* =========================================================
@@ -1258,7 +1276,7 @@ function toggleLEDB() {
 
 /* =========================================================
    18. COMANDOS DO DISPOSITIVO
-   Todos os comandos destrutivos pedem confirmação e senha.
+   Todos os comandos destrutivos pedem confirmação antes de enviar.
 ========================================================= */
 
 function rebootDevice() {
@@ -1287,7 +1305,8 @@ async function resetConfig() {
 ========================================================= */
 
 // Popula o form de configurações com os dados recebidos do backend.
-// Chamado uma vez por conexão WS (via updateSystemWS).
+// Chamado uma vez por conexão WS (via updateSystemWS) ou ao navegar
+// para /settings se state.lastConfig estiver disponível.
 function populateConfig(data) {
   const fields = {
     cfg_hostname: data.hostname,
@@ -1303,7 +1322,7 @@ function populateConfig(data) {
     cfg_aht10_enabled: data.aht10_enabled ? "true" : "false",
     cfg_wifi_ssid: data.wifi_ssid,
     cfg_admin_user: data.admin_user,
-    // cfg_mqtt_password omitido — backend não envia a senha
+    // cfg_mqtt_password e cfg_ws_password omitidos — backend não envia senhas
   };
 
   Object.entries(fields).forEach(([id, val]) => {
@@ -1323,9 +1342,10 @@ function populateConfig(data) {
   if (document.getElementById("cfg_mqtt_enabled")) toggleMQTTFields();
 }
 
-// Valida e envia o payload de configuração para o backend.
+// Valida e envia o payload de configuração para o backend via WS.
+// Senhas deixadas em branco são enviadas como "__keep__" para que o
+// backend preserve o valor atual sem sobrescrever.
 async function saveDeviceConfig() {
-  // if (!(await authenticateWS())) return;
   state._settingsFormDirty = false;
   const get = (id) => document.getElementById(id)?.value ?? "";
   const mqttPassword = get("cfg_mqtt_password");
@@ -1372,7 +1392,7 @@ async function saveDeviceConfig() {
 
   showCfgStatus("⏳ Salvando...", "#facc15");
 
-  // Timeout de confirmação — avisa se não receber configSaved em 5s.
+  // Timeout de confirmação — avisa se não receber "configSaved" em 5s.
   if (state.saveConfigTimer) clearTimeout(state.saveConfigTimer);
   state.saveConfigTimer = setTimeout(() => {
     state.saveConfigTimer = null;
@@ -1384,6 +1404,7 @@ async function saveDeviceConfig() {
 }
 
 // Exibe mensagem de status no form de configurações por 3 segundos.
+// Ao confirmar sucesso, remove o indicador de campo modificado de todos os inputs.
 function showCfgStatus(msg, color) {
   const el = document.getElementById("cfgStatus");
   if (!el) return;
@@ -1419,6 +1440,6 @@ document.addEventListener("DOMContentLoaded", () => {
   updateWSStatus(false);
   connectWS();
 
-  // Se WS já estava aberto (navegação SPA), atualiza badge imediatamente.
+  // Se WS já estava aberto (navegação SPA sem reload), atualiza badge imediatamente.
   if (state.ws && state.ws.readyState === WebSocket.OPEN) updateWSStatus(true);
 });
