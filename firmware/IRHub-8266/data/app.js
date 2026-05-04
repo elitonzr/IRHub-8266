@@ -13,37 +13,35 @@
 const state =
   window.appState ||
   (window.appState = {
-    ws: null, // instância do WebSocket
-    reconnectTimer: null, // timer de reconexão automática
-    wsQueue: [], // fila de mensagens pendentes enquanto WS está offline
-    uptimeSeconds: 0, // segundos de uptime sincronizados com o backend
-    irHistory: [], // histórico de sinais IR recebidos (máx 10)
-    logHistory: [], // histórico de logs em tempo real (máx 200)
-    configPopulated: false, // evita repopular o form de config a cada mensagem
-    irModeIndex: 0, // índice do modo de recepção IR atual
-    irDotTimer: null, // timer do dot de atividade IR
-    uptimeInterval: null, // setInterval do contador de uptime
-    saveConfigTimer: null, // timeout de confirmação de saveConfig
-    remotesData: {}, // dados do remotes.json carregados em memória
-    lastPayloads: {}, // cache dos últimos payloads recebidos por type
-    lastConfig: null, // última config recebida via WS (type: system)
-    logRenderedIndex: 0, // índice de renderização incremental do console
-    _settingsFormDirty: false, // true se o usuário editou o form antes de salvar
-    selectedRemote: lsGet("selectedRemote") || null, // último modelo de controle remoto selecionado
-    wsAuthenticated: false, // true após login WS bem-sucedido
+    ws: null,                                         // instância do WebSocket
+    reconnectTimer: null,                             // timer de reconexão automática
+    wsQueue: [],                                      // fila de mensagens pendentes enquanto WS está offline
+    uptimeSeconds: 0,                                 // segundos de uptime sincronizados com o backend
+    irHistory: [],                                    // histórico de sinais IR recebidos (máx 10)
+    logHistory: [],                                   // histórico de logs em tempo real (máx 200)
+    configPopulated: false,                           // evita repopular o form de config a cada mensagem
+    irModeIndex: 0,                                   // índice do modo de recepção IR atual
+    irDotTimer: null,                                 // timer do dot de atividade IR
+    uptimeInterval: null,                             // setInterval do contador de uptime
+    saveConfigTimer: null,                            // timeout de confirmação de saveConfig
+    remotesData: {},                                  // dados do remotes.json carregados em memória
+    lastPayloads: {},                                 // cache dos últimos payloads recebidos por type
+    lastConfig: null,                                 // última config recebida via WS (type: system)
+    logRenderedIndex: 0,                              // índice de renderização incremental do console
+    _settingsFormDirty: false,                        // true se o usuário editou o form antes de salvar
+    selectedRemote: lsGet("selectedRemote") || null,  // último modelo de controle remoto selecionado
+    wsAuthenticated: false,                           // true após login WS bem-sucedido
   });
 
+// Lê valor do localStorage com fallback seguro.
 function lsGet(key, fallback = "") {
-  try {
-    return localStorage.getItem(key) ?? fallback;
-  } catch {
-    return fallback;
-  }
+  try { return localStorage.getItem(key) ?? fallback; }
+  catch { return fallback; }
 }
+
+// Grava valor no localStorage com segurança.
 function lsSet(key, val) {
-  try {
-    localStorage.setItem(key, val);
-  } catch {}
+  try { localStorage.setItem(key, val); } catch {}
 }
 
 /* =========================================================
@@ -75,7 +73,7 @@ function connectWS() {
     scheduleReconnect();
   };
 
-  state.ws.onerror = () => state.ws.close();
+  state.ws.onerror   = () => state.ws.close();
   state.ws.onmessage = handleWSMessage;
 }
 
@@ -133,6 +131,12 @@ function doLogout() {
   wsSend({ cmd: "logout" });
 }
 
+// Alterna entre exibir o modal de login ou enviar logout conforme estado atual.
+function handleLoginBtn() {
+  if (state.wsAuthenticated) doLogout();
+  else showLoginModal();
+}
+
 // Atualiza o botão Login/Logoff na navbar e recarrega a rota atual
 // para aplicar restrições de visibilidade conforme estado de autenticação.
 function updateAuthUI(authenticated) {
@@ -149,9 +153,9 @@ function updateAuthUI(authenticated) {
 ========================================================= */
 
 const routes = {
-  "/": "/home_content.html",
-  "/ir": "/ir_content.html",
-  "/system": "/system_content.html",
+  "/":         "/home_content.html",
+  "/ir":       "/ir_content.html",
+  "/system":   "/system_content.html",
   "/settings": "/settings_content.html",
 };
 
@@ -161,9 +165,8 @@ async function navigateTo(path) {
 
   // Bloqueia acesso a rotas protegidas sem autenticação.
   const protectedRoutes = ["/ir", "/system", "/settings"];
-  if (!state.wsAuthenticated && protectedRoutes.includes(path)) {
-    path = "/";
-  }
+  if (!state.wsAuthenticated && protectedRoutes.includes(path)) path = "/";
+
   window.history.pushState({}, "", path);
 
   try {
@@ -172,8 +175,8 @@ async function navigateTo(path) {
       contentArea.innerHTML = `<div style="padding:20px">Página não encontrada: ${path}</div>`;
       return;
     }
-    const response = await fetch(file);
 
+    const response = await fetch(file);
     if (!response.ok) {
       const msg = `fetch(${file}) → HTTP ${response.status} ${response.statusText}`;
       contentArea.innerHTML = `<div style="padding:20px;font-family:monospace"><b>Erro ao carregar página</b><br><span style="font-size:12px;opacity:0.6">${msg}</span></div>`;
@@ -211,9 +214,7 @@ function initPageScript(path) {
     if (select) {
       select.addEventListener("change", (e) => {
         state.selectedRemote = e.target.value;
-        try {
-          lsSet("selectedRemote", e.target.value);
-        } catch (_) {}
+        lsSet("selectedRemote", e.target.value);
         loadButtons(e.target.value);
       });
     }
@@ -221,8 +222,7 @@ function initPageScript(path) {
 
     // Oculta o gerenciador de arquivos se não autenticado.
     const fileManager = document.querySelector(".card-file-manager");
-    if (fileManager)
-      fileManager.style.display = state.wsAuthenticated ? "" : "none";
+    if (fileManager) fileManager.style.display = state.wsAuthenticated ? "" : "none";
   }
 
   if (path === "/system") {
@@ -243,14 +243,12 @@ function initPageScript(path) {
     state._settingsFormDirty = false;
 
     // Marca o form como sujo ao primeiro input do usuário.
-    document
-      .querySelectorAll("#app-content input, #app-content select")
-      .forEach((el) => {
-        el.addEventListener("change", () => {
-          state._settingsFormDirty = true;
-          el.classList.add("field-dirty");
-        });
+    document.querySelectorAll("#app-content input, #app-content select").forEach((el) => {
+      el.addEventListener("change", () => {
+        state._settingsFormDirty = true;
+        el.classList.add("field-dirty");
       });
+    });
   }
 }
 
@@ -268,26 +266,13 @@ function updateActiveLinks(path) {
    Roteador central — cada type dispara um updater de UI.
 ========================================================= */
 
-// Alterna entre exibir o modal de login ou enviar logout conforme estado atual.
-function handleLoginBtn() {
-  if (state.wsAuthenticated) {
-    doLogout();
-  } else {
-    showLoginModal();
-  }
-}
-
 function handleWSMessage(event) {
   let data;
-  try {
-    data = JSON.parse(event.data);
-  } catch {
-    return;
-  }
+  try { data = JSON.parse(event.data); }
+  catch { return; }
 
   // Armazena o último payload de cada type para replayLastPayloads().
   if (data.type) state.lastPayloads[data.type] = data;
-
   if (!data.type) return;
 
   switch (data.type) {
@@ -312,27 +297,14 @@ function handleWSMessage(event) {
       navigateTo("/");
       break;
 
-    case "system":
-      updateSystemWS(data);
-      break;
-    case "ledb":
-      updateLEDBWS(data);
-      break;
-    case "sensor":
-      updateSensorWS(data);
-      break;
-    case "ir":
-      updateIRWS(data);
-      break;
-    case "ir_receptor":
-      updateIRReceptorWS(data);
-      break;
-    case "network":
-      updateNetworkWS(data);
-      break;
-    case "mqtt":
-      updateMQTTWS(data);
-      break;
+    case "system":      updateSystemWS(data);    break;
+    case "ledb":        updateLEDBWS(data);       break;
+    case "sensor":      updateSensorWS(data);     break;
+    case "ir":          updateIRWS(data);         break;
+    case "ir_receptor": updateIRReceptorWS(data); break;
+    case "network":     updateNetworkWS(data);    break;
+    case "mqtt":        updateMQTTWS(data);       break;
+    case "console":     saveLogToHistory(data);   break;
 
     case "reboot":
       alert("Dispositivo reiniciando...");
@@ -361,10 +333,6 @@ function handleWSMessage(event) {
     case "configReset":
       alert("Configurações resetadas!");
       break;
-
-    case "console":
-      saveLogToHistory(data);
-      break;
   }
 }
 
@@ -381,6 +349,16 @@ function setText(id, val) {
 // Lê o textContent de um elemento pelo id.
 function getText(id) {
   return document.getElementById(id)?.textContent || "";
+}
+
+// Exibe mensagem de status num elemento pelo id, com cor e auto-limpeza.
+// timeout=0 mantém a mensagem indefinidamente (usado no OTA).
+function showStatus(id, msg, color, timeout = 3000) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color  = color;
+  if (timeout > 0) setTimeout(() => (el.textContent = ""), timeout);
 }
 
 /* =========================================================
@@ -422,10 +400,10 @@ function drawerClose() {
 
 // Atualiza informações de sistema (nome, build, heap, uptime, config).
 function updateSystemWS(data) {
-  setText("name", data.name);
+  setText("name",          data.name);
   setText("buildDateTime", data.buildDateTime);
-  setText("buildVersion", data.buildVersion);
-  setText("heap", data.heap);
+  setText("buildVersion",  data.buildVersion);
+  setText("heap",          data.heap);
 
   document.title = `✅ ${data.name}`;
 
@@ -436,17 +414,15 @@ function updateSystemWS(data) {
     if (knownVersion !== "") {
       const badge = document.getElementById("versionBadge");
       if (badge) {
-        badge.textContent = `✨ v${data.buildVersion}`;
+        badge.textContent  = `✨ v${data.buildVersion}`;
         badge.style.display = "inline";
-        badge.title = `Firmware atualizado! (anterior: v${knownVersion})`;
+        badge.title        = `Firmware atualizado! (anterior: v${knownVersion})`;
       }
     }
   }
 
   // Armazena config para uso em navegações futuras (ex: ao abrir /settings).
-  if (data.config) {
-    state.lastConfig = data.config;
-  }
+  if (data.config) state.lastConfig = data.config;
 
   // Popula o form de configurações apenas uma vez por conexão.
   if (data.config && !state.configPopulated) {
@@ -472,31 +448,20 @@ function updateLEDBWS(data) {
   if (dot) dot.className = "dot " + (data.state ? "yellow" : "gray");
 }
 
-// Mapa de nome de protocolo IR para índice numérico (espelhado no backend enum IR_ReceptorMode).
+// Mapa de nome de protocolo IR para índice numérico.
+// Deve espelhar exatamente o enum IR_ReceptorMode em globals.h.
 const irModeMap = {
-  ALL: 0,
-  KNOWN: 1,
-  DISABLED: 2,
-  NEC: 3,
-  SONY: 4,
-  RC5: 5,
-  RC6: 6,
-  SAMSUNG: 7,
-  NIKAI: 8,
-  LG: 9,
-  JVC: 10,
-  WHYNTER: 11,
+  ALL: 0, KNOWN: 1, DISABLED: 2,
+  NEC: 3, SONY: 4, RC5: 5, RC6: 6,
+  SAMSUNG: 7, NIKAI: 8, LG: 9, JVC: 10, WHYNTER: 11,
 };
 
 // Atualiza estado do emissor e receptor IR.
 function updateIRWS(data) {
   setText("irEmitter", data.emissor_teste ? "Ativo" : "Desligado");
-  setText("irMode", data.receptor_protocol || "--");
+  setText("irMode",    data.receptor_protocol || "--");
 
-  if (
-    data.receptor_protocol &&
-    irModeMap[data.receptor_protocol] !== undefined
-  ) {
+  if (data.receptor_protocol && irModeMap[data.receptor_protocol] !== undefined) {
     state.irModeIndex = irModeMap[data.receptor_protocol];
     const sel = document.getElementById("irReceptorSelect");
     if (sel) sel.value = irModeMap[data.receptor_protocol];
@@ -507,38 +472,32 @@ function updateIRWS(data) {
     const dot = document.getElementById("irDot");
     if (dot)
       dot.className =
-        "dot " +
-        (data.receptor_protocol && data.receptor_protocol !== "DISABLED"
-          ? "green"
-          : "yellow");
+        "dot " + (data.receptor_protocol && data.receptor_protocol !== "DISABLED" ? "green" : "yellow");
   }
 }
 
 // Atualiza dados do sensor AHT10.
 function updateSensorWS(data) {
   const status = document.getElementById("sensorAHT10Status");
-  const text = document.getElementById("sensorAHT10Data");
+  const text   = document.getElementById("sensorAHT10Data");
   if (!status || !text) return;
 
   if (data.status) {
-    status.className = "status offline";
+    status.className   = "status offline";
     status.textContent = data.status;
-    text.textContent = "";
+    text.textContent   = "";
     return;
   }
 
-  text.innerHTML = `Temperatura: ${data.temperatura} °C<br>Umidade: ${data.umidade} %`;
-  status.className = "status online";
+  text.innerHTML     = `Temperatura: ${data.temperatura} °C<br>Umidade: ${data.umidade} %`;
+  status.className   = "status online";
   status.textContent = "online";
 }
 
 // Trata sinal IR recebido em tempo real: pisca dot e adiciona ao histórico.
 function updateIRReceptorWS(data) {
   flashIRDot();
-  saveIRToHistory({
-    ...data,
-    timestamp: new Date().toLocaleTimeString("pt-BR"),
-  });
+  saveIRToHistory({ ...data, timestamp: new Date().toLocaleTimeString("pt-BR") });
 }
 
 // Pisca o dot IR por 300ms ao receber um sinal.
@@ -546,10 +505,7 @@ function flashIRDot() {
   const dot = document.getElementById("irDot");
   if (!dot) return;
 
-  if (state.irDotTimer) {
-    clearTimeout(state.irDotTimer);
-    state.irDotTimer = null;
-  }
+  if (state.irDotTimer) { clearTimeout(state.irDotTimer); state.irDotTimer = null; }
 
   dot.className = "dot green";
   state.irDotTimer = setTimeout(() => {
@@ -561,9 +517,7 @@ function flashIRDot() {
 
 // Atualiza dados de rede.
 function updateNetworkWS(data) {
-  ["mdns", "wifi", "ip", "gateway", "mask", "rssi"].forEach((id) =>
-    setText(id, data[id]),
-  );
+  ["mdns", "wifi", "ip", "gateway", "mask", "rssi"].forEach((id) => setText(id, data[id]));
 }
 
 // Atualiza dados MQTT (status, server, tópicos, contadores).
@@ -571,36 +525,26 @@ function updateMQTTWS(data) {
   const cardMQTT = document.getElementById("cardMQTT");
   if (cardMQTT) cardMQTT.style.display = data.enabled ? "" : "none";
 
-  setText("mqttServer", data.server);
-  setText("mqttPort", data.port);
-  setText("mqttClient", data.client_id);
-  setText("topic_main", data.topic_main);
+  setText("mqttServer",   data.server);
+  setText("mqttPort",     data.port);
+  setText("mqttClient",   data.client_id);
+  setText("topic_main",   data.topic_main);
   setText("mqttSucessos", data.sucesso);
-  setText("mqttErros", data.erro);
+  setText("mqttErros",    data.erro);
 
   const status = document.getElementById("mqttStatus");
   if (!status) return;
 
-  if (!data.enabled) {
-    status.className = "status warn";
-    status.textContent = "desabilitado";
-  } else if (data.status) {
-    status.className = "status online";
-    status.textContent = "online";
-  } else {
-    status.className = "status offline";
-    status.textContent = "offline";
-  }
+  if (!data.enabled)    { status.className = "status warn";    status.textContent = "desabilitado"; }
+  else if (data.status) { status.className = "status online";  status.textContent = "online"; }
+  else                  { status.className = "status offline"; status.textContent = "offline"; }
 }
 
-// Reaaplica estado do receptor IR ao navegar entre páginas, sem acionar o flash do dot.
+// Reaplica o estado do receptor IR ao navegar entre páginas, sem acionar o flash do dot.
 // Diferente de updateIRReceptorWS (que trata sinais ao vivo), esta função apenas
 // restaura o select e o dot para o último estado conhecido.
 function applyIRReceptorState(data) {
-  if (
-    data.receptor_protocol &&
-    irModeMap[data.receptor_protocol] !== undefined
-  ) {
+  if (data.receptor_protocol && irModeMap[data.receptor_protocol] !== undefined) {
     const sel = document.getElementById("irReceptorSelect");
     if (sel) sel.value = irModeMap[data.receptor_protocol];
   }
@@ -608,10 +552,7 @@ function applyIRReceptorState(data) {
     const dot = document.getElementById("irDot");
     if (dot)
       dot.className =
-        "dot " +
-        (data.receptor_protocol && data.receptor_protocol !== "DISABLED"
-          ? "green"
-          : "yellow");
+        "dot " + (data.receptor_protocol && data.receptor_protocol !== "DISABLED" ? "green" : "yellow");
   }
 }
 
@@ -620,13 +561,13 @@ function applyIRReceptorState(data) {
 // updateIRReceptorWS (que aciona flash e adiciona ao histórico).
 function replayLastPayloads() {
   const updaters = {
-    system: (data) => updateSystemWS(data),
-    ledb: updateLEDBWS,
-    sensor: updateSensorWS,
-    ir: updateIRWS,
+    system:      updateSystemWS,
+    ledb:        updateLEDBWS,
+    sensor:      updateSensorWS,
+    ir:          updateIRWS,
     ir_receptor: applyIRReceptorState,
-    network: updateNetworkWS,
-    mqtt: updateMQTTWS,
+    network:     updateNetworkWS,
+    mqtt:        updateMQTTWS,
   };
   Object.entries(updaters).forEach(([type, fn]) => {
     if (state.lastPayloads[type]) fn(state.lastPayloads[type]);
@@ -640,17 +581,15 @@ function replayLastPayloads() {
 ========================================================= */
 
 function formatUptime(s) {
-  const d = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
+  const d   = Math.floor(s / 86400);
+  const h   = Math.floor((s % 86400) / 3600);
+  const m   = Math.floor((s % 3600) / 60);
   const sec = s % 60;
   return `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(sec).padStart(2, "0")}s`;
 }
 
 function restartUptimeInterval() {
-  if (state.uptimeInterval) {
-    clearInterval(state.uptimeInterval);
-  }
+  if (state.uptimeInterval) clearInterval(state.uptimeInterval);
   state.uptimeInterval = setInterval(() => {
     state.uptimeSeconds++;
     setText("uptime", formatUptime(state.uptimeSeconds));
@@ -700,13 +639,12 @@ function renderIRHistory() {
           .then(() => showIrToast("✅ Copiado!"))
           .catch(() => showIrToast("❌ Falha ao copiar", true));
       } else {
+        // Fallback para browsers sem Clipboard API.
         const ta = document.createElement("textarea");
         ta.value = d.hex;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
+        ta.style.cssText = "position:fixed;opacity:0";
         document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
+        ta.focus(); ta.select();
         document.execCommand("copy");
         document.body.removeChild(ta);
         showIrToast("✅ Copiado!");
@@ -716,16 +654,11 @@ function renderIRHistory() {
     // Double-click: carrega no form de envio manual.
     li.ondblclick = () => {
       const proto = document.getElementById("irProto");
-      const code = document.getElementById("irCode");
-      const bits = document.getElementById("irBits");
-
+      const code  = document.getElementById("irCode");
+      const bits  = document.getElementById("irBits");
       if (proto) proto.value = d.protocol;
-      if (code) {
-        code.value = d.hex;
-        code.placeholder = "Código hex (ex: 0x20DF10EF)";
-      }
-      if (bits) bits.value = d.bits;
-
+      if (code)  { code.value = d.hex; code.placeholder = "Código hex (ex: 0x20DF10EF)"; }
+      if (bits)  bits.value  = d.bits;
       li.classList.add("flash");
       setTimeout(() => li.classList.remove("flash"), 400);
     };
@@ -745,10 +678,10 @@ function renderIRHistory() {
 function saveLogToHistory(data) {
   if (!data.msg) return;
 
-  const timestamp = new Date().toLocaleTimeString("pt-BR");
-  const logTag = data.log || "[LOG]";
-  const color = getLogColor(logTag);
-  const safeMsg = escapeHtml(data.msg);
+  const timestamp    = new Date().toLocaleTimeString("pt-BR");
+  const logTag       = data.log || "[LOG]";
+  const color        = getLogColor(logTag);
+  const safeMsg      = escapeHtml(data.msg);
   const tagFormatted = logTag.padEnd(10, " ");
 
   const line =
@@ -757,10 +690,8 @@ function saveLogToHistory(data) {
     `<span style="color:${color}">- ${safeMsg}</span>`;
 
   state.logHistory.push(line);
-
-  if (state.logHistory.length > 200) {
+  if (state.logHistory.length > 200)
     state.logHistory.splice(0, state.logHistory.length - 200);
-  }
 
   renderLogHistory();
 }
@@ -771,9 +702,8 @@ function renderLogHistory() {
   const el = document.getElementById("log");
   if (!el) return;
 
-  if (el.childNodes.length === 0) {
-    state.logRenderedIndex = 0;
-  }
+  // Se o DOM foi limpo (navegação), começa do zero.
+  if (el.childNodes.length === 0) state.logRenderedIndex = 0;
 
   const slice = state.logHistory.slice(state.logRenderedIndex);
   if (slice.length === 0) return;
@@ -812,189 +742,140 @@ function sendTelnetCmd() {
 // Retorna a cor associada à tag de log para colorização do console.
 function getLogColor(tag) {
   if (!tag) return "#ffffff";
-
   tag = tag.toUpperCase();
 
-  if (tag.includes("HTTP")) return "#00FFFF"; // ciano
-  if (tag.includes("MQTT")) return "#FFA500"; // laranja
-  if (tag.includes("WIFI")) return "#8e5a8a"; // roxo
-  if (tag.includes("WS")) return "#60a5fa"; // azul claro
-  if (tag.includes("IR")) return "#a78bfa"; // violeta
-  if (tag.includes("FS")) return "#34d399"; // verde
-  if (tag.includes("AHT")) return "#22d3ee"; // ciano claro
-  if (tag.includes("SYS")) return "#f472b6"; // rosa
-  if (tag.includes("BTN")) return "#fb923c"; // laranja claro
-  if (tag.includes("OTA")) return "#facc15"; // amarelo
-  if (tag.includes("LED A")) return "#009dff"; // azul
-  if (tag.includes("LED B")) return "#FFD700"; // dourado
-  if (tag.includes("ERROR")) return "#FF4C4C"; // vermelho
-  if (tag.includes("WARN")) return "#FFD700"; // dourado
-  if (tag.includes("INFO")) return "#87CEFA"; // azul claro
+  if (tag.includes("HTTP"))   return "#00FFFF"; // ciano
+  if (tag.includes("MQTT"))   return "#FFA500"; // laranja
+  if (tag.includes("WIFI"))   return "#8e5a8a"; // roxo
+  if (tag.includes("WS"))     return "#60a5fa"; // azul claro
+  if (tag.includes("IR"))     return "#a78bfa"; // violeta
+  if (tag.includes("FS"))     return "#34d399"; // verde
+  if (tag.includes("AHT"))    return "#22d3ee"; // ciano claro
+  if (tag.includes("SYS"))    return "#f472b6"; // rosa
+  if (tag.includes("BTN"))    return "#fb923c"; // laranja claro
+  if (tag.includes("OTA"))    return "#facc15"; // amarelo
+  if (tag.includes("LED A"))  return "#009dff"; // azul
+  if (tag.includes("LED B"))  return "#FFD700"; // dourado
+  if (tag.includes("ERROR"))  return "#FF4C4C"; // vermelho
+  if (tag.includes("WARN"))   return "#FFD700"; // dourado
+  if (tag.includes("INFO"))   return "#87CEFA"; // azul claro
   if (tag.includes("TELNET")) return "#94a3b8"; // cinza azulado
-  if (tag.includes("AUTH")) return "#f87171"; // vermelho claro
-  if (tag.includes("TESTE")) return "#c084fc"; // lilás
-
+  if (tag.includes("AUTH"))   return "#f87171"; // vermelho claro
+  if (tag.includes("TESTE"))  return "#c084fc"; // lilás
   return "#CCCCCC";
 }
 
+// Escapa caracteres HTML especiais para exibição segura no console.
 function escapeHtml(str) {
-  return str.replace(/[&<>"']/g, function (m) {
-    return {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    }[m];
-  });
+  return str.replace(/[&<>"']/g, (m) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
+  );
 }
 
 /* =========================================================
-   12. GERENCIAMENTO DE ARQUIVOS (config.json / remotes.json)
+   12. GERENCIAMENTO DE ARQUIVOS
    Upload via POST /upload com autenticação HTTP Basic.
-   Download via GET /download?file=<path> com autenticação HTTP Basic.
+   Download via GET /download?file=<path>.
+   As funções exportConfig/importConfig/exportRemotes/importRemotes
+   delegam para os helpers genéricos downloadFile e uploadFile.
 ========================================================= */
 
-async function exportConfig() {
+// Retorna o header Authorization Basic.
+// Usa o admin_user da última config recebida, com fallback para "admin".
+function makeBasicAuth(pass) {
+  const user = state.lastConfig?.admin_user || "admin";
+  return "Basic " + btoa(`${user}:${pass}`);
+}
+
+// Faz download de um arquivo do LittleFS e dispara o save no browser.
+// statusFn(msg, color) é chamado para feedback ao usuário.
+async function downloadFile(path, filename, statusFn) {
   try {
-    const res = await fetch("/download?file=/config.json");
-    if (res.status === 401) {
-      showConfigStatus("❌ Sem permissão.", "#ef4444");
-      return;
-    }
-    if (!res.ok) {
-      showConfigStatus("❌ Arquivo não encontrado.", "#ef4444");
-      return;
-    }
-    const blob = await res.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "config.json";
+    const res = await fetch(`/download?file=${path}`);
+    if (res.status === 401) { statusFn("❌ Sem permissão.", "#ef4444"); return; }
+    if (!res.ok)            { statusFn("❌ Arquivo não encontrado.", "#ef4444"); return; }
+    const a  = document.createElement("a");
+    a.href     = URL.createObjectURL(await res.blob());
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(a.href);
   } catch {
-    showConfigStatus("❌ Erro ao exportar.", "#ef4444");
+    statusFn("❌ Erro ao exportar.", "#ef4444");
   }
 }
 
-async function importConfig() {
-  if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?"))
-    return;
+// Faz upload de um arquivo para o LittleFS via POST /upload.
+// Valida JSON antes de enviar se o arquivo for .json.
+// statusFn(msg, color) é chamado para feedback; onSuccess é chamado após upload ok.
+async function uploadFile(file, statusFn, onSuccess = null) {
+  if (!file) { alert("Selecione um arquivo."); return; }
 
-  const file = document.getElementById("configFile")?.files[0];
-  if (!file) return alert("Selecione um arquivo .json");
-
-  // Valida JSON antes de enviar.
-  try {
-    JSON.parse(await file.text());
-  } catch {
-    showConfigStatus("❌ Arquivo JSON inválido.", "#ef4444");
-    return;
+  // Valida JSON antes de enviar para evitar corromper o filesystem.
+  if (file.name.endsWith(".json")) {
+    try { JSON.parse(await file.text()); }
+    catch { statusFn("❌ Arquivo JSON inválido.", "#ef4444"); return; }
   }
+
+  const httpPass = prompt("🔐 Senha para continuar:");
+  if (!httpPass) return;
 
   const formData = new FormData();
   formData.append("upload", file);
 
   const xhr = new XMLHttpRequest();
-
-  const httpPass = prompt("🔐 Senha para continuar:");
-  if (!httpPass) return;
-
   xhr.withCredentials = true;
   xhr.open("POST", "/upload", true);
-  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + httpPass));
+  xhr.setRequestHeader("Authorization", makeBasicAuth(httpPass));
+
   xhr.onload = () => {
-    if (xhr.status === 401) {
-      showConfigStatus("❌ Senha incorreta.", "#ef4444");
-      return;
-    }
-    showConfigStatus("✅ Importado com sucesso!", "#22c55e");
+    if (xhr.status === 401) { statusFn("❌ Senha incorreta.", "#ef4444"); return; }
+    statusFn("✅ Importado com sucesso!", "#22c55e");
+    if (onSuccess) onSuccess();
   };
-  xhr.onerror = () => showConfigStatus("❌ Erro no upload.", "#ef4444");
+  xhr.onerror = () => statusFn("❌ Erro no upload.", "#ef4444");
   xhr.send(formData);
 }
 
-function showConfigStatus(msg, color) {
-  const el = document.getElementById("configFileStatus");
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = color;
-  setTimeout(() => (el.textContent = ""), 3000);
+// --- config.json ---
+
+async function exportConfig() {
+  await downloadFile("/config.json", "config.json", (msg, color) =>
+    showStatus("configFileStatus", msg, color)
+  );
 }
 
+async function importConfig() {
+  if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?")) return;
+  const file = document.getElementById("configFile")?.files[0];
+  await uploadFile(file, (msg, color) => showStatus("configFileStatus", msg, color));
+}
+
+// --- remotes.json ---
+
 async function exportRemotes() {
-  try {
-    const res = await fetch("/download?file=/remotes.json");
-    if (res.status === 401) {
-      showRemotesStatus("❌ Sem permissão.", "#ef4444");
-      return;
-    }
-    if (!res.ok) {
-      showRemotesStatus("❌ Arquivo não encontrado.", "#ef4444");
-      return;
-    }
-    const blob = await res.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "remotes.json";
-    a.click();
-    URL.revokeObjectURL(a.href);
-  } catch {
-    showRemotesStatus("❌ Erro ao exportar.", "#ef4444");
-  }
+  await downloadFile("/remotes.json", "remotes.json", (msg, color) =>
+    showStatus("remotesStatus", msg, color)
+  );
 }
 
 async function importRemotes() {
   const file = document.getElementById("remotesFile")?.files[0];
-  if (!file) return alert("Selecione um arquivo .json");
-  if (file.name !== "remotes.json") {
-    showRemotesStatus("❌ O arquivo deve se chamar remotes.json", "#ef4444");
+  if (file && file.name !== "remotes.json") {
+    showStatus("remotesStatus", "❌ O arquivo deve se chamar remotes.json", "#ef4444");
     return;
   }
-
-  try {
-    JSON.parse(await file.text());
-  } catch {
-    showRemotesStatus("❌ Arquivo JSON inválido.", "#ef4444");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("upload", file);
-
-  const xhr = new XMLHttpRequest();
-
-  const httpPass = prompt("🔐 Senha para continuar:");
-  if (!httpPass) return;
-
-  xhr.withCredentials = true;
-  xhr.open("POST", "/upload", true);
-  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + httpPass));
-  xhr.onload = () => {
-    if (xhr.status === 401) {
-      showRemotesStatus("❌ Senha incorreta.", "#ef4444");
-      return;
-    }
-    showRemotesStatus("✅ Importado com sucesso!", "#22c55e");
-    loadRemotes();
-  };
-  xhr.onerror = () => showRemotesStatus("❌ Erro no upload.", "#ef4444");
-  xhr.send(formData);
+  await uploadFile(
+    file,
+    (msg, color) => showStatus("remotesStatus", msg, color),
+    loadRemotes // recarrega os controles após importar com sucesso
+  );
 }
 
-function showRemotesStatus(msg, color) {
-  const el = document.getElementById("remotesStatus");
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = color;
-  setTimeout(() => (el.textContent = ""), 3000);
-}
+// --- OTA ---
 
+// Exibe mensagem de status do OTA sem auto-limpeza (exige ação do usuário).
 function showOtaStatus(msg, color) {
-  const el = document.getElementById("otaStatus");
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = color;
+  showStatus("otaStatus", msg, color, 0);
 }
 
 async function startOTAUpdate() {
@@ -1006,52 +887,38 @@ async function startOTAUpdate() {
     return;
   }
 
-  if (
-    !confirm(
-      `Atualizar firmware com "${file.name}"? O dispositivo será reiniciado.`,
-    )
-  )
-    return;
-
-  const formData = new FormData();
-  formData.append("update", file);
-
-  const xhr = new XMLHttpRequest();
-
-  xhr.upload.onprogress = (e) => {
-    const progress = document.getElementById("otaProgress");
-    if (!progress) return;
-    progress.style.display = "block";
-    if (e.lengthComputable) {
-      progress.value = (e.loaded / e.total) * 100;
-    }
-  };
-
-  xhr.onload = () => {
-    const progress = document.getElementById("otaProgress");
-    if (progress) progress.style.display = "none";
-    if (xhr.status === 200) {
-      showOtaStatus("✅ Firmware enviado! Aguarde o reboot...", "#22c55e");
-    } else if (xhr.status === 401) {
-      showOtaStatus("❌ Senha incorreta.", "#ef4444");
-    } else {
-      showOtaStatus(`❌ Erro: HTTP ${xhr.status}`, "#ef4444");
-    }
-  };
-
-  xhr.onerror = () => {
-    const progress = document.getElementById("otaProgress");
-    if (progress) progress.style.display = "none";
-    showOtaStatus("❌ Falha na conexão.", "#ef4444");
-  };
+  if (!confirm(`Atualizar firmware com "${file.name}"? O dispositivo será reiniciado.`)) return;
 
   const httpPass = prompt("🔐 Senha para continuar:");
   if (!httpPass) return;
 
-  showOtaStatus("⏳ Enviando firmware...", "#facc15");
+  const formData = new FormData();
+  formData.append("update", file);
 
+  const progress = document.getElementById("otaProgress");
+  const xhr      = new XMLHttpRequest();
+
+  xhr.upload.onprogress = (e) => {
+    if (!progress) return;
+    progress.style.display = "block";
+    if (e.lengthComputable) progress.value = (e.loaded / e.total) * 100;
+  };
+
+  xhr.onload = () => {
+    if (progress) progress.style.display = "none";
+    if      (xhr.status === 200) showOtaStatus("✅ Firmware enviado! Aguarde o reboot...", "#22c55e");
+    else if (xhr.status === 401) showOtaStatus("❌ Senha incorreta.", "#ef4444");
+    else                          showOtaStatus(`❌ Erro: HTTP ${xhr.status}`, "#ef4444");
+  };
+
+  xhr.onerror = () => {
+    if (progress) progress.style.display = "none";
+    showOtaStatus("❌ Falha na conexão.", "#ef4444");
+  };
+
+  showOtaStatus("⏳ Enviando firmware...", "#facc15");
   xhr.open("POST", "/update", true);
-  xhr.setRequestHeader("Authorization", "Basic " + btoa("admin:" + httpPass));
+  xhr.setRequestHeader("Authorization", makeBasicAuth(httpPass));
   xhr.send(formData);
 }
 
@@ -1061,7 +928,7 @@ async function startOTAUpdate() {
 
 // Exibe/oculta campos de IP fixo conforme o modo selecionado.
 function toggleIPFields() {
-  const mode = document.getElementById("cfg_ip_mode")?.value;
+  const mode   = document.getElementById("cfg_ip_mode")?.value;
   const fields = document.getElementById("cfg_ip_fields");
   if (fields) fields.style.display = mode === "static" ? "block" : "none";
 }
@@ -1069,7 +936,7 @@ function toggleIPFields() {
 // Exibe/oculta campos MQTT conforme habilitado/desabilitado.
 function toggleMQTTFields() {
   const enabled = document.getElementById("cfg_mqtt_enabled")?.value;
-  const fields = document.getElementById("cfg_mqtt_fields");
+  const fields  = document.getElementById("cfg_mqtt_fields");
   if (fields) fields.style.display = enabled === "true" ? "block" : "none";
 }
 
@@ -1100,10 +967,7 @@ async function loadRemotes() {
     populateRemoteSelect();
   } catch (err) {
     console.error("Erro ao carregar remotes:", err);
-    showRemotesStatus(
-      "❌ Erro ao carregar remotes.json. Faça o upload do arquivo.",
-      "#ef4444",
-    );
+    showStatus("remotesStatus", "❌ Erro ao carregar remotes.json. Faça o upload do arquivo.", "#ef4444");
   }
 }
 
@@ -1117,8 +981,7 @@ function populateRemoteSelect() {
   const models = Object.keys(state.remotesData);
   models.forEach((model) => {
     const opt = document.createElement("option");
-    opt.value = model;
-    opt.textContent = model;
+    opt.value = opt.textContent = model;
     select.appendChild(opt);
   });
 
@@ -1131,7 +994,7 @@ function populateRemoteSelect() {
 
 // Renderiza os botões do modelo selecionado no grid.
 function loadButtons(model) {
-  if (!state.remotesData || !state.remotesData[model]) {
+  if (!state.remotesData?.[model]) {
     console.warn(`Dados para o modelo ${model} ainda não disponíveis.`);
     return;
   }
@@ -1141,10 +1004,10 @@ function loadButtons(model) {
 
   container.innerHTML = "";
 
-  const buttons =
-    state.remotesData[model].buttons || state.remotesData[model].button || [];
+  const buttons = state.remotesData[model].buttons || state.remotesData[model].button || [];
 
   buttons.forEach((btn) => {
+    // Espaço vazio no grid.
     if (btn.type === "space") {
       const space = document.createElement("div");
       if (btn.span) space.className = `span-${btn.span}`;
@@ -1152,34 +1015,34 @@ function loadButtons(model) {
       return;
     }
 
+    // Label descritivo (sem ação).
     if (btn.type === "label") {
-      const label = document.createElement("div");
+      const label       = document.createElement("div");
       label.textContent = btn.name || "";
-      label.className = `remote-label${btn.span ? ` span-${btn.span}` : " span-3"}`;
+      label.className   = `remote-label${btn.span ? ` span-${btn.span}` : " span-3"}`;
       container.appendChild(label);
       return;
     }
 
+    // Ignora tipos desconhecidos (exceto "button" e sem type).
     if (btn.type && btn.type !== "button") return;
 
-    const b = document.createElement("button");
+    const b       = document.createElement("button");
     b.textContent = btn.name;
-    b.type = "button";
-    b.className = "btn-ir-remote";
+    b.type        = "button";
+    b.className   = "btn-ir-remote";
 
-    if (btn.fontSize) b.style.fontSize = btn.fontSize;
-    if (btn.span) b.classList.add(`span-${btn.span}`);
-    if (btn.rowSpan) b.classList.add(`row-span-${btn.rowSpan}`);
+    if (btn.fontSize)   b.style.fontSize   = btn.fontSize;
+    if (btn.span)       b.classList.add(`span-${btn.span}`);
+    if (btn.rowSpan)    b.classList.add(`row-span-${btn.rowSpan}`);
     if (btn.background) b.style.background = `#${btn.background}`;
-    if (btn.color) b.style.color = `#${btn.color}`;
+    if (btn.color)      b.style.color      = `#${btn.color}`;
 
     b.onclick = () => {
-      if (!btn.code) {
-        showIrToast("Botão sem código IR", true);
-        return;
-      }
+      if (!btn.code) { showIrToast("Botão sem código IR", true); return; }
       sendIR(btn.protocol, btn.code, btn.bits, b);
     };
+
     container.appendChild(b);
   });
 }
@@ -1204,23 +1067,14 @@ function sendIR(protocol, code, bits, element = null) {
   }
 
   showIrToast(`Enviando ${protocol}...`);
-  wsSend({
-    cmd: "sendIR",
-    code: String(code),
-    protocol,
-    bits: parseInt(bits) || 32,
-  });
+  wsSend({ cmd: "sendIR", code: String(code), protocol, bits: parseInt(bits) || 32 });
 }
 
 // Exibe toast de feedback de envio IR (roxo = ok, vermelho = erro).
 function showIrToast(message, isError = false) {
-  const existing = document.querySelector(".ir-sending-toast");
-  if (existing) existing.remove();
-
-  const toast = document.createElement("div");
-  toast.className = "ir-sending-toast";
-  if (isError) toast.classList.add("error");
-
+  document.querySelector(".ir-sending-toast")?.remove();
+  const toast       = document.createElement("div");
+  toast.className   = "ir-sending-toast" + (isError ? " error" : "");
   toast.textContent = message;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 1000);
@@ -1230,21 +1084,18 @@ function showIrToast(message, isError = false) {
 // Hex sem prefixo 0x é auto-prefixado antes do envio para garantir
 // interpretação correta pelo backend (strtoull com base 0).
 function sendIRManual() {
-  const code = document.getElementById("irCode")?.value.trim();
+  const code  = document.getElementById("irCode")?.value.trim();
   const proto = document.getElementById("irProto")?.value;
-  const bits = parseInt(document.getElementById("irBits")?.value) || 32;
+  const bits  = parseInt(document.getElementById("irBits")?.value) || 32;
 
   if (!code) return alert("Digite um código IR.");
 
-  const isHex0x = /^0x[0-9a-fA-F]+$/i.test(code);
+  const isHex0x  = /^0x[0-9a-fA-F]+$/i.test(code);
   const isHexRaw = /^[0-9a-fA-F]*[a-fA-F][0-9a-fA-F]*$/.test(code);
-  const isDec = /^\d+$/.test(code);
+  const isDec    = /^\d+$/.test(code);
 
-  if (!isHex0x && !isHexRaw && !isDec) {
-    return alert(
-      "Código inválido. Use hex (0x20DF10EF) ou decimal (551489775).",
-    );
-  }
+  if (!isHex0x && !isHexRaw && !isDec)
+    return alert("Código inválido. Use hex (0x20DF10EF) ou decimal (551489775).");
 
   const finalCode = isHexRaw ? "0x" + code : code;
   wsSend({ cmd: "sendIR", code: finalCode, protocol: proto, bits });
@@ -1284,19 +1135,18 @@ function rebootDevice() {
   wsSend({ cmd: "reboot" });
 }
 
-async function openWifiPortal() {
+function openWifiPortal() {
   if (!confirm("Abrir portal de configuração WiFi?")) return;
   wsSend({ cmd: "wifiPortal" });
 }
 
-async function resetWifi() {
+function resetWifi() {
   if (!confirm("Resetar configurações WiFi?")) return;
   wsSend({ cmd: "resetWifi" });
 }
 
-async function resetConfig() {
-  if (!confirm("Apagar config.json? Isso apagará todas as configurações!"))
-    return;
+function resetConfig() {
+  if (!confirm("Apagar config.json? Isso apagará todas as configurações!")) return;
   wsSend({ cmd: "resetConfig" });
 }
 
@@ -1309,19 +1159,19 @@ async function resetConfig() {
 // para /settings se state.lastConfig estiver disponível.
 function populateConfig(data) {
   const fields = {
-    cfg_hostname: data.hostname,
-    cfg_mqtt_id: data.mqtt_id,
-    cfg_grupo: data.grupo,
-    cfg_ip: data.ip,
-    cfg_gw: data.gw,
-    cfg_sn: data.sn,
-    cfg_mqtt_server: data.mqtt_server,
-    cfg_mqtt_port: data.mqtt_port,
-    cfg_mqtt_user: data.mqtt_user,
-    cfg_mqtt_enabled: data.mqtt_enabled ? "true" : "false",
+    cfg_hostname:      data.hostname,
+    cfg_mqtt_id:       data.mqtt_id,
+    cfg_grupo:         data.grupo,
+    cfg_ip:            data.ip,
+    cfg_gw:            data.gw,
+    cfg_sn:            data.sn,
+    cfg_mqtt_server:   data.mqtt_server,
+    cfg_mqtt_port:     data.mqtt_port,
+    cfg_mqtt_user:     data.mqtt_user,
+    cfg_mqtt_enabled:  data.mqtt_enabled  ? "true" : "false",
     cfg_aht10_enabled: data.aht10_enabled ? "true" : "false",
-    cfg_wifi_ssid: data.wifi_ssid,
-    cfg_admin_user: data.admin_user,
+    cfg_wifi_ssid:     data.wifi_ssid,
+    cfg_admin_user:    data.admin_user,
     // cfg_mqtt_password e cfg_ws_password omitidos — backend não envia senhas
   };
 
@@ -1333,8 +1183,7 @@ function populateConfig(data) {
   // Detecta modo IP (DHCP ou fixo) e exibe campos correspondentes.
   const modeEl = document.getElementById("cfg_ip_mode");
   if (modeEl) {
-    modeEl.value =
-      data.ip && data.ip !== "" && data.ip !== "0.0.0.0" ? "static" : "dhcp";
+    modeEl.value = data.ip && data.ip !== "" && data.ip !== "0.0.0.0" ? "static" : "dhcp";
     toggleIPFields();
   }
 
@@ -1343,17 +1192,16 @@ function populateConfig(data) {
 }
 
 // Valida e envia o payload de configuração para o backend via WS.
-// Senhas deixadas em branco são enviadas como "__keep__" para que o
+// Senhas em branco são enviadas como "__keep__" para que o
 // backend preserve o valor atual sem sobrescrever.
-async function saveDeviceConfig() {
+function saveDeviceConfig() {
   state._settingsFormDirty = false;
   const get = (id) => document.getElementById(id)?.value ?? "";
-  const mqttPassword = get("cfg_mqtt_password");
 
   const ipMode = document.getElementById("cfg_ip_mode")?.value;
-  const ip = ipMode === "static" ? get("cfg_ip").trim() : "";
-  const gw = ipMode === "static" ? get("cfg_gw").trim() : "";
-  const sn = ipMode === "static" ? get("cfg_sn").trim() : "";
+  const ip     = ipMode === "static" ? get("cfg_ip").trim() : "";
+  const gw     = ipMode === "static" ? get("cfg_gw").trim() : "";
+  const sn     = ipMode === "static" ? get("cfg_sn").trim() : "";
 
   if (ipMode === "static") {
     if (!ip || !gw || !sn) {
@@ -1366,28 +1214,28 @@ async function saveDeviceConfig() {
     }
   }
 
-  const wsPassword = get("cfg_ws_password");
+  const wsPassword   = get("cfg_ws_password");
   const wifiPassword = get("cfg_wifi_password");
+  const mqttPassword = get("cfg_mqtt_password");
+  const adminUser    = get("cfg_admin_user");
+
   wsSend({
-    cmd: "saveConfig",
-    hostname: get("cfg_hostname").trim(),
-    mqtt_id: get("cfg_mqtt_id").trim(),
-    grupo: get("cfg_grupo").trim(),
-    wifi_ssid: get("cfg_wifi_ssid").trim(),
+    cmd:           "saveConfig",
+    hostname:      get("cfg_hostname").trim(),
+    mqtt_id:       get("cfg_mqtt_id").trim(),
+    grupo:         get("cfg_grupo").trim(),
+    wifi_ssid:     get("cfg_wifi_ssid").trim(),
     wifi_password: wifiPassword.length > 0 ? wifiPassword : "__keep__",
-    ip,
-    gw,
-    sn,
-    mqtt_server: get("cfg_mqtt_server").trim(),
-    mqtt_user: get("cfg_mqtt_user").trim(),
+    ip, gw, sn,
+    mqtt_server:   get("cfg_mqtt_server").trim(),
+    mqtt_user:     get("cfg_mqtt_user").trim(),
     mqtt_password: mqttPassword.length > 0 ? mqttPassword : "__keep__",
-    mqtt_enabled: get("cfg_mqtt_enabled") === "true",
-    mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
+    mqtt_enabled:  get("cfg_mqtt_enabled") === "true",
+    mqtt_port:     parseInt(get("cfg_mqtt_port")) || 1883,
     aht10_enabled: get("cfg_aht10_enabled") === "true",
-    ws_password: wsPassword.length > 0 ? wsPassword : "__keep__",
-    admin_user:
-      get("cfg_admin_user").length > 0 ? get("cfg_admin_user") : "__keep__",
-    ir_receptor: state.irModeIndex,
+    ws_password:   wsPassword.length > 0 ? wsPassword : "__keep__",
+    admin_user:    adminUser.length  > 0 ? adminUser  : "__keep__",
+    ir_receptor:   state.irModeIndex,
   });
 
   showCfgStatus("⏳ Salvando...", "#facc15");
@@ -1396,26 +1244,17 @@ async function saveDeviceConfig() {
   if (state.saveConfigTimer) clearTimeout(state.saveConfigTimer);
   state.saveConfigTimer = setTimeout(() => {
     state.saveConfigTimer = null;
-    showCfgStatus(
-      "⚠️ Sem confirmação do dispositivo. Verifique a conexão.",
-      "#f59e0b",
-    );
+    showCfgStatus("⚠️ Sem confirmação do dispositivo. Verifique a conexão.", "#f59e0b");
   }, 5000);
 }
 
 // Exibe mensagem de status no form de configurações por 3 segundos.
 // Ao confirmar sucesso, remove o indicador de campo modificado de todos os inputs.
 function showCfgStatus(msg, color) {
-  const el = document.getElementById("cfgStatus");
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = color;
+  showStatus("cfgStatus", msg, color);
   if (color === "#22c55e") {
-    document
-      .querySelectorAll(".field-dirty")
-      .forEach((f) => f.classList.remove("field-dirty"));
+    document.querySelectorAll(".field-dirty").forEach((f) => f.classList.remove("field-dirty"));
   }
-  setTimeout(() => (el.textContent = ""), 3000);
 }
 
 /* =========================================================
@@ -1425,10 +1264,7 @@ function showCfgStatus(msg, color) {
 
 document.addEventListener("DOMContentLoaded", () => {
   // Cancela timer de dot que pode ter sobrado de navegação anterior.
-  if (state.irDotTimer) {
-    clearTimeout(state.irDotTimer);
-    state.irDotTimer = null;
-  }
+  if (state.irDotTimer) { clearTimeout(state.irDotTimer); state.irDotTimer = null; }
 
   setText("uptime", "0d 00h 00m 00s");
   renderIRHistory();

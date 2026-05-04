@@ -181,5 +181,5 @@ void debugLogPrint(const char* tag, const char* msg, bool newline = false);
 void debugLogPrintf(const char* tag, const char* format, ...);
 void debugLogPrintfln(const char* tag, const char* format, ...);
 
-void wsSendSystemTo_withConfig(uint8_t num);
+void wsSendSystemTo(uint8_t num, bool withConfig = false);
 
