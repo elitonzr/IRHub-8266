@@ -1269,7 +1269,7 @@ function resetWifi() {
 }
 
 function resetConfig() {
-  if (!confirm("Apagar config.json? Isso apagará todas as configurações!"))
+  if (!confirm("Tem certeza que deseja resetar o config.json? Todas as configurações atuais serão perdidas e restauradas para o padrão."))
     return;
   wsSend({ cmd: "resetConfig" });
 }
