@@ -35,7 +35,7 @@ extern char snStr[16];
 // PASSWORD
 // ================================================================
 extern char admin_user[32];
-extern char PasswordWS[16];
+extern char PasswordWS[64];
 void initPassword();
 
 // ================================================================

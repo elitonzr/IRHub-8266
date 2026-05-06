@@ -39,7 +39,7 @@ String clientID = "";
 // ================================================================
 bool aht10_enabled = false;
 uint32_t uptimeSeconds = 0;
-bool configDirty = true;
+bool configDirty = false;
 
 // ================================================================
 // BUILD
@@ -51,7 +51,7 @@ const String buildVersion = "0.8.2";
 // PASSWORD
 // ================================================================
 char admin_user[32] = "admin";
-char PasswordWS[16] = "";
+char PasswordWS[64] = "";
 
 void initPassword() {
   if (strlen(PasswordWS) == 0) {

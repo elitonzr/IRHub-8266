@@ -102,10 +102,35 @@ void saveConfig() {
 // ==========================
 void resetConfig() {
   if (LittleFS.exists("/config.json")) {
-    LittleFS.remove("/config.json");
-    debugLogPrint("[FS]", "config.json removido.");
+    if (LittleFS.exists("/config.bak.json")) LittleFS.remove("/config.bak.json");
+    LittleFS.rename("/config.json", "/config.bak.json");
+    debugLogPrint("[FS]", "config.json → config.bak.json");
   }
-  delay(1000);
+
+  // Restaura valores padrão
+  strlcpy(hostname_buf,       "irhub8266",   sizeof(hostname_buf));
+  strlcpy(mqtt_id_buf,        "IRHub-8266",  sizeof(mqtt_id_buf));
+  strlcpy(grupo_buf,          "Sala",        sizeof(grupo_buf));
+  strlcpy(wifi_ssid_buf,      "",            sizeof(wifi_ssid_buf));
+  strlcpy(wifi_password_buf,  "",            sizeof(wifi_password_buf));
+  strlcpy(ipStr,              "",            sizeof(ipStr));
+  strlcpy(gwStr,              "",            sizeof(gwStr));
+  strlcpy(snStr,              "",            sizeof(snStr));
+  strlcpy(mqtt_server,        "mqtt.local",  sizeof(mqtt_server));
+  strlcpy(mqtt_user_buf,      "",            sizeof(mqtt_user_buf));
+  strlcpy(mqtt_password_buf,  "",            sizeof(mqtt_password_buf));
+  strlcpy(admin_user,         "admin",       sizeof(admin_user));
+  strlcpy(PasswordWS,         "",            sizeof(PasswordWS));
+  mqtt_port    = 1883;
+  mqtt_enabled = false;
+  aht10_enabled = false;
+  IR_ReceptorEstado = IR_PROTOCOL_KNOWN;
+
+  initPassword(); // gera PasswordWS padrão baseado no ChipID
+  saveConfig();
+  debugLogPrint("[FS]", "config.json resetado para padrões.");
+
+  delay(500);
   ESP.restart();
 }
 

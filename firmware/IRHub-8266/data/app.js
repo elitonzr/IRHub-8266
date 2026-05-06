@@ -13,35 +13,41 @@
 const state =
   window.appState ||
   (window.appState = {
-    ws: null,                                         // instância do WebSocket
-    reconnectTimer: null,                             // timer de reconexão automática
-    wsQueue: [],                                      // fila de mensagens pendentes enquanto WS está offline
-    uptimeSeconds: 0,                                 // segundos de uptime sincronizados com o backend
-    irHistory: [],                                    // histórico de sinais IR recebidos (máx 10)
-    logHistory: [],                                   // histórico de logs em tempo real (máx 200)
-    configPopulated: false,                           // evita repopular o form de config a cada mensagem
-    irModeIndex: 0,                                   // índice do modo de recepção IR atual
-    irDotTimer: null,                                 // timer do dot de atividade IR
-    uptimeInterval: null,                             // setInterval do contador de uptime
-    saveConfigTimer: null,                            // timeout de confirmação de saveConfig
-    remotesData: {},                                  // dados do remotes.json carregados em memória
-    lastPayloads: {},                                 // cache dos últimos payloads recebidos por type
-    lastConfig: null,                                 // última config recebida via WS (type: system)
-    logRenderedIndex: 0,                              // índice de renderização incremental do console
-    _settingsFormDirty: false,                        // true se o usuário editou o form antes de salvar
-    selectedRemote: lsGet("selectedRemote") || null,  // último modelo de controle remoto selecionado
-    wsAuthenticated: false,                           // true após login WS bem-sucedido
+    ws: null, // instância do WebSocket
+    reconnectTimer: null, // timer de reconexão automática
+    wsQueue: [], // fila de mensagens pendentes enquanto WS está offline
+    uptimeSeconds: 0, // segundos de uptime sincronizados com o backend
+    irHistory: [], // histórico de sinais IR recebidos (máx 10)
+    logHistory: [], // histórico de logs em tempo real (máx 200)
+    configPopulated: false, // evita repopular o form de config a cada mensagem
+    irModeIndex: 0, // índice do modo de recepção IR atual
+    irDotTimer: null, // timer do dot de atividade IR
+    uptimeInterval: null, // setInterval do contador de uptime
+    saveConfigTimer: null, // timeout de confirmação de saveConfig
+    remotesData: {}, // dados do remotes.json carregados em memória
+    lastPayloads: {}, // cache dos últimos payloads recebidos por type
+    lastConfig: null, // última config recebida via WS (type: system)
+    logRenderedIndex: 0, // índice de renderização incremental do console
+    _settingsFormDirty: false, // true se o usuário editou o form antes de salvar
+    selectedRemote: lsGet("selectedRemote") || null, // último modelo de controle remoto selecionado
+    wsAuthenticated: false, // true após login WS bem-sucedido
+    _navigating: false,
   });
 
 // Lê valor do localStorage com fallback seguro.
 function lsGet(key, fallback = "") {
-  try { return localStorage.getItem(key) ?? fallback; }
-  catch { return fallback; }
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 // Grava valor no localStorage com segurança.
 function lsSet(key, val) {
-  try { localStorage.setItem(key, val); } catch {}
+  try {
+    localStorage.setItem(key, val);
+  } catch {}
 }
 
 /* =========================================================
@@ -73,7 +79,7 @@ function connectWS() {
     scheduleReconnect();
   };
 
-  state.ws.onerror   = () => state.ws.close();
+  state.ws.onerror = () => state.ws.close();
   state.ws.onmessage = handleWSMessage;
 }
 
@@ -92,7 +98,7 @@ function wsSend(msg) {
   if (state.ws && state.ws.readyState === WebSocket.OPEN) {
     state.ws.send(data);
   } else {
-    state.wsQueue.push(data);
+    if (state.wsQueue.length < 20) state.wsQueue.push(data);
   }
 }
 
@@ -153,13 +159,15 @@ function updateAuthUI(authenticated) {
 ========================================================= */
 
 const routes = {
-  "/":         "/home_content.html",
-  "/ir":       "/ir_content.html",
-  "/system":   "/system_content.html",
+  "/": "/home_content.html",
+  "/ir": "/ir_content.html",
+  "/system": "/system_content.html",
   "/settings": "/settings_content.html",
 };
 
 async function navigateTo(path) {
+  if (state._navigating) return;
+  state._navigating = true;
   const contentArea = document.getElementById("app-content");
   if (!contentArea) return;
 
@@ -192,6 +200,8 @@ async function navigateTo(path) {
   } catch (err) {
     contentArea.innerHTML = `<div style="padding:20px;font-family:monospace"><b>Erro ao carregar página</b><br><span style="font-size:12px;opacity:0.6">${err}</span></div>`;
     console.error("navigateTo exception:", err);
+  } finally {
+    state._navigating = false;
   }
 }
 
@@ -222,12 +232,15 @@ function initPageScript(path) {
 
     // Oculta o gerenciador de arquivos se não autenticado.
     const fileManager = document.querySelector(".card-file-manager");
-    if (fileManager) fileManager.style.display = state.wsAuthenticated ? "" : "none";
+    if (fileManager)
+      fileManager.style.display = state.wsAuthenticated ? "" : "none";
+  }
+
+  if (path === "/ir") {
+    renderIRHistory();
   }
 
   if (path === "/system") {
-    // Reinicia o índice de renderização para exibir o histórico completo.
-    state.logRenderedIndex = 0;
     renderLogHistory();
   }
 
@@ -243,12 +256,14 @@ function initPageScript(path) {
     state._settingsFormDirty = false;
 
     // Marca o form como sujo ao primeiro input do usuário.
-    document.querySelectorAll("#app-content input, #app-content select").forEach((el) => {
-      el.addEventListener("change", () => {
-        state._settingsFormDirty = true;
-        el.classList.add("field-dirty");
+    document
+      .querySelectorAll("#app-content input, #app-content select")
+      .forEach((el) => {
+        el.addEventListener("change", () => {
+          state._settingsFormDirty = true;
+          el.classList.add("field-dirty");
+        });
       });
-    });
   }
 }
 
@@ -268,8 +283,11 @@ function updateActiveLinks(path) {
 
 function handleWSMessage(event) {
   let data;
-  try { data = JSON.parse(event.data); }
-  catch { return; }
+  try {
+    data = JSON.parse(event.data);
+  } catch {
+    return;
+  }
 
   // Armazena o último payload de cada type para replayLastPayloads().
   if (data.type) state.lastPayloads[data.type] = data;
@@ -297,14 +315,30 @@ function handleWSMessage(event) {
       navigateTo("/");
       break;
 
-    case "system":      updateSystemWS(data);    break;
-    case "ledb":        updateLEDBWS(data);       break;
-    case "sensor":      updateSensorWS(data);     break;
-    case "ir":          updateIRWS(data);         break;
-    case "ir_receptor": updateIRReceptorWS(data); break;
-    case "network":     updateNetworkWS(data);    break;
-    case "mqtt":        updateMQTTWS(data);       break;
-    case "console":     saveLogToHistory(data);   break;
+    case "system":
+      updateSystemWS(data);
+      break;
+    case "ledb":
+      updateLEDBWS(data);
+      break;
+    case "sensor":
+      updateSensorWS(data);
+      break;
+    case "ir":
+      updateIRWS(data);
+      break;
+    case "ir_receptor":
+      updateIRReceptorWS(data);
+      break;
+    case "network":
+      updateNetworkWS(data);
+      break;
+    case "mqtt":
+      updateMQTTWS(data);
+      break;
+    case "console":
+      saveLogToHistory(data);
+      break;
 
     case "reboot":
       alert("Dispositivo reiniciando...");
@@ -357,7 +391,7 @@ function showStatus(id, msg, color, timeout = 3000) {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = msg;
-  el.style.color  = color;
+  el.style.color = color;
   if (timeout > 0) setTimeout(() => (el.textContent = ""), timeout);
 }
 
@@ -400,10 +434,10 @@ function drawerClose() {
 
 // Atualiza informações de sistema (nome, build, heap, uptime, config).
 function updateSystemWS(data) {
-  setText("name",          data.name);
+  setText("name", data.name);
   setText("buildDateTime", data.buildDateTime);
-  setText("buildVersion",  data.buildVersion);
-  setText("heap",          data.heap);
+  setText("buildVersion", data.buildVersion);
+  setText("heap", data.heap);
 
   document.title = `✅ ${data.name}`;
 
@@ -414,9 +448,9 @@ function updateSystemWS(data) {
     if (knownVersion !== "") {
       const badge = document.getElementById("versionBadge");
       if (badge) {
-        badge.textContent  = `✨ v${data.buildVersion}`;
+        badge.textContent = `✨ v${data.buildVersion}`;
         badge.style.display = "inline";
-        badge.title        = `Firmware atualizado! (anterior: v${knownVersion})`;
+        badge.title = `Firmware atualizado! (anterior: v${knownVersion})`;
       }
     }
   }
@@ -451,17 +485,29 @@ function updateLEDBWS(data) {
 // Mapa de nome de protocolo IR para índice numérico.
 // Deve espelhar exatamente o enum IR_ReceptorMode em globals.h.
 const irModeMap = {
-  ALL: 0, KNOWN: 1, DISABLED: 2,
-  NEC: 3, SONY: 4, RC5: 5, RC6: 6,
-  SAMSUNG: 7, NIKAI: 8, LG: 9, JVC: 10, WHYNTER: 11,
+  ALL: 0,
+  KNOWN: 1,
+  DISABLED: 2,
+  NEC: 3,
+  SONY: 4,
+  RC5: 5,
+  RC6: 6,
+  SAMSUNG: 7,
+  NIKAI: 8,
+  LG: 9,
+  JVC: 10,
+  WHYNTER: 11,
 };
 
 // Atualiza estado do emissor e receptor IR.
 function updateIRWS(data) {
   setText("irEmitter", data.emissor_teste ? "Ativo" : "Desligado");
-  setText("irMode",    data.receptor_protocol || "--");
+  setText("irMode", data.receptor_protocol || "--");
 
-  if (data.receptor_protocol && irModeMap[data.receptor_protocol] !== undefined) {
+  if (
+    data.receptor_protocol &&
+    irModeMap[data.receptor_protocol] !== undefined
+  ) {
     state.irModeIndex = irModeMap[data.receptor_protocol];
     const sel = document.getElementById("irReceptorSelect");
     if (sel) sel.value = irModeMap[data.receptor_protocol];
@@ -472,32 +518,38 @@ function updateIRWS(data) {
     const dot = document.getElementById("irDot");
     if (dot)
       dot.className =
-        "dot " + (data.receptor_protocol && data.receptor_protocol !== "DISABLED" ? "green" : "yellow");
+        "dot " +
+        (data.receptor_protocol && data.receptor_protocol !== "DISABLED"
+          ? "green"
+          : "yellow");
   }
 }
 
 // Atualiza dados do sensor AHT10.
 function updateSensorWS(data) {
   const status = document.getElementById("sensorAHT10Status");
-  const text   = document.getElementById("sensorAHT10Data");
+  const text = document.getElementById("sensorAHT10Data");
   if (!status || !text) return;
 
   if (data.status) {
-    status.className   = "status offline";
+    status.className = "status offline";
     status.textContent = data.status;
-    text.textContent   = "";
+    text.textContent = "";
     return;
   }
 
-  text.innerHTML     = `Temperatura: ${data.temperatura} °C<br>Umidade: ${data.umidade} %`;
-  status.className   = "status online";
+  text.innerHTML = `Temperatura: ${data.temperatura} °C<br>Umidade: ${data.umidade} %`;
+  status.className = "status online";
   status.textContent = "online";
 }
 
 // Trata sinal IR recebido em tempo real: pisca dot e adiciona ao histórico.
 function updateIRReceptorWS(data) {
   flashIRDot();
-  saveIRToHistory({ ...data, timestamp: new Date().toLocaleTimeString("pt-BR") });
+  saveIRToHistory({
+    ...data,
+    timestamp: new Date().toLocaleTimeString("pt-BR"),
+  });
 }
 
 // Pisca o dot IR por 300ms ao receber um sinal.
@@ -505,7 +557,10 @@ function flashIRDot() {
   const dot = document.getElementById("irDot");
   if (!dot) return;
 
-  if (state.irDotTimer) { clearTimeout(state.irDotTimer); state.irDotTimer = null; }
+  if (state.irDotTimer) {
+    clearTimeout(state.irDotTimer);
+    state.irDotTimer = null;
+  }
 
   dot.className = "dot green";
   state.irDotTimer = setTimeout(() => {
@@ -517,7 +572,9 @@ function flashIRDot() {
 
 // Atualiza dados de rede.
 function updateNetworkWS(data) {
-  ["mdns", "wifi", "ip", "gateway", "mask", "rssi"].forEach((id) => setText(id, data[id]));
+  ["mdns", "wifi", "ip", "gateway", "mask", "rssi"].forEach((id) =>
+    setText(id, data[id]),
+  );
 }
 
 // Atualiza dados MQTT (status, server, tópicos, contadores).
@@ -525,26 +582,36 @@ function updateMQTTWS(data) {
   const cardMQTT = document.getElementById("cardMQTT");
   if (cardMQTT) cardMQTT.style.display = data.enabled ? "" : "none";
 
-  setText("mqttServer",   data.server);
-  setText("mqttPort",     data.port);
-  setText("mqttClient",   data.client_id);
-  setText("topic_main",   data.topic_main);
+  setText("mqttServer", data.server);
+  setText("mqttPort", data.port);
+  setText("mqttClient", data.client_id);
+  setText("topic_main", data.topic_main);
   setText("mqttSucessos", data.sucesso);
-  setText("mqttErros",    data.erro);
+  setText("mqttErros", data.erro);
 
   const status = document.getElementById("mqttStatus");
   if (!status) return;
 
-  if (!data.enabled)    { status.className = "status warn";    status.textContent = "desabilitado"; }
-  else if (data.status) { status.className = "status online";  status.textContent = "online"; }
-  else                  { status.className = "status offline"; status.textContent = "offline"; }
+  if (!data.enabled) {
+    status.className = "status warn";
+    status.textContent = "desabilitado";
+  } else if (data.status) {
+    status.className = "status online";
+    status.textContent = "online";
+  } else {
+    status.className = "status offline";
+    status.textContent = "offline";
+  }
 }
 
 // Reaplica o estado do receptor IR ao navegar entre páginas, sem acionar o flash do dot.
 // Diferente de updateIRReceptorWS (que trata sinais ao vivo), esta função apenas
 // restaura o select e o dot para o último estado conhecido.
 function applyIRReceptorState(data) {
-  if (data.receptor_protocol && irModeMap[data.receptor_protocol] !== undefined) {
+  if (
+    data.receptor_protocol &&
+    irModeMap[data.receptor_protocol] !== undefined
+  ) {
     const sel = document.getElementById("irReceptorSelect");
     if (sel) sel.value = irModeMap[data.receptor_protocol];
   }
@@ -552,7 +619,10 @@ function applyIRReceptorState(data) {
     const dot = document.getElementById("irDot");
     if (dot)
       dot.className =
-        "dot " + (data.receptor_protocol && data.receptor_protocol !== "DISABLED" ? "green" : "yellow");
+        "dot " +
+        (data.receptor_protocol && data.receptor_protocol !== "DISABLED"
+          ? "green"
+          : "yellow");
   }
 }
 
@@ -561,13 +631,13 @@ function applyIRReceptorState(data) {
 // updateIRReceptorWS (que aciona flash e adiciona ao histórico).
 function replayLastPayloads() {
   const updaters = {
-    system:      updateSystemWS,
-    ledb:        updateLEDBWS,
-    sensor:      updateSensorWS,
-    ir:          updateIRWS,
+    system: updateSystemWS,
+    ledb: updateLEDBWS,
+    sensor: updateSensorWS,
+    ir: updateIRWS,
     ir_receptor: applyIRReceptorState,
-    network:     updateNetworkWS,
-    mqtt:        updateMQTTWS,
+    network: updateNetworkWS,
+    mqtt: updateMQTTWS,
   };
   Object.entries(updaters).forEach(([type, fn]) => {
     if (state.lastPayloads[type]) fn(state.lastPayloads[type]);
@@ -581,9 +651,9 @@ function replayLastPayloads() {
 ========================================================= */
 
 function formatUptime(s) {
-  const d   = Math.floor(s / 86400);
-  const h   = Math.floor((s % 86400) / 3600);
-  const m   = Math.floor((s % 3600) / 60);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
   return `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(sec).padStart(2, "0")}s`;
 }
@@ -644,7 +714,8 @@ function renderIRHistory() {
         ta.value = d.hex;
         ta.style.cssText = "position:fixed;opacity:0";
         document.body.appendChild(ta);
-        ta.focus(); ta.select();
+        ta.focus();
+        ta.select();
         document.execCommand("copy");
         document.body.removeChild(ta);
         showIrToast("✅ Copiado!");
@@ -654,11 +725,14 @@ function renderIRHistory() {
     // Double-click: carrega no form de envio manual.
     li.ondblclick = () => {
       const proto = document.getElementById("irProto");
-      const code  = document.getElementById("irCode");
-      const bits  = document.getElementById("irBits");
+      const code = document.getElementById("irCode");
+      const bits = document.getElementById("irBits");
       if (proto) proto.value = d.protocol;
-      if (code)  { code.value = d.hex; code.placeholder = "Código hex (ex: 0x20DF10EF)"; }
-      if (bits)  bits.value  = d.bits;
+      if (code) {
+        code.value = d.hex;
+        code.placeholder = "Código hex (ex: 0x20DF10EF)";
+      }
+      if (bits) bits.value = d.bits;
       li.classList.add("flash");
       setTimeout(() => li.classList.remove("flash"), 400);
     };
@@ -678,10 +752,10 @@ function renderIRHistory() {
 function saveLogToHistory(data) {
   if (!data.msg) return;
 
-  const timestamp    = new Date().toLocaleTimeString("pt-BR");
-  const logTag       = data.log || "[LOG]";
-  const color        = getLogColor(logTag);
-  const safeMsg      = escapeHtml(data.msg);
+  const timestamp = new Date().toLocaleTimeString("pt-BR");
+  const logTag = data.log || "[LOG]";
+  const color = getLogColor(logTag);
+  const safeMsg = escapeHtml(data.msg);
   const tagFormatted = logTag.padEnd(10, " ");
 
   const line =
@@ -744,31 +818,35 @@ function getLogColor(tag) {
   if (!tag) return "#ffffff";
   tag = tag.toUpperCase();
 
-  if (tag.includes("HTTP"))   return "#00FFFF"; // ciano
-  if (tag.includes("MQTT"))   return "#FFA500"; // laranja
-  if (tag.includes("WIFI"))   return "#8e5a8a"; // roxo
-  if (tag.includes("WS"))     return "#60a5fa"; // azul claro
-  if (tag.includes("IR"))     return "#a78bfa"; // violeta
-  if (tag.includes("FS"))     return "#34d399"; // verde
-  if (tag.includes("AHT"))    return "#22d3ee"; // ciano claro
-  if (tag.includes("SYS"))    return "#f472b6"; // rosa
-  if (tag.includes("BTN"))    return "#fb923c"; // laranja claro
-  if (tag.includes("OTA"))    return "#facc15"; // amarelo
-  if (tag.includes("LED A"))  return "#009dff"; // azul
-  if (tag.includes("LED B"))  return "#FFD700"; // dourado
-  if (tag.includes("ERROR"))  return "#FF4C4C"; // vermelho
-  if (tag.includes("WARN"))   return "#FFD700"; // dourado
-  if (tag.includes("INFO"))   return "#87CEFA"; // azul claro
+  if (tag.includes("HTTP")) return "#00FFFF"; // ciano
+  if (tag.includes("MQTT")) return "#FFA500"; // laranja
+  if (tag.includes("WIFI")) return "#8e5a8a"; // roxo
+  if (tag.includes("WS")) return "#60a5fa"; // azul claro
+  if (tag.includes("IR")) return "#a78bfa"; // violeta
+  if (tag.includes("FS")) return "#34d399"; // verde
+  if (tag.includes("AHT")) return "#22d3ee"; // ciano claro
+  if (tag.includes("SYS")) return "#f472b6"; // rosa
+  if (tag.includes("BTN")) return "#fb923c"; // laranja claro
+  if (tag.includes("OTA")) return "#facc15"; // amarelo
+  if (tag.includes("LED A")) return "#009dff"; // azul
+  if (tag.includes("LED B")) return "#FFD700"; // dourado
+  if (tag.includes("ERROR")) return "#FF4C4C"; // vermelho
+  if (tag.includes("WARN")) return "#FFD700"; // dourado
+  if (tag.includes("INFO")) return "#87CEFA"; // azul claro
   if (tag.includes("TELNET")) return "#94a3b8"; // cinza azulado
-  if (tag.includes("AUTH"))   return "#f87171"; // vermelho claro
-  if (tag.includes("TESTE"))  return "#c084fc"; // lilás
+  if (tag.includes("AUTH")) return "#f87171"; // vermelho claro
+  if (tag.includes("TESTE")) return "#c084fc"; // lilás
   return "#CCCCCC";
 }
 
 // Escapa caracteres HTML especiais para exibição segura no console.
 function escapeHtml(str) {
-  return str.replace(/[&<>"']/g, (m) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
+  return str.replace(
+    /[&<>"']/g,
+    (m) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        m
+      ],
   );
 }
 
@@ -792,10 +870,16 @@ function makeBasicAuth(pass) {
 async function downloadFile(path, filename, statusFn) {
   try {
     const res = await fetch(`/download?file=${path}`);
-    if (res.status === 401) { statusFn("❌ Sem permissão.", "#ef4444"); return; }
-    if (!res.ok)            { statusFn("❌ Arquivo não encontrado.", "#ef4444"); return; }
-    const a  = document.createElement("a");
-    a.href     = URL.createObjectURL(await res.blob());
+    if (res.status === 401) {
+      statusFn("❌ Sem permissão.", "#ef4444");
+      return;
+    }
+    if (!res.ok) {
+      statusFn("❌ Arquivo não encontrado.", "#ef4444");
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(await res.blob());
     a.download = filename;
     a.click();
     URL.revokeObjectURL(a.href);
@@ -808,12 +892,19 @@ async function downloadFile(path, filename, statusFn) {
 // Valida JSON antes de enviar se o arquivo for .json.
 // statusFn(msg, color) é chamado para feedback; onSuccess é chamado após upload ok.
 async function uploadFile(file, statusFn, onSuccess = null) {
-  if (!file) { alert("Selecione um arquivo."); return; }
+  if (!file) {
+    alert("Selecione um arquivo.");
+    return;
+  }
 
   // Valida JSON antes de enviar para evitar corromper o filesystem.
   if (file.name.endsWith(".json")) {
-    try { JSON.parse(await file.text()); }
-    catch { statusFn("❌ Arquivo JSON inválido.", "#ef4444"); return; }
+    try {
+      JSON.parse(await file.text());
+    } catch {
+      statusFn("❌ Arquivo JSON inválido.", "#ef4444");
+      return;
+    }
   }
 
   const httpPass = prompt("🔐 Senha para continuar:");
@@ -828,7 +919,10 @@ async function uploadFile(file, statusFn, onSuccess = null) {
   xhr.setRequestHeader("Authorization", makeBasicAuth(httpPass));
 
   xhr.onload = () => {
-    if (xhr.status === 401) { statusFn("❌ Senha incorreta.", "#ef4444"); return; }
+    if (xhr.status === 401) {
+      statusFn("❌ Senha incorreta.", "#ef4444");
+      return;
+    }
     statusFn("✅ Importado com sucesso!", "#22c55e");
     if (onSuccess) onSuccess();
   };
@@ -840,34 +934,41 @@ async function uploadFile(file, statusFn, onSuccess = null) {
 
 async function exportConfig() {
   await downloadFile("/config.json", "config.json", (msg, color) =>
-    showStatus("configFileStatus", msg, color)
+    showStatus("configFileStatus", msg, color),
   );
 }
 
 async function importConfig() {
-  if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?")) return;
+  if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?"))
+    return;
   const file = document.getElementById("configFile")?.files[0];
-  await uploadFile(file, (msg, color) => showStatus("configFileStatus", msg, color));
+  await uploadFile(file, (msg, color) =>
+    showStatus("configFileStatus", msg, color),
+  );
 }
 
 // --- remotes.json ---
 
 async function exportRemotes() {
   await downloadFile("/remotes.json", "remotes.json", (msg, color) =>
-    showStatus("remotesStatus", msg, color)
+    showStatus("remotesStatus", msg, color),
   );
 }
 
 async function importRemotes() {
   const file = document.getElementById("remotesFile")?.files[0];
   if (file && file.name !== "remotes.json") {
-    showStatus("remotesStatus", "❌ O arquivo deve se chamar remotes.json", "#ef4444");
+    showStatus(
+      "remotesStatus",
+      "❌ O arquivo deve se chamar remotes.json",
+      "#ef4444",
+    );
     return;
   }
   await uploadFile(
     file,
     (msg, color) => showStatus("remotesStatus", msg, color),
-    loadRemotes // recarrega os controles após importar com sucesso
+    loadRemotes, // recarrega os controles após importar com sucesso
   );
 }
 
@@ -887,7 +988,12 @@ async function startOTAUpdate() {
     return;
   }
 
-  if (!confirm(`Atualizar firmware com "${file.name}"? O dispositivo será reiniciado.`)) return;
+  if (
+    !confirm(
+      `Atualizar firmware com "${file.name}"? O dispositivo será reiniciado.`,
+    )
+  )
+    return;
 
   const httpPass = prompt("🔐 Senha para continuar:");
   if (!httpPass) return;
@@ -896,7 +1002,7 @@ async function startOTAUpdate() {
   formData.append("update", file);
 
   const progress = document.getElementById("otaProgress");
-  const xhr      = new XMLHttpRequest();
+  const xhr = new XMLHttpRequest();
 
   xhr.upload.onprogress = (e) => {
     if (!progress) return;
@@ -906,9 +1012,11 @@ async function startOTAUpdate() {
 
   xhr.onload = () => {
     if (progress) progress.style.display = "none";
-    if      (xhr.status === 200) showOtaStatus("✅ Firmware enviado! Aguarde o reboot...", "#22c55e");
-    else if (xhr.status === 401) showOtaStatus("❌ Senha incorreta.", "#ef4444");
-    else                          showOtaStatus(`❌ Erro: HTTP ${xhr.status}`, "#ef4444");
+    if (xhr.status === 200)
+      showOtaStatus("✅ Firmware enviado! Aguarde o reboot...", "#22c55e");
+    else if (xhr.status === 401)
+      showOtaStatus("❌ Senha incorreta.", "#ef4444");
+    else showOtaStatus(`❌ Erro: HTTP ${xhr.status}`, "#ef4444");
   };
 
   xhr.onerror = () => {
@@ -928,7 +1036,7 @@ async function startOTAUpdate() {
 
 // Exibe/oculta campos de IP fixo conforme o modo selecionado.
 function toggleIPFields() {
-  const mode   = document.getElementById("cfg_ip_mode")?.value;
+  const mode = document.getElementById("cfg_ip_mode")?.value;
   const fields = document.getElementById("cfg_ip_fields");
   if (fields) fields.style.display = mode === "static" ? "block" : "none";
 }
@@ -936,7 +1044,7 @@ function toggleIPFields() {
 // Exibe/oculta campos MQTT conforme habilitado/desabilitado.
 function toggleMQTTFields() {
   const enabled = document.getElementById("cfg_mqtt_enabled")?.value;
-  const fields  = document.getElementById("cfg_mqtt_fields");
+  const fields = document.getElementById("cfg_mqtt_fields");
   if (fields) fields.style.display = enabled === "true" ? "block" : "none";
 }
 
@@ -967,7 +1075,11 @@ async function loadRemotes() {
     populateRemoteSelect();
   } catch (err) {
     console.error("Erro ao carregar remotes:", err);
-    showStatus("remotesStatus", "❌ Erro ao carregar remotes.json. Faça o upload do arquivo.", "#ef4444");
+    showStatus(
+      "remotesStatus",
+      "❌ Erro ao carregar remotes.json. Faça o upload do arquivo.",
+      "#ef4444",
+    );
   }
 }
 
@@ -1004,7 +1116,8 @@ function loadButtons(model) {
 
   container.innerHTML = "";
 
-  const buttons = state.remotesData[model].buttons || state.remotesData[model].button || [];
+  const buttons =
+    state.remotesData[model].buttons || state.remotesData[model].button || [];
 
   buttons.forEach((btn) => {
     // Espaço vazio no grid.
@@ -1017,9 +1130,9 @@ function loadButtons(model) {
 
     // Label descritivo (sem ação).
     if (btn.type === "label") {
-      const label       = document.createElement("div");
+      const label = document.createElement("div");
       label.textContent = btn.name || "";
-      label.className   = `remote-label${btn.span ? ` span-${btn.span}` : " span-3"}`;
+      label.className = `remote-label${btn.span ? ` span-${btn.span}` : " span-3"}`;
       container.appendChild(label);
       return;
     }
@@ -1027,19 +1140,22 @@ function loadButtons(model) {
     // Ignora tipos desconhecidos (exceto "button" e sem type).
     if (btn.type && btn.type !== "button") return;
 
-    const b       = document.createElement("button");
+    const b = document.createElement("button");
     b.textContent = btn.name;
-    b.type        = "button";
-    b.className   = "btn-ir-remote";
+    b.type = "button";
+    b.className = "btn-ir-remote";
 
-    if (btn.fontSize)   b.style.fontSize   = btn.fontSize;
-    if (btn.span)       b.classList.add(`span-${btn.span}`);
-    if (btn.rowSpan)    b.classList.add(`row-span-${btn.rowSpan}`);
+    if (btn.fontSize) b.style.fontSize = btn.fontSize;
+    if (btn.span) b.classList.add(`span-${btn.span}`);
+    if (btn.rowSpan) b.classList.add(`row-span-${btn.rowSpan}`);
     if (btn.background) b.style.background = `#${btn.background}`;
-    if (btn.color)      b.style.color      = `#${btn.color}`;
+    if (btn.color) b.style.color = `#${btn.color}`;
 
     b.onclick = () => {
-      if (!btn.code) { showIrToast("Botão sem código IR", true); return; }
+      if (!btn.code) {
+        showIrToast("Botão sem código IR", true);
+        return;
+      }
       sendIR(btn.protocol, btn.code, btn.bits, b);
     };
 
@@ -1067,14 +1183,19 @@ function sendIR(protocol, code, bits, element = null) {
   }
 
   showIrToast(`Enviando ${protocol}...`);
-  wsSend({ cmd: "sendIR", code: String(code), protocol, bits: parseInt(bits) || 32 });
+  wsSend({
+    cmd: "sendIR",
+    code: String(code),
+    protocol,
+    bits: parseInt(bits) || 32,
+  });
 }
 
 // Exibe toast de feedback de envio IR (roxo = ok, vermelho = erro).
 function showIrToast(message, isError = false) {
   document.querySelector(".ir-sending-toast")?.remove();
-  const toast       = document.createElement("div");
-  toast.className   = "ir-sending-toast" + (isError ? " error" : "");
+  const toast = document.createElement("div");
+  toast.className = "ir-sending-toast" + (isError ? " error" : "");
   toast.textContent = message;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 1000);
@@ -1084,18 +1205,20 @@ function showIrToast(message, isError = false) {
 // Hex sem prefixo 0x é auto-prefixado antes do envio para garantir
 // interpretação correta pelo backend (strtoull com base 0).
 function sendIRManual() {
-  const code  = document.getElementById("irCode")?.value.trim();
+  const code = document.getElementById("irCode")?.value.trim();
   const proto = document.getElementById("irProto")?.value;
-  const bits  = parseInt(document.getElementById("irBits")?.value) || 32;
+  const bits = parseInt(document.getElementById("irBits")?.value) || 32;
 
   if (!code) return alert("Digite um código IR.");
 
-  const isHex0x  = /^0x[0-9a-fA-F]+$/i.test(code);
-  const isHexRaw = /^[0-9a-fA-F]*[a-fA-F][0-9a-fA-F]*$/.test(code);
-  const isDec    = /^\d+$/.test(code);
+  const isHex0x = /^0x[0-9a-fA-F]+$/i.test(code);
+  const isHexRaw = /^[0-9a-fA-F]{1,16}$/.test(code) && !/^\d+$/.test(code);
+  const isDec = /^\d+$/.test(code);
 
   if (!isHex0x && !isHexRaw && !isDec)
-    return alert("Código inválido. Use hex (0x20DF10EF) ou decimal (551489775).");
+    return alert(
+      "Código inválido. Use hex (0x20DF10EF) ou decimal (551489775).",
+    );
 
   const finalCode = isHexRaw ? "0x" + code : code;
   wsSend({ cmd: "sendIR", code: finalCode, protocol: proto, bits });
@@ -1146,7 +1269,8 @@ function resetWifi() {
 }
 
 function resetConfig() {
-  if (!confirm("Apagar config.json? Isso apagará todas as configurações!")) return;
+  if (!confirm("Apagar config.json? Isso apagará todas as configurações!"))
+    return;
   wsSend({ cmd: "resetConfig" });
 }
 
@@ -1159,19 +1283,19 @@ function resetConfig() {
 // para /settings se state.lastConfig estiver disponível.
 function populateConfig(data) {
   const fields = {
-    cfg_hostname:      data.hostname,
-    cfg_mqtt_id:       data.mqtt_id,
-    cfg_grupo:         data.grupo,
-    cfg_ip:            data.ip,
-    cfg_gw:            data.gw,
-    cfg_sn:            data.sn,
-    cfg_mqtt_server:   data.mqtt_server,
-    cfg_mqtt_port:     data.mqtt_port,
-    cfg_mqtt_user:     data.mqtt_user,
-    cfg_mqtt_enabled:  data.mqtt_enabled  ? "true" : "false",
+    cfg_hostname: data.hostname,
+    cfg_mqtt_id: data.mqtt_id,
+    cfg_grupo: data.grupo,
+    cfg_ip: data.ip,
+    cfg_gw: data.gw,
+    cfg_sn: data.sn,
+    cfg_mqtt_server: data.mqtt_server,
+    cfg_mqtt_port: data.mqtt_port,
+    cfg_mqtt_user: data.mqtt_user,
+    cfg_mqtt_enabled: data.mqtt_enabled ? "true" : "false",
     cfg_aht10_enabled: data.aht10_enabled ? "true" : "false",
-    cfg_wifi_ssid:     data.wifi_ssid,
-    cfg_admin_user:    data.admin_user,
+    cfg_wifi_ssid: data.wifi_ssid,
+    cfg_admin_user: data.admin_user,
     // cfg_mqtt_password e cfg_ws_password omitidos — backend não envia senhas
   };
 
@@ -1183,7 +1307,8 @@ function populateConfig(data) {
   // Detecta modo IP (DHCP ou fixo) e exibe campos correspondentes.
   const modeEl = document.getElementById("cfg_ip_mode");
   if (modeEl) {
-    modeEl.value = data.ip && data.ip !== "" && data.ip !== "0.0.0.0" ? "static" : "dhcp";
+    modeEl.value =
+      data.ip && data.ip !== "" && data.ip !== "0.0.0.0" ? "static" : "dhcp";
     toggleIPFields();
   }
 
@@ -1199,9 +1324,9 @@ function saveDeviceConfig() {
   const get = (id) => document.getElementById(id)?.value ?? "";
 
   const ipMode = document.getElementById("cfg_ip_mode")?.value;
-  const ip     = ipMode === "static" ? get("cfg_ip").trim() : "";
-  const gw     = ipMode === "static" ? get("cfg_gw").trim() : "";
-  const sn     = ipMode === "static" ? get("cfg_sn").trim() : "";
+  const ip = ipMode === "static" ? get("cfg_ip").trim() : "";
+  const gw = ipMode === "static" ? get("cfg_gw").trim() : "";
+  const sn = ipMode === "static" ? get("cfg_sn").trim() : "";
 
   if (ipMode === "static") {
     if (!ip || !gw || !sn) {
@@ -1214,28 +1339,30 @@ function saveDeviceConfig() {
     }
   }
 
-  const wsPassword   = get("cfg_ws_password");
+  const wsPassword = get("cfg_ws_password");
   const wifiPassword = get("cfg_wifi_password");
   const mqttPassword = get("cfg_mqtt_password");
-  const adminUser    = get("cfg_admin_user");
+  const adminUser = get("cfg_admin_user");
 
   wsSend({
-    cmd:           "saveConfig",
-    hostname:      get("cfg_hostname").trim(),
-    mqtt_id:       get("cfg_mqtt_id").trim(),
-    grupo:         get("cfg_grupo").trim(),
-    wifi_ssid:     get("cfg_wifi_ssid").trim(),
+    cmd: "saveConfig",
+    hostname: get("cfg_hostname").trim(),
+    mqtt_id: get("cfg_mqtt_id").trim(),
+    grupo: get("cfg_grupo").trim(),
+    wifi_ssid: get("cfg_wifi_ssid").trim(),
     wifi_password: wifiPassword.length > 0 ? wifiPassword : "__keep__",
-    ip, gw, sn,
-    mqtt_server:   get("cfg_mqtt_server").trim(),
-    mqtt_user:     get("cfg_mqtt_user").trim(),
+    ip,
+    gw,
+    sn,
+    mqtt_server: get("cfg_mqtt_server").trim(),
+    mqtt_user: get("cfg_mqtt_user").trim(),
     mqtt_password: mqttPassword.length > 0 ? mqttPassword : "__keep__",
-    mqtt_enabled:  get("cfg_mqtt_enabled") === "true",
-    mqtt_port:     parseInt(get("cfg_mqtt_port")) || 1883,
+    mqtt_enabled: get("cfg_mqtt_enabled") === "true",
+    mqtt_port: parseInt(get("cfg_mqtt_port")) || 1883,
     aht10_enabled: get("cfg_aht10_enabled") === "true",
-    ws_password:   wsPassword.length > 0 ? wsPassword : "__keep__",
-    admin_user:    adminUser.length  > 0 ? adminUser  : "__keep__",
-    ir_receptor:   state.irModeIndex,
+    ws_password: wsPassword.length > 0 ? wsPassword : "__keep__",
+    admin_user: adminUser.length > 0 ? adminUser : "__keep__",
+    ir_receptor: state.irModeIndex,
   });
 
   showCfgStatus("⏳ Salvando...", "#facc15");
@@ -1244,7 +1371,10 @@ function saveDeviceConfig() {
   if (state.saveConfigTimer) clearTimeout(state.saveConfigTimer);
   state.saveConfigTimer = setTimeout(() => {
     state.saveConfigTimer = null;
-    showCfgStatus("⚠️ Sem confirmação do dispositivo. Verifique a conexão.", "#f59e0b");
+    showCfgStatus(
+      "⚠️ Sem confirmação do dispositivo. Verifique a conexão.",
+      "#f59e0b",
+    );
   }, 5000);
 }
 
@@ -1253,7 +1383,9 @@ function saveDeviceConfig() {
 function showCfgStatus(msg, color) {
   showStatus("cfgStatus", msg, color);
   if (color === "#22c55e") {
-    document.querySelectorAll(".field-dirty").forEach((f) => f.classList.remove("field-dirty"));
+    document
+      .querySelectorAll(".field-dirty")
+      .forEach((f) => f.classList.remove("field-dirty"));
   }
 }
 
@@ -1264,7 +1396,10 @@ function showCfgStatus(msg, color) {
 
 document.addEventListener("DOMContentLoaded", () => {
   // Cancela timer de dot que pode ter sobrado de navegação anterior.
-  if (state.irDotTimer) { clearTimeout(state.irDotTimer); state.irDotTimer = null; }
+  if (state.irDotTimer) {
+    clearTimeout(state.irDotTimer);
+    state.irDotTimer = null;
+  }
 
   setText("uptime", "0d 00h 00m 00s");
   renderIRHistory();

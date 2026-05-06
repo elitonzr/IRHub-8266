@@ -218,7 +218,7 @@ function upload(){
   if (!pass) return;
   xhr.withCredentials=true;
   xhr.open('POST','/upload',true);
-  xhr.setRequestHeader('Authorization', 'Basic ' + btoa('admin:' + pass));
+  xhr.setRequestHeader('Authorization', 'Basic ' + btoa('%ADMIN_USER%:' + pass));
   xhr.send(formData);
 }
 </script>

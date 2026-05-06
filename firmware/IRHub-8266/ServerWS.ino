@@ -6,10 +6,10 @@
 // simultâneas suportadas pela biblioteca WebSocketsServer.
 // ================================================================
 static bool wsAuthenticated[WEBSOCKETS_SERVER_CLIENT_MAX] = {};
+static bool uploadAuthorized = false;
 
 // Preenche user/pass com as credenciais HTTP atuais (admin_user / PasswordWS).
 void getHttpCredentials(char* user, size_t userSize, char* pass, size_t passSize) {
-  initPassword();  // garante que PasswordWS está inicializado
   strlcpy(user, admin_user, userSize);
   strlcpy(pass, PasswordWS, passSize);
 }
@@ -17,8 +17,8 @@ void getHttpCredentials(char* user, size_t userSize, char* pass, size_t passSize
 // Autentica a requisição HTTP corrente via Basic Auth.
 // Retorna false e envia 401 automaticamente se falhar.
 bool checkAuth() {
-  char user[16];
-  char pass[32];
+  char user[32];
+  char pass[64];
   getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
   if (!server.authenticate(user, pass)) {
     server.requestAuthentication();
@@ -31,11 +31,11 @@ bool checkAuth() {
 
 // Imprime as credenciais HTTP e WS no log de debug (útil no boot).
 void printHttpCredentials() {
-  char user[16];
-  char pass[32];
+  char user[32];
+  char pass[64];
   getHttpCredentials(user, sizeof(user), pass, sizeof(pass));
   debugLogPrintf("[AUTH]", "%-6s | Usuario : %-12s | Senha: %-10s", "HTTP", user, pass);
-  debugLogPrintf("[AUTH]", "%-6s |         : %-12s | Senha: %-10s", "WS",   "",   PasswordWS);
+  debugLogPrintf("[AUTH]", "%-6s |         : %-12s | Senha: %-10s", "WS", "", PasswordWS);
 }
 
 // ================================================================
@@ -48,26 +48,26 @@ void printHttpCredentials() {
 // WS_SEND_TO    — envia apenas para o cliente identificado por `num`.
 // ================================================================
 
-#define WS_BROADCAST(doc, bufSize, tag)                          \
-  do {                                                           \
-    char _buf[bufSize];                                          \
-    size_t _len = serializeJson(doc, _buf, sizeof(_buf));        \
-    if (_len == 0 || _len >= sizeof(_buf)) {                     \
-      debugLogPrint("[WS]", "Erro: JSON " tag " truncado");      \
-      return;                                                    \
-    }                                                            \
-    webSocket.broadcastTXT(_buf, _len);                          \
+#define WS_BROADCAST(doc, bufSize, tag) \
+  do { \
+    char _buf[bufSize]; \
+    size_t _len = serializeJson(doc, _buf, sizeof(_buf)); \
+    if (_len == 0 || _len >= sizeof(_buf)) { \
+      debugLogPrint("[WS]", "Erro: JSON " tag " truncado"); \
+      return; \
+    } \
+    webSocket.broadcastTXT(_buf, _len); \
   } while (0)
 
-#define WS_SEND_TO(num, doc, bufSize, tag)                       \
-  do {                                                           \
-    char _buf[bufSize];                                          \
-    size_t _len = serializeJson(doc, _buf, sizeof(_buf));        \
-    if (_len == 0 || _len >= sizeof(_buf)) {                     \
-      debugLogPrint("[WS]", "Erro: JSON " tag " truncado");      \
-      return;                                                    \
-    }                                                            \
-    webSocket.sendTXT(num, _buf, _len);                          \
+#define WS_SEND_TO(num, doc, bufSize, tag) \
+  do { \
+    char _buf[bufSize]; \
+    size_t _len = serializeJson(doc, _buf, sizeof(_buf)); \
+    if (_len == 0 || _len >= sizeof(_buf)) { \
+      debugLogPrint("[WS]", "Erro: JSON " tag " truncado"); \
+      return; \
+    } \
+    webSocket.sendTXT(num, _buf, _len); \
   } while (0)
 
 // ================================================================
@@ -91,14 +91,20 @@ void setup_server() {
 
   // --- Assets estáticos do frontend (rotas explícitas evitam cache busting via onNotFound) ---
   server.on("/app.js", HTTP_GET, []() {
-    if (!LittleFS.exists("/app.js")) { server.send(404, "text/plain", "app.js not found"); return; }
+    if (!LittleFS.exists("/app.js")) {
+      server.send(404, "text/plain", "app.js not found");
+      return;
+    }
     File f = LittleFS.open("/app.js", "r");
     server.streamFile(f, "application/javascript");
     f.close();
   });
 
   server.on("/style.css", HTTP_GET, []() {
-    if (!LittleFS.exists("/style.css")) { server.send(404, "text/plain", "style.css not found"); return; }
+    if (!LittleFS.exists("/style.css")) {
+      server.send(404, "text/plain", "style.css not found");
+      return;
+    }
     File f = LittleFS.open("/style.css", "r");
     server.streamFile(f, "text/css");
     f.close();
@@ -107,7 +113,10 @@ void setup_server() {
   // remotes.json é público — não exige autenticação
   server.on("/remotes.json", HTTP_GET, []() {
     File file = LittleFS.open("/remotes.json", "r");
-    if (!file) { server.send(404, "application/json", "{\"error\":\"file not found\"}"); return; }
+    if (!file) {
+      server.send(404, "application/json", "{\"error\":\"file not found\"}");
+      return;
+    }
     server.streamFile(file, "application/json");
     file.close();
   });
@@ -140,15 +149,22 @@ void setup_server() {
     String html = FPSTR(FILES_PAGE);
     html.replace("%FILES%", rows);
     html.replace("%USAGE%", usage);
+    html.replace("%ADMIN_USER%", admin_user);
     server.send(200, "text/html", html);
   });
 
   // --- /download?file=<path>: download de arquivo do LittleFS ---
   server.on("/download", HTTP_GET, []() {
     if (!checkAuth()) return;
-    if (!server.hasArg("file")) { server.send(400, "text/plain", "Arquivo não especificado"); return; }
+    if (!server.hasArg("file")) {
+      server.send(400, "text/plain", "Arquivo não especificado");
+      return;
+    }
     String path = server.arg("file");
-    if (!LittleFS.exists(path)) { server.send(404, "text/plain", "Arquivo não encontrado"); return; }
+    if (!LittleFS.exists(path)) {
+      server.send(404, "text/plain", "Arquivo não encontrado");
+      return;
+    }
     File file = LittleFS.open(path, "r");
     server.sendHeader("Content-Disposition", "attachment; filename=" + path.substring(1));
     server.streamFile(file, "application/octet-stream");
@@ -158,9 +174,15 @@ void setup_server() {
   // --- /delete?file=<path>: remove arquivo e redireciona para /files ---
   server.on("/delete", HTTP_GET, []() {
     if (!checkAuth()) return;
-    if (!server.hasArg("file")) { server.send(400, "text/plain", "Arquivo não especificado"); return; }
+    if (!server.hasArg("file")) {
+      server.send(400, "text/plain", "Arquivo não especificado");
+      return;
+    }
     String path = server.arg("file");
-    if (!LittleFS.exists(path)) { server.send(404, "text/plain", "Arquivo não encontrado"); return; }
+    if (!LittleFS.exists(path)) {
+      server.send(404, "text/plain", "Arquivo não encontrado");
+      return;
+    }
     if (LittleFS.remove(path)) {
       server.sendHeader("Location", "/files");
       server.send(303);
@@ -176,13 +198,15 @@ void setup_server() {
   // upload completo. Por isso a autenticação é feita dentro do callback de
   // progresso (UPLOAD_FILE_START) e o resultado é guardado em uploadAuthorized.
   // ---
-  static bool uploadAuthorized = false;
 
   server.on(
     "/upload", HTTP_POST,
     // Callback final (após todo o upload): confirma ou rejeita a operação.
     []() {
-      if (!uploadAuthorized) { server.send(401, "text/plain", "Unauthorized"); return; }
+      if (!uploadAuthorized) {
+        server.send(401, "text/plain", "Unauthorized");
+        return;
+      }
       uploadAuthorized = false;
       server.sendHeader("Location", "/files");
       server.send(303);
@@ -197,8 +221,7 @@ void setup_server() {
         return;
       }
       handleUpload();
-    }
-  );
+    });
 
   // --- onNotFound: serve arquivos do LittleFS ou fallback SPA.
   //     Qualquer rota desconhecida devolve index.html para o roteador frontend.
@@ -210,12 +233,12 @@ void setup_server() {
     if (LittleFS.exists(path)) {
       // Detecta content-type pelo sufixo
       String ct = "text/plain";
-      if      (path.endsWith(".html")) ct = "text/html";
-      else if (path.endsWith(".css"))  ct = "text/css";
-      else if (path.endsWith(".js"))   ct = "application/javascript";
+      if (path.endsWith(".html")) ct = "text/html";
+      else if (path.endsWith(".css")) ct = "text/css";
+      else if (path.endsWith(".js")) ct = "application/javascript";
       else if (path.endsWith(".json")) ct = "application/json";
-      else if (path.endsWith(".png"))  ct = "image/png";
-      else if (path.endsWith(".ico"))  ct = "image/x-icon";
+      else if (path.endsWith(".png")) ct = "image/png";
+      else if (path.endsWith(".ico")) ct = "image/x-icon";
       File file = LittleFS.open(path, "r");
       server.streamFile(file, ct);
       file.close();
@@ -250,19 +273,19 @@ void handleUpload() {
   HTTPUpload& upload = server.upload();
 
   switch (upload.status) {
-    case UPLOAD_FILE_START: {
-      String filename = upload.filename;
-      if (filename.indexOf("..") >= 0)  return;  // path traversal
-      if (filename.length() > 32)       return;  // nome muito longo
-      if (filename.indexOf('/') > 0)    return;  // subpasta não permitida
-      if (!filename.endsWith(".html") && !filename.endsWith(".js") &&
-          !filename.endsWith(".css")  && !filename.endsWith(".json")) return;
-      if (!filename.startsWith("/")) filename = "/" + filename;
-      debugLogPrintf("[FS]", "Upload START: %s", filename.c_str());
-      if (LittleFS.exists(filename)) LittleFS.remove(filename);
-      fsUploadFile = LittleFS.open(filename, "w");
-      break;
-    }
+    case UPLOAD_FILE_START:
+      {
+        String filename = upload.filename;
+        if (filename.indexOf("..") >= 0) return;  // path traversal
+        if (filename.length() > 32) return;       // nome muito longo
+        if (filename.indexOf('/') > 0) return;    // subpasta não permitida
+        if (!filename.endsWith(".html") && !filename.endsWith(".js") && !filename.endsWith(".css") && !filename.endsWith(".json")) return;
+        if (!filename.startsWith("/")) filename = "/" + filename;
+        debugLogPrintf("[FS]", "Upload START: %s", filename.c_str());
+        if (LittleFS.exists(filename)) LittleFS.remove(filename);
+        fsUploadFile = LittleFS.open(filename, "w");
+        break;
+      }
     case UPLOAD_FILE_WRITE:
       if (fsUploadFile) fsUploadFile.write(upload.buf, upload.currentSize);
       break;
@@ -313,8 +336,8 @@ void handleSaveConfig(JsonDocument& doc) {
 
   // -------- Identificação --------
   strlcpy(hostname_buf, doc["hostname"] | hostname_buf, sizeof(hostname_buf));
-  strlcpy(mqtt_id_buf,  doc["mqtt_id"]  | mqtt_id_buf,  sizeof(mqtt_id_buf));
-  strlcpy(grupo_buf,    doc["grupo"]    | grupo_buf,    sizeof(grupo_buf));
+  strlcpy(mqtt_id_buf, doc["mqtt_id"] | mqtt_id_buf, sizeof(mqtt_id_buf));
+  strlcpy(grupo_buf, doc["grupo"] | grupo_buf, sizeof(grupo_buf));
 
   // -------- Rede --------
   strlcpy(wifi_ssid_buf, doc["wifi_ssid"] | wifi_ssid_buf, sizeof(wifi_ssid_buf));
@@ -328,8 +351,8 @@ void handleSaveConfig(JsonDocument& doc) {
   strlcpy(snStr, doc["sn"] | snStr, sizeof(snStr));
 
   // -------- MQTT --------
-  strlcpy(mqtt_server,   doc["mqtt_server"] | mqtt_server,   sizeof(mqtt_server));
-  strlcpy(mqtt_user_buf, doc["mqtt_user"]   | mqtt_user_buf, sizeof(mqtt_user_buf));
+  strlcpy(mqtt_server, doc["mqtt_server"] | mqtt_server, sizeof(mqtt_server));
+  strlcpy(mqtt_user_buf, doc["mqtt_user"] | mqtt_user_buf, sizeof(mqtt_user_buf));
 
   mqtt_port = doc["mqtt_port"] | 1883;
   if (mqtt_port == 0) mqtt_port = 1883;
@@ -371,7 +394,9 @@ void handleSaveConfig(JsonDocument& doc) {
   // -------- Persistência e propagação --------
   recalcularTopicos();
   saveConfig();
-  configDirty = true;
+  StaticJsonDocument<1024> sysDoc;
+  buildSystemDoc(sysDoc, true);
+  WS_BROADCAST(sysDoc, 1024, "system");
 
   if (mqtt_enabled) {
     mqtt_client.disconnect();
@@ -382,7 +407,6 @@ void handleSaveConfig(JsonDocument& doc) {
     debugLogPrint("[MQTT]", "Desabilitado, desconectando.");
   }
 
-  wsSendSystem();  // inclui config (configDirty=true) e zera a flag
   webSocket.broadcastTXT("{\"type\":\"configSaved\"}");
 }
 
@@ -396,7 +420,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
     // -------- Nova conexão: envia estado inicial ao cliente --------
     case WStype_CONNECTED:
       wsAuthenticated[num] = false;
-      wsSendSystemTo(num);        // sem config (cliente ainda não autenticado)
+      wsSendSystemTo(num);  // sem config (cliente ainda não autenticado)
       wsSendLEDBTo(num);
       wsSendAHT10To(num);
       wsSendNetworkTo(num);
@@ -411,185 +435,183 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
       break;
 
     // -------- Mensagem de texto: comandos JSON --------
-    case WStype_TEXT: {
-      StaticJsonDocument<512> doc;
-      DeserializationError err = deserializeJson(doc, payload, length);
-      if (err) {
-        debugLogPrintf("[ERROR]", "[WS] JSON inválido: %.*s", length, (const char*)payload);
-        return;
-      }
-
-      const char* cmd = doc["cmd"];
-      if (!cmd) return;
-
-      debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
-
-      // ---- Login ----
-      if (strcmp(cmd, "login") == 0) {
-        const char* user = doc["user"]     | "";
-        const char* pass = doc["password"] | "";
-        if (strcmp(user, admin_user) == 0 && strcmp(pass, PasswordWS) == 0) {
-          wsAuthenticated[num] = true;
-          debugLogPrint("[AUTH]", "Login ok!");
-          webSocket.sendTXT(num, "{\"type\":\"loginOk\"}");
-          // Força envio de config completa a todos após login bem-sucedido
-          configDirty = true;
-          wsSendSystem();
-          wsSendNetwork();
-          wsSendMQTT();
-          wsSendInfoIR();
-          wsSendInfoIR_Receptor();
-          wsSendLEDB();
-        } else {
-          debugLogPrint("[AUTH]", "Login falhou");
-          wsAuthenticated[num] = false;
-          webSocket.sendTXT(num, "{\"type\":\"loginError\"}");
-        }
-        return;
-      }
-
-      // ---- Logout ----
-      if (strcmp(cmd, "logout") == 0) {
-        wsAuthenticated[num] = false;
-        debugLogPrint("[AUTH]", "Logout");
-        webSocket.sendTXT(num, "{\"type\":\"logoutOk\"}");
-        return;
-      }
-
-      // Comandos públicos: permitidos sem autenticação
-      const bool isPublicCmd =
-        strcmp(cmd, "sendIR")         == 0 ||
-        strcmp(cmd, "toggleIREmissor")== 0 ||
-        strcmp(cmd, "setIRReceptor")  == 0 ||
-        strcmp(cmd, "toggleLEDB")     == 0;
-
-      if (!wsAuthenticated[num] && !isPublicCmd) {
-        webSocket.sendTXT(num, "{\"type\":\"authError\"}");
-        return;
-      }
-
-      // ---- LED B ----
-      if (strcmp(cmd, "toggleLEDB") == 0) {
-        ledB_state = !ledB_state;
-        digitalWrite(LEDB, ledB_state ? LOW : HIGH);
-        wsSendLEDB();
-        MQTTsendLEDB();
-        debugLEDB();
-        return;
-      }
-
-      if (strcmp(cmd, "setLEDB") == 0) {
-        ledB_state = doc["state"] | false;
-        digitalWrite(LEDB, ledB_state ? LOW : HIGH);
-        wsSendLEDB();
-        MQTTsendLEDB();
-        return;
-      }
-
-      // ---- IR Emissor ----
-      if (strcmp(cmd, "toggleIREmissor") == 0) {
-        IR_EmissorTeste = !IR_EmissorTeste;
-        MQTTsendIRConfig();
-        debugsendInfoIR();
-        wsSendInfoIR();
-        webSocket.sendTXT(num, "{\"type\":\"ack\",\"cmd\":\"toggleIREmissor\"}");
-        return;
-      }
-
-      if (strcmp(cmd, "setIREmissor") == 0) {
-        IR_EmissorTeste = doc["state"] | false;
-        MQTTsendIRConfig();
-        debugsendInfoIR();
-        wsSendInfoIR();
-        return;
-      }
-
-      // ---- IR Receptor ----
-      if (strcmp(cmd, "setIRReceptor") == 0) {
-        IR_ReceptorSET(doc["mode"] | -1);
-        return;
-      }
-
-      // ---- Envio de código IR ----
-      if (strcmp(cmd, "sendIR") == 0) {
-        const char* codeStr  = doc["code"];
-        const char* protoStr = doc["protocol"] | "NEC";
-        uint8_t bits         = doc["bits"] | 32;
-        if (!codeStr || strlen(codeStr) == 0) {
-          debugLogPrint("[WS]", "code vazio");
-          sendIRFeedback(0, UNKNOWN, 0, "code vazio", "[WS]");
+    case WStype_TEXT:
+      {
+        StaticJsonDocument<768> doc;
+        DeserializationError err = deserializeJson(doc, payload, length);
+        if (err) {
+          debugLogPrintf("[ERROR]", "[WS] JSON inválido: %.*s", length, (const char*)payload);
           return;
         }
-        handleIRCommand(codeStr, protoStr, bits, "[WS]");
-        return;
-      }
 
-      // ---- Portal WiFi AP ----
-      if (strcmp(cmd, "wifiPortal") == 0) {
-        debugLogPrint("[WS]", "Abrindo portal WiFi");
-        printPortalCredentials();
-        webSocket.broadcastTXT("{\"type\":\"wifiPortal\"}");
-        delay(500);
-        startConfigPortal();
-        return;
-      }
+        const char* cmd = doc["cmd"];
+        if (!cmd) return;
 
-      // ---- Reset WiFi ----
-      if (strcmp(cmd, "resetWifi") == 0) {
-        debugLogPrint("[WS]", "Reset WiFi solicitado");
-        webSocket.broadcastTXT("{\"type\":\"resetWifi\"}");
-        delay(500);
-        resetWifi();
-        return;
-      }
+        debugLogPrintf("[WS]", "Recebido: %.*s", length, (const char*)payload);
 
-      // ---- Salvar configuração ----
-      if (strcmp(cmd, "saveConfig") == 0) {
-        handleSaveConfig(doc);
-        return;
-      }
-
-      // ---- Forçar envio de system com config (ex: ao abrir /settings) ----
-      if (strcmp(cmd, "getSystem") == 0) {
-        configDirty = true;
-        wsSendSystemTo(num, true);
-        return;
-      }
-
-      // ---- Reset de configuração (apaga config.json) ----
-      if (strcmp(cmd, "resetConfig") == 0) {
-        debugLogPrint("[WS]", "Reset Config solicitado");
-        webSocket.broadcastTXT("{\"type\":\"resetConfig\"}");
-        delay(500);
-        resetConfig();
-        return;
-      }
-
-      // ---- Reboot ----
-      if (strcmp(cmd, "reboot") == 0) {
-        debugLogPrint("[WS]", "Reboot solicitado");
-        webSocket.broadcastTXT("{\"type\":\"reboot\"}");
-        delay(500);
-        ESP.restart();
-        return;
-      }
-
-      // ---- Comando de console/telnet via WS ----
-      if (strcmp(cmd, "telnetCmd") == 0) {
-        const char* line = doc["line"] | "";
-        if (strlen(line) > 0) {
-          char buf[TELNET_BUFFER];
-          strlcpy(buf, line, sizeof(buf));
-          // Normaliza para minúsculo — igual ao handleTelnet()
-          for (size_t i = 0; i < strlen(buf); i++)
-            buf[i] = tolower((unsigned char)buf[i]);
-          processTelnetCommand(buf);
+        // ---- Login ----
+        if (strcmp(cmd, "login") == 0) {
+          const char* user = doc["user"] | "";
+          const char* pass = doc["password"] | "";
+          if (strcmp(user, admin_user) == 0 && strcmp(pass, PasswordWS) == 0) {
+            wsAuthenticated[num] = true;
+            debugLogPrint("[AUTH]", "Login ok!");
+            webSocket.sendTXT(num, "{\"type\":\"loginOk\"}");
+            // Força envio de config completa a todos após login bem-sucedido
+            configDirty = true;
+            wsSendSystem();
+            wsSendNetwork();
+            wsSendMQTT();
+            wsSendInfoIR();
+            wsSendInfoIR_Receptor();
+            wsSendLEDB();
+          } else {
+            debugLogPrint("[AUTH]", "Login falhou");
+            wsAuthenticated[num] = false;
+            webSocket.sendTXT(num, "{\"type\":\"loginError\"}");
+          }
+          return;
         }
-        return;
-      }
 
-      break;
-    }
+        // ---- Logout ----
+        if (strcmp(cmd, "logout") == 0) {
+          wsAuthenticated[num] = false;
+          debugLogPrint("[AUTH]", "Logout");
+          webSocket.sendTXT(num, "{\"type\":\"logoutOk\"}");
+          return;
+        }
+
+        // Comandos públicos: permitidos sem autenticação
+        const bool isPublicCmd =
+          strcmp(cmd, "sendIR") == 0 || strcmp(cmd, "toggleIREmissor") == 0 || strcmp(cmd, "setIRReceptor") == 0 || strcmp(cmd, "toggleLEDB") == 0;
+
+        if (!wsAuthenticated[num] && !isPublicCmd) {
+          webSocket.sendTXT(num, "{\"type\":\"authError\"}");
+          return;
+        }
+
+        // ---- LED B ----
+        if (strcmp(cmd, "toggleLEDB") == 0) {
+          ledB_state = !ledB_state;
+          digitalWrite(LEDB, ledB_state ? LOW : HIGH);
+          wsSendLEDB();
+          MQTTsendLEDB();
+          debugLEDB();
+          return;
+        }
+
+        if (strcmp(cmd, "setLEDB") == 0) {
+          ledB_state = doc["state"] | false;
+          digitalWrite(LEDB, ledB_state ? LOW : HIGH);
+          wsSendLEDB();
+          MQTTsendLEDB();
+          return;
+        }
+
+        // ---- IR Emissor ----
+        if (strcmp(cmd, "toggleIREmissor") == 0) {
+          IR_EmissorTeste = !IR_EmissorTeste;
+          MQTTsendIRConfig();
+          debugsendInfoIR();
+          wsSendInfoIR();
+          webSocket.sendTXT(num, "{\"type\":\"ack\",\"cmd\":\"toggleIREmissor\"}");
+          return;
+        }
+
+        if (strcmp(cmd, "setIREmissor") == 0) {
+          IR_EmissorTeste = doc["state"] | false;
+          MQTTsendIRConfig();
+          debugsendInfoIR();
+          wsSendInfoIR();
+          return;
+        }
+
+        // ---- IR Receptor ----
+        if (strcmp(cmd, "setIRReceptor") == 0) {
+          IR_ReceptorSET(doc["mode"] | -1);
+          return;
+        }
+
+        // ---- Envio de código IR ----
+        if (strcmp(cmd, "sendIR") == 0) {
+          const char* codeStr = doc["code"];
+          const char* protoStr = doc["protocol"] | "NEC";
+          uint8_t bits = doc["bits"] | 32;
+          if (!codeStr || strlen(codeStr) == 0) {
+            debugLogPrint("[WS]", "code vazio");
+            sendIRFeedback(0, UNKNOWN, 0, "code vazio", "[WS]");
+            return;
+          }
+          handleIRCommand(codeStr, protoStr, bits, "[WS]");
+          return;
+        }
+
+        // ---- Portal WiFi AP ----
+        if (strcmp(cmd, "wifiPortal") == 0) {
+          debugLogPrint("[WS]", "Abrindo portal WiFi");
+          printPortalCredentials();
+          webSocket.broadcastTXT("{\"type\":\"wifiPortal\"}");
+          delay(500);
+          startConfigPortal();
+          return;
+        }
+
+        // ---- Reset WiFi ----
+        if (strcmp(cmd, "resetWifi") == 0) {
+          debugLogPrint("[WS]", "Reset WiFi solicitado");
+          webSocket.broadcastTXT("{\"type\":\"resetWifi\"}");
+          delay(500);
+          resetWifi();
+          return;
+        }
+
+        // ---- Salvar configuração ----
+        if (strcmp(cmd, "saveConfig") == 0) {
+          handleSaveConfig(doc);
+          return;
+        }
+
+        // ---- Forçar envio de system com config (ex: ao abrir /settings) ----
+        if (strcmp(cmd, "getSystem") == 0) {
+          configDirty = true;
+          wsSendSystemTo(num, true);
+          return;
+        }
+
+        // ---- Reset de configuração (apaga config.json) ----
+        if (strcmp(cmd, "resetConfig") == 0) {
+          debugLogPrint("[WS]", "Reset Config solicitado");
+          webSocket.broadcastTXT("{\"type\":\"resetConfig\"}");
+          delay(500);
+          resetConfig();
+          return;
+        }
+
+        // ---- Reboot ----
+        if (strcmp(cmd, "reboot") == 0) {
+          debugLogPrint("[WS]", "Reboot solicitado");
+          webSocket.broadcastTXT("{\"type\":\"reboot\"}");
+          delay(500);
+          ESP.restart();
+          return;
+        }
+
+        // ---- Comando de console/telnet via WS ----
+        if (strcmp(cmd, "telnetCmd") == 0) {
+          const char* line = doc["line"] | "";
+          if (strlen(line) > 0) {
+            char buf[TELNET_BUFFER];
+            strlcpy(buf, line, sizeof(buf));
+            // Normaliza para minúsculo — igual ao handleTelnet()
+            for (size_t i = 0; i < strlen(buf); i++)
+              buf[i] = tolower((unsigned char)buf[i]);
+            processTelnetCommand(buf);
+          }
+          return;
+        }
+
+        break;
+      }
   }
 }
 
@@ -597,44 +619,80 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 // FUNÇÕES DE ENVIO WS — Broadcast (todos os clientes)
 // ================================================================
 
+// Preenche o documento de sistema. withConfig=true inclui objeto "config".
+void buildSystemDoc(StaticJsonDocument<1024>& doc, bool withConfig) {
+  doc["type"] = "system";
+  doc["name"] = mqtt_id_buf;
+  doc["buildDateTime"] = buildDateTime;
+  doc["buildVersion"] = buildVersion;
+  doc["uptime"] = getFormattedUptime();
+  doc["uptime_seconds"] = uptimeSeconds;
+  doc["heap"] = ESP.getFreeHeap();
+
+  if (withConfig) {
+    JsonObject cfg = doc.createNestedObject("config");
+    cfg["hostname"] = hostname_buf;
+    cfg["mqtt_id"] = mqtt_id_buf;
+    cfg["grupo"] = grupo_buf;
+    cfg["wifi_ssid"] = wifi_ssid_buf;
+    cfg["ip"] = ipStr;
+    cfg["gw"] = gwStr;
+    cfg["sn"] = snStr;
+    cfg["mqtt_server"] = mqtt_server;
+    cfg["mqtt_port"] = mqtt_port;
+    cfg["mqtt_user"] = mqtt_user_buf;
+    cfg["mqtt_enabled"] = mqtt_enabled;
+    cfg["aht10_enabled"] = aht10_enabled;
+    cfg["ir_receptor"] = (int)IR_ReceptorEstado;
+    cfg["admin_user"] = admin_user;
+  }
+}
+
 // Envia estado do sistema.
 // Se configDirty=true, inclui objeto "config" com todas as configurações
 // editáveis e zera a flag após o envio.
 void wsSendSystem() {
   StaticJsonDocument<1024> doc;
-  doc["type"]           = "system";
-  doc["name"]           = mqtt_id_buf;
-  doc["buildDateTime"]  = buildDateTime;
-  doc["buildVersion"]   = buildVersion;
-  doc["uptime"]         = getFormattedUptime();
-  doc["uptime_seconds"] = uptimeSeconds;
-  doc["heap"]           = ESP.getFreeHeap();
-
-  if (configDirty) {
-    JsonObject cfg       = doc.createNestedObject("config");
-    cfg["hostname"]      = hostname_buf;
-    cfg["mqtt_id"]       = mqtt_id_buf;
-    cfg["grupo"]         = grupo_buf;
-    cfg["wifi_ssid"]     = wifi_ssid_buf;
-    cfg["ip"]            = ipStr;
-    cfg["gw"]            = gwStr;
-    cfg["sn"]            = snStr;
-    cfg["mqtt_server"]   = mqtt_server;
-    cfg["mqtt_port"]     = mqtt_port;
-    cfg["mqtt_user"]     = mqtt_user_buf;
-    cfg["mqtt_enabled"]  = mqtt_enabled;
-    cfg["aht10_enabled"] = aht10_enabled;
-    cfg["ir_receptor"]   = (int)IR_ReceptorEstado;
-    cfg["admin_user"]    = admin_user;
-    configDirty = false;
-  }
-
+  buildSystemDoc(doc, configDirty);
+  if (configDirty) configDirty = false;
   WS_BROADCAST(doc, 1024, "system");
 }
 
+// void wsSendSystem() {
+//   StaticJsonDocument<1024> doc;
+//   doc["type"] = "system";
+//   doc["name"] = mqtt_id_buf;
+//   doc["buildDateTime"] = buildDateTime;
+//   doc["buildVersion"] = buildVersion;
+//   doc["uptime"] = getFormattedUptime();
+//   doc["uptime_seconds"] = uptimeSeconds;
+//   doc["heap"] = ESP.getFreeHeap();
+
+//   if (configDirty) {
+//     JsonObject cfg = doc.createNestedObject("config");
+//     cfg["hostname"] = hostname_buf;
+//     cfg["mqtt_id"] = mqtt_id_buf;
+//     cfg["grupo"] = grupo_buf;
+//     cfg["wifi_ssid"] = wifi_ssid_buf;
+//     cfg["ip"] = ipStr;
+//     cfg["gw"] = gwStr;
+//     cfg["sn"] = snStr;
+//     cfg["mqtt_server"] = mqtt_server;
+//     cfg["mqtt_port"] = mqtt_port;
+//     cfg["mqtt_user"] = mqtt_user_buf;
+//     cfg["mqtt_enabled"] = mqtt_enabled;
+//     cfg["aht10_enabled"] = aht10_enabled;
+//     cfg["ir_receptor"] = (int)IR_ReceptorEstado;
+//     cfg["admin_user"] = admin_user;
+//     configDirty = false;
+//   }
+
+//   WS_BROADCAST(doc, 1024, "system");
+// }
+
 void wsSendLEDB() {
   StaticJsonDocument<64> doc;
-  doc["type"]  = "ledb";
+  doc["type"] = "ledb";
   doc["state"] = ledB_state;
   WS_BROADCAST(doc, 64, "ledb");
 }
@@ -647,42 +705,42 @@ void wsSendAHT10() {
     doc["status"] = EstadoAHT10();
   } else {
     doc["temperatura"] = String(temperatura, 1);
-    doc["umidade"]     = String(umidade, 1);
+    doc["umidade"] = String(umidade, 1);
   }
   WS_BROADCAST(doc, 128, "sensor");
 }
 
 void wsSendNetwork() {
   StaticJsonDocument<256> doc;
-  doc["type"]    = "network";
-  doc["mdns"]    = String("http://") + hostname_buf + ".local";
-  doc["wifi"]    = WiFi.SSID();
-  doc["ip"]      = WiFi.localIP().toString();
+  doc["type"] = "network";
+  doc["mdns"] = String("http://") + hostname_buf + ".local";
+  doc["wifi"] = WiFi.SSID();
+  doc["ip"] = WiFi.localIP().toString();
   doc["gateway"] = WiFi.gatewayIP().toString();
-  doc["mask"]    = WiFi.subnetMask().toString();
-  doc["rssi"]    = WiFi.RSSI();
+  doc["mask"] = WiFi.subnetMask().toString();
+  doc["rssi"] = WiFi.RSSI();
   WS_BROADCAST(doc, 256, "network");
 }
 
 void wsSendMQTT() {
   StaticJsonDocument<384> doc;
-  doc["type"]       = "mqtt";
-  doc["enabled"]    = mqtt_enabled;
-  doc["server"]     = mqtt_server;
-  doc["port"]       = mqtt_port;
-  doc["client_id"]  = clientID;
+  doc["type"] = "mqtt";
+  doc["enabled"] = mqtt_enabled;
+  doc["server"] = mqtt_server;
+  doc["port"] = mqtt_port;
+  doc["client_id"] = clientID;
   doc["topic_main"] = myTopic + "/#";
-  doc["status"]     = mqtt_client.connected();
-  doc["sucesso"]    = mqttOK;
-  doc["erro"]       = mqttErro;
+  doc["status"] = mqtt_client.connected();
+  doc["sucesso"] = mqttOK;
+  doc["erro"] = mqttErro;
   WS_BROADCAST(doc, 384, "mqtt");
 }
 
 void wsSendInfoIR() {
   StaticJsonDocument<128> doc;
-  doc["type"]              = "ir";
+  doc["type"] = "ir";
   doc["receptor_protocol"] = EstadoIRReceptor();
-  doc["emissor_teste"]     = IR_EmissorTeste;
+  doc["emissor_teste"] = IR_EmissorTeste;
   WS_BROADCAST(doc, 128, "ir");
 }
 
@@ -690,9 +748,9 @@ void wsSendInfoIR() {
 void wsSendInfoIR_Receptor() {
   if (!lastIR.valido) return;
   StaticJsonDocument<192> doc;
-  doc["type"]     = "ir_receptor";
+  doc["type"] = "ir_receptor";
   doc["protocol"] = lastIR.protocolo;
-  doc["bits"]     = lastIR.bits;
+  doc["bits"] = lastIR.bits;
   char decStr[21];
   snprintf(decStr, sizeof(decStr), "%llu", (unsigned long long)lastIR.dec);
   doc["dec"] = decStr;
@@ -721,38 +779,44 @@ void wsSendIREmissor(uint64_t code, decode_type_t protocol, uint8_t bits, const 
 // withConfig=true: inclui "config" — usado após login ou comando getSystem.
 void wsSendSystemTo(uint8_t num, bool withConfig) {
   StaticJsonDocument<1024> doc;
-  doc["type"]           = "system";
-  doc["name"]           = mqtt_id_buf;
-  doc["buildDateTime"]  = buildDateTime;
-  doc["buildVersion"]   = buildVersion;
-  doc["uptime"]         = getFormattedUptime();
-  doc["uptime_seconds"] = uptimeSeconds;
-  doc["heap"]           = ESP.getFreeHeap();
-
-  if (withConfig) {
-    JsonObject cfg       = doc.createNestedObject("config");
-    cfg["hostname"]      = hostname_buf;
-    cfg["mqtt_id"]       = mqtt_id_buf;
-    cfg["grupo"]         = grupo_buf;
-    cfg["wifi_ssid"]     = wifi_ssid_buf;
-    cfg["ip"]            = ipStr;
-    cfg["gw"]            = gwStr;
-    cfg["sn"]            = snStr;
-    cfg["mqtt_server"]   = mqtt_server;
-    cfg["mqtt_port"]     = mqtt_port;
-    cfg["mqtt_user"]     = mqtt_user_buf;
-    cfg["mqtt_enabled"]  = mqtt_enabled;
-    cfg["aht10_enabled"] = aht10_enabled;
-    cfg["ir_receptor"]   = (int)IR_ReceptorEstado;
-    cfg["admin_user"]    = admin_user;
-  }
-
+  buildSystemDoc(doc, withConfig);
   WS_SEND_TO(num, doc, 1024, "system");
 }
 
+// void wsSendSystemTo(uint8_t num, bool withConfig) {
+//   StaticJsonDocument<1024> doc;
+//   doc["type"] = "system";
+//   doc["name"] = mqtt_id_buf;
+//   doc["buildDateTime"] = buildDateTime;
+//   doc["buildVersion"] = buildVersion;
+//   doc["uptime"] = getFormattedUptime();
+//   doc["uptime_seconds"] = uptimeSeconds;
+//   doc["heap"] = ESP.getFreeHeap();
+
+//   if (withConfig) {
+//     JsonObject cfg = doc.createNestedObject("config");
+//     cfg["hostname"] = hostname_buf;
+//     cfg["mqtt_id"] = mqtt_id_buf;
+//     cfg["grupo"] = grupo_buf;
+//     cfg["wifi_ssid"] = wifi_ssid_buf;
+//     cfg["ip"] = ipStr;
+//     cfg["gw"] = gwStr;
+//     cfg["sn"] = snStr;
+//     cfg["mqtt_server"] = mqtt_server;
+//     cfg["mqtt_port"] = mqtt_port;
+//     cfg["mqtt_user"] = mqtt_user_buf;
+//     cfg["mqtt_enabled"] = mqtt_enabled;
+//     cfg["aht10_enabled"] = aht10_enabled;
+//     cfg["ir_receptor"] = (int)IR_ReceptorEstado;
+//     cfg["admin_user"] = admin_user;
+//   }
+
+//   WS_SEND_TO(num, doc, 1024, "system");
+// }
+
 void wsSendLEDBTo(uint8_t num) {
   StaticJsonDocument<64> doc;
-  doc["type"]  = "ledb";
+  doc["type"] = "ledb";
   doc["state"] = ledB_state;
   WS_SEND_TO(num, doc, 64, "ledb");
 }
@@ -765,41 +829,41 @@ void wsSendAHT10To(uint8_t num) {
     doc["status"] = EstadoAHT10();
   } else {
     doc["temperatura"] = String(temperatura, 1);
-    doc["umidade"]     = String(umidade, 1);
+    doc["umidade"] = String(umidade, 1);
   }
   WS_SEND_TO(num, doc, 128, "sensor");
 }
 
 void wsSendNetworkTo(uint8_t num) {
   StaticJsonDocument<256> doc;
-  doc["type"]    = "network";
-  doc["mdns"]    = String("http://") + hostname_buf + ".local";
-  doc["wifi"]    = WiFi.SSID();
-  doc["ip"]      = WiFi.localIP().toString();
+  doc["type"] = "network";
+  doc["mdns"] = String("http://") + hostname_buf + ".local";
+  doc["wifi"] = WiFi.SSID();
+  doc["ip"] = WiFi.localIP().toString();
   doc["gateway"] = WiFi.gatewayIP().toString();
-  doc["mask"]    = WiFi.subnetMask().toString();
-  doc["rssi"]    = WiFi.RSSI();
+  doc["mask"] = WiFi.subnetMask().toString();
+  doc["rssi"] = WiFi.RSSI();
   WS_SEND_TO(num, doc, 256, "network");
 }
 
 void wsSendMQTTTo(uint8_t num) {
   StaticJsonDocument<384> doc;
-  doc["type"]       = "mqtt";
-  doc["enabled"]    = mqtt_enabled;
-  doc["server"]     = mqtt_server;
-  doc["port"]       = mqtt_port;
-  doc["client_id"]  = clientID;
+  doc["type"] = "mqtt";
+  doc["enabled"] = mqtt_enabled;
+  doc["server"] = mqtt_server;
+  doc["port"] = mqtt_port;
+  doc["client_id"] = clientID;
   doc["topic_main"] = myTopic + "/#";
-  doc["status"]     = mqtt_client.connected();
-  doc["sucesso"]    = mqttOK;
-  doc["erro"]       = mqttErro;
+  doc["status"] = mqtt_client.connected();
+  doc["sucesso"] = mqttOK;
+  doc["erro"] = mqttErro;
   WS_SEND_TO(num, doc, 384, "mqtt");
 }
 
 void wsSendInfoIRTo(uint8_t num) {
   StaticJsonDocument<128> doc;
-  doc["type"]              = "ir";
+  doc["type"] = "ir";
   doc["receptor_protocol"] = EstadoIRReceptor();
-  doc["emissor_teste"]     = IR_EmissorTeste;
+  doc["emissor_teste"] = IR_EmissorTeste;
   WS_SEND_TO(num, doc, 128, "ir");
 }
