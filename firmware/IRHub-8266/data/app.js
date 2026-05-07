@@ -50,6 +50,22 @@ function lsSet(key, val) {
   } catch {}
 }
 
+function toggleTheme() {
+  const html = document.documentElement;
+  const isLight = html.getAttribute("data-theme") === "light";
+  const next = isLight ? "dark" : "light";
+  html.setAttribute("data-theme", next);
+  lsSet("theme", next);
+  document.getElementById("btnTheme").textContent =
+    next === "light" ? "🌙" : "☀️";
+}
+
+// Chamar no início da inicialização (antes de qualquer render):
+(function initTheme() {
+  const saved = lsGet("theme") || "dark";
+  document.documentElement.setAttribute("data-theme", saved);
+})();
+
 /* =========================================================
    2. WEBSOCKET
    Conecta na porta 81. Reconecta automaticamente a cada 2s
@@ -117,12 +133,12 @@ function flushQueue() {
 
 function showLoginModal() {
   const modal = document.getElementById("loginModal");
-  if (modal) modal.style.display = "flex";
+  if (modal) modal.classList.add("open");
 }
 
 function hideLoginModal() {
   const modal = document.getElementById("loginModal");
-  if (modal) modal.style.display = "none";
+  if (modal) modal.classList.remove("open");
 }
 
 // Envia credenciais ao backend via WS para autenticação.
@@ -501,8 +517,19 @@ const irModeMap = {
 
 // Atualiza estado do emissor e receptor IR.
 function updateIRWS(data) {
-  setText("irEmitter", data.emissor_teste ? "Ativo" : "Desligado");
+  const ativo = data.emissor_teste;
+  setText("irEmitter", ativo ? "Ativo" : "Desligado");
   setText("irMode", data.receptor_protocol || "--");
+
+  const btn = document.querySelector(".btn-ir-emitter");
+  if (btn) {
+    btn.textContent = ativo
+      ? "⏹ Desativar Modo Teste"
+      : "🔁 Alternar Modo Teste";
+    btn.style.background = ativo
+      ? "linear-gradient(135deg, #ef4444, #dc2626)"
+      : "";
+  }
 
   if (
     data.receptor_protocol &&
@@ -1038,7 +1065,9 @@ async function startOTAUpdate() {
 function toggleIPFields() {
   const mode = document.getElementById("cfg_ip_mode")?.value;
   const fields = document.getElementById("cfg_ip_fields");
-  if (fields) fields.style.display = mode === "static" ? "block" : "none";
+  if (fields) {
+    fields.classList.toggle("hidden", mode !== "static");
+  }
 }
 
 // Exibe/oculta campos MQTT conforme habilitado/desabilitado.
@@ -1066,12 +1095,21 @@ function validarIP(ip) {
    opcionais: span, rowSpan, background, color, fontSize.
 ========================================================= */
 
-// Busca remotes.json do dispositivo e popula o select de modelos.
 async function loadRemotes() {
   try {
     const response = await fetch("/remotes.json");
     if (!response.ok) throw new Error("Erro ao baixar remotes.json");
     state.remotesData = await response.json();
+
+    if (!state.remotesData || Object.keys(state.remotesData).length === 0) {
+      showStatus(
+        "remotesStatus",
+        "⚠️ Nenhum controle cadastrado em remotes.json.",
+        "#f59e0b",
+      );
+      return;
+    }
+
     populateRemoteSelect();
   } catch (err) {
     console.error("Erro ao carregar remotes:", err);
@@ -1269,7 +1307,11 @@ function resetWifi() {
 }
 
 function resetConfig() {
-  if (!confirm("Tem certeza que deseja resetar o config.json? Todas as configurações atuais serão perdidas e restauradas para o padrão."))
+  if (
+    !confirm(
+      "Tem certeza que deseja resetar o config.json? Todas as configurações atuais serão perdidas e restauradas para o padrão.",
+    )
+  )
     return;
   wsSend({ cmd: "resetConfig" });
 }
@@ -1413,4 +1455,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Se WS já estava aberto (navegação SPA sem reload), atualiza badge imediatamente.
   if (state.ws && state.ws.readyState === WebSocket.OPEN) updateWSStatus(true);
+
+  // Inicializa ícone do botão de tema
+  const btnTheme = document.getElementById("btnTheme");
+  if (btnTheme) {
+    btnTheme.textContent = lsGet("theme") === "light" ? "🌙" : "☀️";
+  }
 });

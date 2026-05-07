@@ -19,11 +19,7 @@
     <header>Controles Remotos</header>
     <div class="item">
       <div class="upload-row">
-        <input
-          type="file"
-          id="remotesFile"
-          accept=".json"
-        />
+        <input type="file" id="remotesFile" accept=".json" />
         <button class="btn-send" onclick="importRemotes()">📤 Importar</button>
       </div>
       <div class="item">
@@ -32,14 +28,6 @@
         </button>
       </div>
     </div>
-    <div
-      id="remotesStatus"
-      style="
-        text-align: center;
-        font-size: 11px;
-        min-height: 16px;
-        margin-top: 8px;
-      "
-    ></div>
+    <div id="remotesStatus" class="status-msg"></div>
   </section>
 </div>
