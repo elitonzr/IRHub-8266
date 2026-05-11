@@ -100,9 +100,6 @@ const char PAGE_PORTAL_6[] PROGMEM = R"rawliteral('>
 </div>
 
 <script>
-function toggleIP(v){
-  document.getElementById('ip_fields').style.display = v==='static'?'block':'none';
-}
 function togglePass(id,btn){
   var el=document.getElementById(id);
   var show=el.type==='password';

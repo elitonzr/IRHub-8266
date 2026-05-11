@@ -133,12 +133,20 @@ function flushQueue() {
 
 function showLoginModal() {
   const modal = document.getElementById("loginModal");
-  if (modal) modal.classList.add("open");
+  if (!modal) return;
+  const err = document.getElementById("loginError");
+  if (err) err.style.display = "none";
+  modal.classList.add("open");
 }
 
 function hideLoginModal() {
   const modal = document.getElementById("loginModal");
   if (modal) modal.classList.remove("open");
+  const btn = document.querySelector("#loginModal .btn-primary");
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = "Entrar";
+  }
 }
 
 // Envia credenciais ao backend via WS para autenticação.
@@ -146,6 +154,11 @@ function submitLogin() {
   const user = document.getElementById("loginUser")?.value || "";
   const pass = document.getElementById("loginPass")?.value || "";
   if (!user || !pass) return;
+  const btn = document.querySelector("#loginModal .btn-primary");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Aguarde...";
+  }
   wsSend({ cmd: "login", user, password: pass });
 }
 
@@ -164,7 +177,13 @@ function handleLoginBtn() {
 function updateAuthUI(authenticated) {
   const btn = document.getElementById("btnLogin");
   if (btn) btn.textContent = authenticated ? "Logoff" : "Login";
-  navigateTo(window.location.pathname);
+
+  // Só redireciona ao fazer logout (sai de rota protegida)
+  // ou se a rota atual ficou bloqueada após logout
+  const protectedRoutes = ["/ir", "/system", "/settings"];
+  if (!authenticated && protectedRoutes.includes(window.location.pathname)) {
+    navigateTo("/");
+  }
 }
 
 /* =========================================================
@@ -185,7 +204,10 @@ async function navigateTo(path) {
   if (state._navigating) return;
   state._navigating = true;
   const contentArea = document.getElementById("app-content");
-  if (!contentArea) return;
+  if (!contentArea) {
+    state._navigating = false;
+    return;
+  }
 
   // Bloqueia acesso a rotas protegidas sem autenticação.
   const protectedRoutes = ["/ir", "/system", "/settings"];
@@ -244,7 +266,11 @@ function initPageScript(path) {
         loadButtons(e.target.value);
       });
     }
-    loadRemotes();
+    if (Object.keys(state.remotesData).length > 0) {
+      populateRemoteSelect();
+    } else {
+      loadRemotes();
+    }
 
     // Oculta o gerenciador de arquivos se não autenticado.
     const fileManager = document.querySelector(".card-file-manager");
@@ -257,6 +283,7 @@ function initPageScript(path) {
   }
 
   if (path === "/system") {
+    state.logRenderedIndex = 0;
     renderLogHistory();
   }
 
@@ -319,16 +346,16 @@ function handleWSMessage(event) {
       updateAuthUI(true);
       break;
 
-    case "loginError":
+    case "loginError": {
       state.wsAuthenticated = false;
       const errEl = document.getElementById("loginError");
       if (errEl) errEl.style.display = "block";
       break;
+    }
 
     case "logoutOk":
       state.wsAuthenticated = false;
       updateAuthUI(false);
-      navigateTo("/");
       break;
 
     case "system":
@@ -482,7 +509,7 @@ function updateSystemWS(data) {
 
   if (data.uptime_seconds !== undefined) {
     state.uptimeSeconds = data.uptime_seconds;
-    restartUptimeInterval();
+    if (!state.uptimeInterval) restartUptimeInterval();
   }
 
   // Mostra/oculta card AHT10 conforme configuração.
@@ -496,60 +523,6 @@ function updateLEDBWS(data) {
   setText("ledbState", data.state ? "Ligado" : "Desligado");
   const dot = document.getElementById("ledbDot");
   if (dot) dot.className = "dot " + (data.state ? "yellow" : "gray");
-}
-
-// Mapa de nome de protocolo IR para índice numérico.
-// Deve espelhar exatamente o enum IR_ReceptorMode em globals.h.
-const irModeMap = {
-  ALL: 0,
-  KNOWN: 1,
-  DISABLED: 2,
-  NEC: 3,
-  SONY: 4,
-  RC5: 5,
-  RC6: 6,
-  SAMSUNG: 7,
-  NIKAI: 8,
-  LG: 9,
-  JVC: 10,
-  WHYNTER: 11,
-};
-
-// Atualiza estado do emissor e receptor IR.
-function updateIRWS(data) {
-  const ativo = data.emissor_teste;
-  setText("irEmitter", ativo ? "Ativo" : "Desligado");
-  setText("irMode", data.receptor_protocol || "--");
-
-  const btn = document.querySelector(".btn-ir-emitter");
-  if (btn) {
-    btn.textContent = ativo
-      ? "⏹ Desativar Modo Teste"
-      : "🔁 Alternar Modo Teste";
-    btn.style.background = ativo
-      ? "linear-gradient(135deg, #ef4444, #dc2626)"
-      : "";
-  }
-
-  if (
-    data.receptor_protocol &&
-    irModeMap[data.receptor_protocol] !== undefined
-  ) {
-    state.irModeIndex = irModeMap[data.receptor_protocol];
-    const sel = document.getElementById("irReceptorSelect");
-    if (sel) sel.value = irModeMap[data.receptor_protocol];
-  }
-
-  // Atualiza dot apenas se não há timer ativo (evita conflito com flash de sinal recebido).
-  if (!state.irDotTimer) {
-    const dot = document.getElementById("irDot");
-    if (dot)
-      dot.className =
-        "dot " +
-        (data.receptor_protocol && data.receptor_protocol !== "DISABLED"
-          ? "green"
-          : "yellow");
-  }
 }
 
 // Atualiza dados do sensor AHT10.
@@ -713,6 +686,7 @@ function saveIRToHistory(payload) {
 
 // Limpa todo o histórico.
 function cleanHistory() {
+  if (!confirm("Limpar histórico IR?")) return;
   state.irHistory = [];
   renderIRHistory();
 }
@@ -825,7 +799,9 @@ function renderLogHistory() {
 
 // Limpa o histórico de logs.
 function clearLogs() {
+  if (!confirm("Limpar console?")) return;
   state.logHistory = [];
+  state.logRenderedIndex = 0;
   const el = document.getElementById("log");
   if (el) el.innerHTML = "";
 }
@@ -1250,7 +1226,10 @@ function sendIRManual() {
   if (!code) return alert("Digite um código IR.");
 
   const isHex0x = /^0x[0-9a-fA-F]+$/i.test(code);
-  const isHexRaw = /^[0-9a-fA-F]{1,16}$/.test(code) && !/^\d+$/.test(code);
+  const isHexRaw =
+    /^[0-9a-fA-F]{1,16}$/.test(code) && !/^\d+$/.test(code) && !isHex0x;
+  const finalCode = isHexRaw ? "0x" + code : code;
+
   const isDec = /^\d+$/.test(code);
 
   if (!isHex0x && !isHexRaw && !isDec)
@@ -1258,13 +1237,66 @@ function sendIRManual() {
       "Código inválido. Use hex (0x20DF10EF) ou decimal (551489775).",
     );
 
-  const finalCode = isHexRaw ? "0x" + code : code;
   wsSend({ cmd: "sendIR", code: finalCode, protocol: proto, bits });
 }
 
 /* =========================================================
    16. IR — CONTROLES DO RECEPTOR E EMISSOR
 ========================================================= */
+
+// Mapa de nome de protocolo IR para índice numérico.
+// Deve espelhar exatamente o enum IR_ReceptorMode em globals.h.
+const irModeMap = {
+  ALL: 0,
+  KNOWN: 1,
+  DISABLED: 2,
+  NEC: 3,
+  SONY: 4,
+  RC5: 5,
+  RC6: 6,
+  SAMSUNG: 7,
+  NIKAI: 8,
+  LG: 9,
+  JVC: 10,
+  WHYNTER: 11,
+};
+
+// Atualiza estado do emissor e receptor IR.
+function updateIRWS(data) {
+  const ativo = data.emissor_teste;
+  setText("irEmitter", ativo ? "Ativo" : "Desligado");
+  setText("irMode", data.receptor_protocol || "--");
+
+  const btn = document.querySelector(".btn-ir-emitter");
+  if (btn) {
+    btn.textContent = ativo
+      ? "⏹ Desativar Modo Teste"
+      : "🔁 Alternar Modo Teste";
+    btn.style.background = ativo
+      ? "linear-gradient(135deg, #ef4444, #dc2626)"
+      : "";
+  }
+
+  if (
+    data.receptor_protocol &&
+    irModeMap[data.receptor_protocol] !== undefined
+  ) {
+    state.irModeIndex = irModeMap[data.receptor_protocol];
+    const sel = document.getElementById("irReceptorSelect");
+    if (sel) sel.value = irModeMap[data.receptor_protocol];
+  }
+
+  // Atualiza dot apenas se não há timer ativo (evita conflito com flash de sinal recebido).
+  if (!state.irDotTimer) {
+    const dot = document.getElementById("irDot");
+    if (dot)
+      dot.className =
+        "dot " +
+        (data.receptor_protocol && data.receptor_protocol !== "DISABLED"
+          ? "green"
+          : "yellow");
+  }
+}
 
 // Alterna o modo de teste do emissor IR.
 function toggleIREmissor() {

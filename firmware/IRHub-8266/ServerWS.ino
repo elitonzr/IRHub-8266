@@ -50,24 +50,30 @@ void printHttpCredentials() {
 
 #define WS_BROADCAST(doc, bufSize, tag) \
   do { \
-    char _buf[bufSize]; \
-    size_t _len = serializeJson(doc, _buf, sizeof(_buf)); \
-    if (_len == 0 || _len >= sizeof(_buf)) { \
-      debugLogPrint("[WS]", "Erro: JSON " tag " truncado"); \
+    String _out; \
+    serializeJson(doc, _out); \
+\
+    if (_out.length() == 0) { \
+      debugLogPrint("[WS]", "Erro JSON " tag); \
       return; \
     } \
-    webSocket.broadcastTXT(_buf, _len); \
+\
+    webSocket.broadcastTXT(_out); \
+    yield(); \
   } while (0)
 
 #define WS_SEND_TO(num, doc, bufSize, tag) \
   do { \
-    char _buf[bufSize]; \
-    size_t _len = serializeJson(doc, _buf, sizeof(_buf)); \
-    if (_len == 0 || _len >= sizeof(_buf)) { \
-      debugLogPrint("[WS]", "Erro: JSON " tag " truncado"); \
+    String _out; \
+    serializeJson(doc, _out); \
+\
+    if (_out.length() == 0) { \
+      debugLogPrint("[WS]", "Erro JSON " tag); \
       return; \
     } \
-    webSocket.sendTXT(num, _buf, _len); \
+\
+    webSocket.sendTXT(num, _out); \
+    yield(); \
   } while (0)
 
 // ================================================================
@@ -394,9 +400,13 @@ void handleSaveConfig(JsonDocument& doc) {
   // -------- Persistência e propagação --------
   recalcularTopicos();
   saveConfig();
-  StaticJsonDocument<1024> sysDoc;
+  debugLogPrint("[DEBUG]", "Passou saveConfig.");
+  StaticJsonDocument<1280> sysDoc;
   buildSystemDoc(sysDoc, true);
-  WS_BROADCAST(sysDoc, 1024, "system");
+  debugLogPrint("[DEBUG]", "Passou buildSystemDoc.");
+  WS_BROADCAST(sysDoc, 1280, "system");
+  debugLogPrint("[DEBUG]", "Passou WS_BROADCAST.");
+
 
   if (mqtt_enabled) {
     mqtt_client.disconnect();
@@ -620,7 +630,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
 // ================================================================
 
 // Preenche o documento de sistema. withConfig=true inclui objeto "config".
-void buildSystemDoc(StaticJsonDocument<1024>& doc, bool withConfig) {
+void buildSystemDoc(StaticJsonDocument<1280>& doc, bool withConfig) {
+
   doc["type"] = "system";
   doc["name"] = mqtt_id_buf;
   doc["buildDateTime"] = buildDateTime;
@@ -652,43 +663,11 @@ void buildSystemDoc(StaticJsonDocument<1024>& doc, bool withConfig) {
 // Se configDirty=true, inclui objeto "config" com todas as configurações
 // editáveis e zera a flag após o envio.
 void wsSendSystem() {
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<1280> doc;
   buildSystemDoc(doc, configDirty);
   if (configDirty) configDirty = false;
-  WS_BROADCAST(doc, 1024, "system");
+  WS_BROADCAST(doc, 1280, "system");
 }
-
-// void wsSendSystem() {
-//   StaticJsonDocument<1024> doc;
-//   doc["type"] = "system";
-//   doc["name"] = mqtt_id_buf;
-//   doc["buildDateTime"] = buildDateTime;
-//   doc["buildVersion"] = buildVersion;
-//   doc["uptime"] = getFormattedUptime();
-//   doc["uptime_seconds"] = uptimeSeconds;
-//   doc["heap"] = ESP.getFreeHeap();
-
-//   if (configDirty) {
-//     JsonObject cfg = doc.createNestedObject("config");
-//     cfg["hostname"] = hostname_buf;
-//     cfg["mqtt_id"] = mqtt_id_buf;
-//     cfg["grupo"] = grupo_buf;
-//     cfg["wifi_ssid"] = wifi_ssid_buf;
-//     cfg["ip"] = ipStr;
-//     cfg["gw"] = gwStr;
-//     cfg["sn"] = snStr;
-//     cfg["mqtt_server"] = mqtt_server;
-//     cfg["mqtt_port"] = mqtt_port;
-//     cfg["mqtt_user"] = mqtt_user_buf;
-//     cfg["mqtt_enabled"] = mqtt_enabled;
-//     cfg["aht10_enabled"] = aht10_enabled;
-//     cfg["ir_receptor"] = (int)IR_ReceptorEstado;
-//     cfg["admin_user"] = admin_user;
-//     configDirty = false;
-//   }
-
-//   WS_BROADCAST(doc, 1024, "system");
-// }
 
 void wsSendLEDB() {
   StaticJsonDocument<64> doc;
@@ -778,41 +757,10 @@ void wsSendIREmissor(uint64_t code, decode_type_t protocol, uint8_t bits, const 
 //   inicial, antes de o cliente se autenticar.
 // withConfig=true: inclui "config" — usado após login ou comando getSystem.
 void wsSendSystemTo(uint8_t num, bool withConfig) {
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<1280> doc;
   buildSystemDoc(doc, withConfig);
-  WS_SEND_TO(num, doc, 1024, "system");
+  WS_SEND_TO(num, doc, 1280, "system");
 }
-
-// void wsSendSystemTo(uint8_t num, bool withConfig) {
-//   StaticJsonDocument<1024> doc;
-//   doc["type"] = "system";
-//   doc["name"] = mqtt_id_buf;
-//   doc["buildDateTime"] = buildDateTime;
-//   doc["buildVersion"] = buildVersion;
-//   doc["uptime"] = getFormattedUptime();
-//   doc["uptime_seconds"] = uptimeSeconds;
-//   doc["heap"] = ESP.getFreeHeap();
-
-//   if (withConfig) {
-//     JsonObject cfg = doc.createNestedObject("config");
-//     cfg["hostname"] = hostname_buf;
-//     cfg["mqtt_id"] = mqtt_id_buf;
-//     cfg["grupo"] = grupo_buf;
-//     cfg["wifi_ssid"] = wifi_ssid_buf;
-//     cfg["ip"] = ipStr;
-//     cfg["gw"] = gwStr;
-//     cfg["sn"] = snStr;
-//     cfg["mqtt_server"] = mqtt_server;
-//     cfg["mqtt_port"] = mqtt_port;
-//     cfg["mqtt_user"] = mqtt_user_buf;
-//     cfg["mqtt_enabled"] = mqtt_enabled;
-//     cfg["aht10_enabled"] = aht10_enabled;
-//     cfg["ir_receptor"] = (int)IR_ReceptorEstado;
-//     cfg["admin_user"] = admin_user;
-//   }
-
-//   WS_SEND_TO(num, doc, 1024, "system");
-// }
 
 void wsSendLEDBTo(uint8_t num) {
   StaticJsonDocument<64> doc;

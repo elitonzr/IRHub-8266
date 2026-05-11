@@ -4,10 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IRHub-8266</title>
-    <link
+    <!-- <link
       href="https://fonts.googleapis.com/css?family=Inter:300,400,600"
       rel="stylesheet"
-    />
+      media="print"
+      onload="this.media = 'all'"
+    /> -->
     <link rel="stylesheet" href="/style.css" />
   </head>
 
@@ -65,7 +67,14 @@
       <button id="btnLogin" class="btn-navbar" onclick="handleLoginBtn()">
         Login
       </button>
-      <button id="btnTheme" class="btn-navbar" onclick="toggleTheme()" title="Alternar tema">🌙</button>
+      <button
+        id="btnTheme"
+        class="btn-navbar"
+        onclick="toggleTheme()"
+        title="Alternar tema"
+      >
+        🌙
+      </button>
     </nav>
 
     <div
@@ -73,11 +82,13 @@
       id="drawerOverlay"
       onclick="drawerClose()"
     ></div>
-    <div class="drawer-title">IRHub-8266</div>
-    <a href="/" data-link class="active">🏠 Home</a>
-    <a href="/ir" data-link>📡 IR</a>
-    <a href="/system" data-link>🤖 System</a>
-    <a href="/settings" data-link>⚙️ Settings</a>
+    <div class="drawer" id="drawer">
+      <div class="drawer-title">IRHub-8266</div>
+      <a href="/" data-link class="active">🏠 Home</a>
+      <a href="/ir" data-link>📡 IR</a>
+      <a href="/system" data-link>🤖 System</a>
+      <a href="/settings" data-link>⚙️ Settings</a>
+    </div>
 
     <div id="app-content"></div>
 

@@ -14,7 +14,7 @@ void loadConfig() {
     return;
   }
 
-  StaticJsonDocument<768> doc;
+  StaticJsonDocument<1280> doc;
   DeserializationError err = deserializeJson(doc, file);
   if (err) {
     debugLogPrintf("[FS]", "Erro ao parsear config.json: %s", err.c_str());
@@ -58,7 +58,7 @@ void loadConfig() {
 // SALVA CONFIG NO FS
 // ==========================
 void saveConfig() {
-  StaticJsonDocument<768> doc;
+  StaticJsonDocument<1280> doc;
 
   // -------- Identificação --------
   doc["hostname"] = hostname_buf;

@@ -22,8 +22,8 @@
   --dot-green: #22c55e;
   --dot-yellow: #facc15;
 
-  --li-color: #5b22c5;
-  --li-color-child: #4a54de;
+  --li-color: #a78bfa;
+  --li-color-child: #818cf8;
 
   --nav-h: 56px;
   --drawer-w: 220px;
@@ -41,9 +41,6 @@
   --link-active-tx: #60a5fa;
   --console-border: #181453;
   --console-glow: #2240c533;
-  --btn-remote-bg: #2c2c2c;
-  --btn-remote-hv: #444444;
-  --btn-remote-tx: #ffffff;
   --flash-bg: #1a1453;
   --btn-ir-remote-bg: #333333;
   --btn-ir-remote-tx: #ffffff;
@@ -60,11 +57,10 @@
   --nav-border: #e2e8f0;
   --link-active-bg: #dbeafe;
   --link-active-tx: #1d4ed8;
+  --li-color: #5b22c5;
+  --li-color-child: #4a54de;
   --console-border: #c7d2fe;
   --console-glow: #6366f133;
-  --btn-remote-bg: #e2e8f0;
-  --btn-remote-hv: #cbd5e1;
-  --btn-remote-tx: #0f172a;
   --flash-bg: #dbeafe;
   --btn-ir-remote-bg: #e2e8f0;
   --btn-ir-remote-tx: #0f172a;
@@ -81,7 +77,7 @@
    BASE
    ================================================ */
 body {
-  font-family: "Inter", sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
   background: var(--bg-base);
   color: var(--text-primary);
   margin: 0;
@@ -656,19 +652,6 @@ button:active {
   align-items: center;
   justify-content: center;
   padding: 8px;
-}
-
-.btn-remote {
-  padding: 10px;
-  border-radius: 8px;
-  background: var(--btn-remote-bg);
-  color: var(--btn-remote-tx);
-  border: none;
-  cursor: pointer;
-}
-
-.btn-remote:hover {
-  background: var(--btn-remote-hv);
 }
 
 .btn-active-feedback {

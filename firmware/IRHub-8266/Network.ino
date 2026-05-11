@@ -168,8 +168,8 @@ void sendPortalPage() {
   server.sendContent_P(PAGE_PORTAL_5);
   server.sendContent(hasStaticIP ? snStr : "");
 
-  server.sendContent_P(PAGE_PORTAL_6);
   server.sendContent(ipModeScript);
+  server.sendContent_P(PAGE_PORTAL_6);
 }
 
 // ==========================
