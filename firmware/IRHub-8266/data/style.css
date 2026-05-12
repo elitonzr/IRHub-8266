@@ -42,28 +42,38 @@
   --console-border: #181453;
   --console-glow: #2240c533;
   --flash-bg: #1a1453;
-  --btn-ir-remote-bg: #333333;
+  --btn-ir-remote-bg: #2d3748;
   --btn-ir-remote-tx: #ffffff;
+  --btn-navbar-bg: #1e293b;
+  --btn-navbar-border: #374151;
+  --btn-navbar-tx: #94a3b8;
+  --btn-navbar-hv-bg: #334155;
+  --btn-navbar-hv-tx: #f1f5f9;
 }
 
 [data-theme="light"] {
-  --bg-base: #f1f5f9;
+  --bg-base: #f0f4f8;
   --bg-surface: #ffffff;
-  --bg-raised: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-muted: #475569;
-  --border: #cbd5e1;
+  --bg-raised: #e8edf3;
+  --text-primary: #1e293b;
+  --text-muted: #64748b;
+  --border: #d1dbe8;
   --nav-bg: #ffffff;
-  --nav-border: #e2e8f0;
-  --link-active-bg: #dbeafe;
-  --link-active-tx: #1d4ed8;
+  --nav-border: #dde3ec;
+  --link-active-bg: #e0eaff;
+  --link-active-tx: #2563eb;
   --li-color: #5b22c5;
   --li-color-child: #4a54de;
   --console-border: #c7d2fe;
   --console-glow: #6366f133;
   --flash-bg: #dbeafe;
-  --btn-ir-remote-bg: #e2e8f0;
-  --btn-ir-remote-tx: #0f172a;
+  --btn-ir-remote-bg: #edf0f5;
+  --btn-ir-remote-tx: #1e293b;
+  --btn-navbar-bg: #f0f4f8;
+  --btn-navbar-border: #d1dbe8;
+  --btn-navbar-tx: #475569;
+  --btn-navbar-hv-bg: #e2e8f0;
+  --btn-navbar-hv-tx: #1e293b;
 }
 
 /* ================================================
@@ -144,6 +154,13 @@ select {
   margin-bottom: 2px;
 }
 
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
 #file {
   margin-bottom: 8px;
 }
@@ -180,7 +197,7 @@ progress {
 }
 
 .navbar-burger {
-  display: none;
+  display: block;
   background: none;
   border: none;
   color: #f9fafb;
@@ -204,7 +221,7 @@ progress {
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 1px;
-  background: linear-gradient(90deg, #60a5fa, #c52222);
+  background: linear-gradient(90deg, #60a5fa, #818cf8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   flex: 1;
@@ -214,8 +231,7 @@ progress {
 }
 
 .navbar-links {
-  display: flex;
-  gap: 4px;
+  display: none;
 }
 
 .navbar-links a {
@@ -255,6 +271,18 @@ progress {
   margin-top: 0;
   padding: 6px 14px;
   font-size: 13px;
+  background: var(--btn-navbar-bg);
+  color: var(--btn-navbar-tx);
+  border: 1px solid var(--btn-navbar-border);
+  border-radius: 8px;
+  transition: 0.15s;
+}
+
+.btn-navbar:hover {
+  background: var(--btn-navbar-hv-bg);
+  color: var(--btn-navbar-hv-tx);
+  transform: none;
+  filter: none;
 }
 
 /* ================================================
@@ -272,49 +300,7 @@ progress {
   display: block;
 }
 
-.drawer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: var(--drawer-w);
-  height: 100%;
-  background: var(--nav-bg);
-  border-right: 1px solid var(--nav-border);
-  z-index: 201;
-  transform: translateX(-100%);
-  transition: transform 0.25s ease;
-  padding: 20px 16px;
-  display: flex;
-  flex-direction: column;
-}
-
-.drawer.open {
-  transform: translateX(0);
-}
-
-.drawer-title {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  background: linear-gradient(90deg, #60a5fa, #c52222);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 24px;
-}
-
-.drawer a {
-  color: var(--text-muted);
-}
-
-.drawer a:hover {
-  background: var(--bg-raised);
-  color: var(--text-primary);
-}
-
-.drawer a.active {
-  background: var(--link-active-bg);
-  color: var(--link-active-tx);
-}
+/* drawer styles above */
 
 /* ================================================
    WS OVERLAY
@@ -371,12 +357,142 @@ progress {
 }
 
 /* ================================================
-   LAYOUT — PAGE / GRID / UPLOAD
+   PAGE TRANSITION
    ================================================ */
 .page-content {
   padding: 24px 20px;
   max-width: 1400px;
   margin: 0 auto;
+  animation: pageIn 0.18s ease;
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ================================================
+   DRAWER — MODERN SIDEBAR
+   ================================================ */
+
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--drawer-w);
+  height: 100%;
+  background: var(--nav-bg);
+  border-right: 1px solid var(--nav-border);
+  z-index: 201;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--nav-border);
+}
+
+.drawer-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  opacity: 0.6;
+  padding: 16px 16px 6px;
+  display: block;
+}
+
+.drawer a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  border-radius: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: 0.15s;
+  border-left: 3px solid transparent;
+}
+
+.drawer a:hover {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  border-left-color: var(--border);
+}
+
+.drawer a.active {
+  background: var(--link-active-bg);
+  color: var(--link-active-tx);
+  border-left-color: #3b82f6;
+}
+
+.drawer a .drawer-icon {
+  font-size: 16px;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.drawer-footer {
+  margin-top: auto;
+  padding: 12px 16px;
+  border-top: 1px solid var(--nav-border);
+}
+
+.drawer-footer a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-left: none !important;
+  background: none !important;
+}
+
+.drawer-footer a:hover {
+  color: var(--text-primary);
+}
+
+/* ================================================
+   FOOTER
+   ================================================ */
+.app-footer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  padding: 24px 20px 32px;
+  border-top: 1px solid var(--border);
+  margin-top: 32px;
+}
+
+.app-footer a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.app-footer a:hover {
+  opacity: 0.8;
+}
+
+/* ================================================
+   LIGHT THEME — IR REMOTE BUTTON BORDER
+   ================================================ */
+[data-theme="light"] .btn-ir-remote {
+  border: 1px solid var(--border);
 }
 
 .control,
@@ -388,7 +504,7 @@ progress {
 
 .control .card,
 .history .card {
-  max-width: 400px;
+  max-width: 560px;
 }
 
 .grid {
@@ -431,15 +547,21 @@ section.card {
   padding: 20px;
   border-radius: 14px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
   max-width: 400px;
 }
 
 section.card header {
-  text-align: center;
-  font-size: 13px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  opacity: 0.6;
+  letter-spacing: 1.5px;
+  color: var(--link-active-tx);
+  opacity: 1;
   margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
 }
 
 .card.card-file-manager {
@@ -652,6 +774,7 @@ button:active {
   align-items: center;
   justify-content: center;
   padding: 8px;
+  border: 1px solid var(--border);
 }
 
 .btn-active-feedback {
@@ -841,14 +964,6 @@ button:active {
    RESPONSIVE
    ================================================ */
 @media (max-width: 640px) {
-  .navbar-links {
-    display: none;
-  }
-
-  .navbar-burger {
-    display: block;
-  }
-
   .page-content {
     padding: 16px 12px;
   }

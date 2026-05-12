@@ -47,7 +47,7 @@ function lsGet(key, fallback = "") {
 function lsSet(key, val) {
   try {
     localStorage.setItem(key, val);
-  } catch {}
+  } catch { }
 }
 
 function toggleTheme() {
@@ -480,6 +480,7 @@ function updateSystemWS(data) {
   setText("name", data.name);
   setText("buildDateTime", data.buildDateTime);
   setText("buildVersion", data.buildVersion);
+  setText("footerVersion", data.buildVersion ? `v${data.buildVersion}` : "v0.x.xx");
   setText("heap", data.heap);
 
   document.title = `✅ ${data.name}`;
@@ -848,7 +849,7 @@ function escapeHtml(str) {
     /[&<>"']/g,
     (m) =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-        m
+      m
       ],
   );
 }
