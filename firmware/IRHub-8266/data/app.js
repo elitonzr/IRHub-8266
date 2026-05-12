@@ -74,6 +74,60 @@ function toggleTheme() {
 ========================================================= */
 
 // Abre a conexão WebSocket se ainda não estiver aberta.
+/* =========================================================
+   MODAL — substitui confirm(), alert(), prompt()
+   appModal(msg, {type, confirmText, cancelText}) → Promise<string|bool|null>
+   type: "alert" | "confirm" | "prompt"
+========================================================= */
+function appModal(msg, { type = "alert", confirmText = "OK", cancelText = "Cancelar", inputPlaceholder = "Senha" } = {}) {
+  return new Promise((resolve) => {
+    const modal   = document.getElementById("appModal");
+    const msgEl   = document.getElementById("appModalMsg");
+    const inputWrap = document.getElementById("appModalInput");
+    const field   = document.getElementById("appModalField");
+    const btnOk   = document.getElementById("appModalConfirm");
+    const btnCancel = document.getElementById("appModalCancel");
+    if (!modal) { resolve(null); return; }
+
+    msgEl.innerHTML = msg;
+    btnOk.textContent = confirmText;
+    btnCancel.textContent = cancelText;
+
+    const isPrompt  = type === "prompt";
+    const isAlert   = type === "alert";
+
+    inputWrap.style.display = isPrompt ? "" : "none";
+    btnCancel.style.display = isAlert  ? "none" : "";
+    if (isPrompt) {
+      field.placeholder = inputPlaceholder;
+      field.value = "";
+      field.type = "password";
+      setTimeout(() => field.focus(), 80);
+    }
+
+    modal.classList.add("open");
+
+    const cleanup = () => {
+      modal.classList.remove("open");
+      btnOk.onclick = null;
+      btnCancel.onclick = null;
+      field.onkeydown = null;
+    };
+
+    btnOk.onclick = () => {
+      cleanup();
+      if (isPrompt) resolve(field.value || null);
+      else resolve(true);
+    };
+
+    btnCancel.onclick = () => { cleanup(); resolve(false); };
+
+    if (isPrompt) {
+      field.onkeydown = (e) => { if (e.key === "Enter") btnOk.click(); };
+    }
+  });
+}
+
 function connectWS() {
   if (state.ws && state.ws.readyState === WebSocket.OPEN) return;
 
@@ -384,15 +438,15 @@ function handleWSMessage(event) {
       break;
 
     case "reboot":
-      alert("Dispositivo reiniciando...");
+      appModal("🔄 Dispositivo reiniciando...", { type: "alert", confirmText: "OK" });
       break;
 
     case "wifiPortal":
-      alert("Conecte-se à rede '" + (getText("name") || "irhub8266") + "'");
+      appModal(`📶 Conecte-se à rede <b>'${getText("name") || "irhub8266"}'</b> para configurar.`, { type: "alert" });
       break;
 
     case "wifiReset":
-      alert("WiFi resetado!");
+      appModal("✅ WiFi resetado com sucesso!", { type: "alert" });
       break;
 
     case "configSaved":
@@ -408,7 +462,7 @@ function handleWSMessage(event) {
       break;
 
     case "configReset":
-      alert("Configurações resetadas!");
+      appModal("✅ Configurações resetadas para o padrão.", { type: "alert" });
       break;
   }
 }
@@ -469,6 +523,14 @@ function drawerOpen() {
 function drawerClose() {
   document.getElementById("drawer")?.classList.remove("open");
   document.getElementById("drawerOverlay")?.classList.remove("open");
+}
+
+function toggleAccordion(btn) {
+  const body = btn.nextElementSibling;
+  const arrow = btn.querySelector(".accordion-arrow");
+  const isOpen = body.classList.contains("open");
+  body.classList.toggle("open", !isOpen);
+  if (arrow) arrow.style.transform = isOpen ? "rotate(-90deg)" : "rotate(0deg)";
 }
 
 /* =========================================================
@@ -686,8 +748,9 @@ function saveIRToHistory(payload) {
 }
 
 // Limpa todo o histórico.
-function cleanHistory() {
-  if (!confirm("Limpar histórico IR?")) return;
+async function cleanHistory() {
+  const ok = await appModal("Limpar todo o histórico IR?", { type: "confirm", confirmText: "Limpar" });
+  if (!ok) return;
   state.irHistory = [];
   renderIRHistory();
 }
@@ -799,8 +862,9 @@ function renderLogHistory() {
 }
 
 // Limpa o histórico de logs.
-function clearLogs() {
-  if (!confirm("Limpar console?")) return;
+async function clearLogs() {
+  const ok = await appModal("Limpar o console?", { type: "confirm", confirmText: "Limpar" });
+  if (!ok) return;
   state.logHistory = [];
   state.logRenderedIndex = 0;
   const el = document.getElementById("log");
@@ -897,11 +961,10 @@ async function downloadFile(path, filename, statusFn) {
 // statusFn(msg, color) é chamado para feedback; onSuccess é chamado após upload ok.
 async function uploadFile(file, statusFn, onSuccess = null) {
   if (!file) {
-    alert("Selecione um arquivo.");
+    await appModal("Selecione um arquivo antes de continuar.", { type: "alert" });
     return;
   }
 
-  // Valida JSON antes de enviar para evitar corromper o filesystem.
   if (file.name.endsWith(".json")) {
     try {
       JSON.parse(await file.text());
@@ -911,7 +974,7 @@ async function uploadFile(file, statusFn, onSuccess = null) {
     }
   }
 
-  const httpPass = prompt("🔐 Senha para continuar:");
+  const httpPass = await appModal("🔐 Informe a senha para continuar:", { type: "prompt", confirmText: "Enviar", inputPlaceholder: "Senha HTTP" });
   if (!httpPass) return;
 
   const formData = new FormData();
@@ -943,8 +1006,8 @@ async function exportConfig() {
 }
 
 async function importConfig() {
-  if (!confirm("⚠️ O config.json contém dados sensíveis. Deseja continuar?"))
-    return;
+  const ok = await appModal("⚠️ O <b>config.json</b> contém dados sensíveis (senhas, tokens). Deseja continuar com a importação?", { type: "confirm", confirmText: "Importar" });
+  if (!ok) return;
   const file = document.getElementById("configFile")?.files[0];
   await uploadFile(file, (msg, color) =>
     showStatus("configFileStatus", msg, color),
@@ -985,21 +1048,20 @@ function showOtaStatus(msg, color) {
 
 async function startOTAUpdate() {
   const file = document.getElementById("otaFile")?.files[0];
-  if (!file) return alert("Selecione um arquivo .bin");
+  if (!file) {
+    await appModal("Selecione um arquivo <b>.bin</b> antes de continuar.", { type: "alert" });
+    return;
+  }
 
   if (!file.name.endsWith(".bin")) {
     showOtaStatus("❌ Arquivo inválido. Selecione um .bin", "#ef4444");
     return;
   }
 
-  if (
-    !confirm(
-      `Atualizar firmware com "${file.name}"? O dispositivo será reiniciado.`,
-    )
-  )
-    return;
+  const ok = await appModal(`Atualizar firmware com <b>"${file.name}"</b>?<br><span style="opacity:0.6;font-size:12px">O dispositivo será reiniciado após o envio.</span>`, { type: "confirm", confirmText: "Atualizar" });
+  if (!ok) return;
 
-  const httpPass = prompt("🔐 Senha para continuar:");
+  const httpPass = await appModal("🔐 Informe a senha para continuar:", { type: "prompt", confirmText: "Enviar", inputPlaceholder: "Senha HTTP" });
   if (!httpPass) return;
 
   const formData = new FormData();
@@ -1129,12 +1191,29 @@ function loadButtons(model) {
   const container = document.getElementById("buttonsContainer");
   if (!container) return;
 
-  container.innerHTML = "";
+  container.style.opacity = "0";
+  container.style.transition = "opacity 0.15s ease";
 
-  const buttons =
-    state.remotesData[model].buttons || state.remotesData[model].button || [];
+  setTimeout(() => {
+    container.innerHTML = "";
 
-  buttons.forEach((btn) => {
+    const buttons =
+      state.remotesData[model].buttons || state.remotesData[model].button || [];
+
+    const emptyState = document.getElementById("remotesEmptyState");
+    const hasButtons = buttons && buttons.filter(b => b.type !== "space").length > 0;
+
+    if (!hasButtons) {
+      if (emptyState) {
+        emptyState.style.display = "";
+        container.appendChild(emptyState);
+      }
+      container.style.opacity = "1";
+      return;
+    }
+    if (emptyState) emptyState.style.display = "none";
+
+    buttons.forEach((btn) => {
     // Espaço vazio no grid.
     if (btn.type === "space") {
       const space = document.createElement("div");
@@ -1176,6 +1255,9 @@ function loadButtons(model) {
 
     container.appendChild(b);
   });
+
+    container.style.opacity = "1";
+  }, 120);
 }
 
 /* =========================================================
@@ -1219,24 +1301,26 @@ function showIrToast(message, isError = false) {
 // Envia código IR digitado manualmente no form.
 // Hex sem prefixo 0x é auto-prefixado antes do envio para garantir
 // interpretação correta pelo backend (strtoull com base 0).
-function sendIRManual() {
+async function sendIRManual() {
   const code = document.getElementById("irCode")?.value.trim();
   const proto = document.getElementById("irProto")?.value;
   const bits = parseInt(document.getElementById("irBits")?.value) || 32;
 
-  if (!code) return alert("Digite um código IR.");
+  if (!code) {
+    await appModal("Digite um código IR antes de enviar.", { type: "alert" });
+    return;
+  }
 
   const isHex0x = /^0x[0-9a-fA-F]+$/i.test(code);
   const isHexRaw =
     /^[0-9a-fA-F]{1,16}$/.test(code) && !/^\d+$/.test(code) && !isHex0x;
   const finalCode = isHexRaw ? "0x" + code : code;
-
   const isDec = /^\d+$/.test(code);
 
-  if (!isHex0x && !isHexRaw && !isDec)
-    return alert(
-      "Código inválido. Use hex (0x20DF10EF) ou decimal (551489775).",
-    );
+  if (!isHex0x && !isHexRaw && !isDec) {
+    await appModal("Código inválido.<br><span style='opacity:0.6;font-size:12px'>Use hex (0x20DF10EF) ou decimal (551489775).</span>", { type: "alert" });
+    return;
+  }
 
   wsSend({ cmd: "sendIR", code: finalCode, protocol: proto, bits });
 }
@@ -1309,6 +1393,8 @@ function setIRReceptor() {
   const select = document.getElementById("irReceptorSelect");
   if (!select) return;
   wsSend({ cmd: "setIRReceptor", mode: parseInt(select.value) });
+  const label = select.options[select.selectedIndex]?.text || "";
+  showIrToast(`Protocolo ${label} aplicado`);
 }
 
 /* =========================================================
@@ -1324,28 +1410,27 @@ function toggleLEDB() {
    Todos os comandos destrutivos pedem confirmação antes de enviar.
 ========================================================= */
 
-function rebootDevice() {
-  if (!confirm("Reiniciar o dispositivo?")) return;
+async function rebootDevice() {
+  const ok = await appModal("Reiniciar o dispositivo?", { type: "confirm", confirmText: "Reiniciar" });
+  if (!ok) return;
   wsSend({ cmd: "reboot" });
 }
 
-function openWifiPortal() {
-  if (!confirm("Abrir portal de configuração WiFi?")) return;
+async function openWifiPortal() {
+  const ok = await appModal("Abrir portal de configuração WiFi?<br><span style='opacity:0.6;font-size:12px'>A conexão atual será derrubada.</span>", { type: "confirm", confirmText: "Abrir Portal" });
+  if (!ok) return;
   wsSend({ cmd: "wifiPortal" });
 }
 
-function resetWifi() {
-  if (!confirm("Resetar configurações WiFi?")) return;
+async function resetWifi() {
+  const ok = await appModal("⚠️ Resetar configurações WiFi?<br><span style='opacity:0.6;font-size:12px'>O dispositivo perderá a conexão atual.</span>", { type: "confirm", confirmText: "Resetar" });
+  if (!ok) return;
   wsSend({ cmd: "resetWifi" });
 }
 
-function resetConfig() {
-  if (
-    !confirm(
-      "Tem certeza que deseja resetar o config.json? Todas as configurações atuais serão perdidas e restauradas para o padrão.",
-    )
-  )
-    return;
+async function resetConfig() {
+  const ok = await appModal("⚠️ Resetar <b>todas</b> as configurações?<br><span style='opacity:0.6;font-size:12px'>Todas as configurações atuais serão perdidas e restauradas para o padrão.</span>", { type: "confirm", confirmText: "Resetar Tudo" });
+  if (!ok) return;
   wsSend({ cmd: "resetConfig" });
 }
 

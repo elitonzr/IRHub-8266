@@ -20,21 +20,23 @@
       <div id="otaStatus" class="status-msg"></div>
     </section>
 
-    <!-- MENU -->
+    <!-- STATUS GERAL -->
     <section class="card">
-      <header>Menu</header>
+      <header>Status Geral</header>
 
-      <button class="btn-primary btn-block" onclick="navigateTo('/settings')">
-        ⚙️ Settings
-      </button>
-
-      <div class="item">
-        <button
-          class="btn-primary btn-block"
-          onclick="location.href = '/files'"
-        >
-          📁 File Manager
-        </button>
+      <div class="status-overview">
+        <div class="status-overview-item">
+          <span class="status-overview-label">WebSocket</span>
+          <span id="statusWS" class="status offline">offline</span>
+        </div>
+        <div class="status-overview-item">
+          <span class="status-overview-label">MQTT</span>
+          <span id="statusMQTT" class="status offline">offline</span>
+        </div>
+        <div class="status-overview-item">
+          <span class="status-overview-label">AHT10</span>
+          <span id="statusAHT" class="status offline">offline</span>
+        </div>
       </div>
     </section>
 

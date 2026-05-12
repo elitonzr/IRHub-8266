@@ -303,6 +303,131 @@ progress {
 /* drawer styles above */
 
 /* ================================================
+   APP MODAL
+   ================================================ */
+#appModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1100;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#appModal.open {
+  display: flex;
+}
+
+.app-modal-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.app-modal-msg {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.app-modal-input-wrap input {
+  width: 100%;
+  margin: 0;
+}
+
+.app-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.app-modal-btn {
+  width: auto;
+  margin: 0;
+  padding: 8px 18px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+.app-modal-btn-cancel {
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.app-modal-btn-cancel:hover {
+  background: var(--border);
+  color: var(--text-primary);
+  transform: none;
+  filter: none;
+}
+
+.app-modal-btn-confirm {
+  background: var(--btn-primary-bg);
+  color: #fff;
+}
+
+/* ================================================
+   ACCORDION
+   ================================================ */
+.accordion-item {
+  border-bottom: 1px solid var(--border);
+}
+
+.accordion-item:last-of-type {
+  border-bottom: none;
+}
+
+.accordion-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 0;
+}
+
+.accordion-toggle:hover {
+  color: var(--link-active-tx);
+  background: none;
+  transform: none;
+  filter: none;
+}
+
+.accordion-arrow {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+  color: var(--text-muted);
+}
+
+.accordion-body {
+  display: none;
+  padding-bottom: 10px;
+}
+
+.accordion-body.open {
+  display: block;
+}
+
+/* ================================================
    WS OVERLAY
    ================================================ */
 #loginModal {
