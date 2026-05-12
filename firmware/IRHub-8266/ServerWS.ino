@@ -400,13 +400,9 @@ void handleSaveConfig(JsonDocument& doc) {
   // -------- Persistência e propagação --------
   recalcularTopicos();
   saveConfig();
-  debugLogPrint("[DEBUG]", "Passou saveConfig.");
   StaticJsonDocument<1280> sysDoc;
   buildSystemDoc(sysDoc, true);
-  debugLogPrint("[DEBUG]", "Passou buildSystemDoc.");
   WS_BROADCAST(sysDoc, 1280, "system");
-  debugLogPrint("[DEBUG]", "Passou WS_BROADCAST.");
-
 
   if (mqtt_enabled) {
     mqtt_client.disconnect();

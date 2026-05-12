@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IRHub-8266</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <!-- <link
       href="https://fonts.googleapis.com/css?family=Inter:300,400,600"
       rel="stylesheet"
@@ -47,12 +52,26 @@
     <div id="appModal">
       <div class="app-modal-box">
         <p id="appModalMsg" class="app-modal-msg"></p>
-        <div id="appModalInput" class="app-modal-input-wrap" style="display:none">
+        <div
+          id="appModalInput"
+          class="app-modal-input-wrap"
+          style="display: none"
+        >
           <input id="appModalField" type="password" placeholder="Senha" />
         </div>
         <div class="app-modal-actions">
-          <button id="appModalCancel" class="app-modal-btn app-modal-btn-cancel">Cancelar</button>
-          <button id="appModalConfirm" class="app-modal-btn app-modal-btn-confirm">Confirmar</button>
+          <button
+            id="appModalCancel"
+            class="app-modal-btn app-modal-btn-cancel"
+          >
+            Cancelar
+          </button>
+          <button
+            id="appModalConfirm"
+            class="app-modal-btn app-modal-btn-confirm"
+          >
+            Confirmar
+          </button>
         </div>
       </div>
     </div>
@@ -105,9 +124,7 @@
       <a href="/" data-link class="active">
         <span class="drawer-icon">🏠</span> Home
       </a>
-      <a href="/ir" data-link>
-        <span class="drawer-icon">📡</span> IR
-      </a>
+      <a href="/ir" data-link> <span class="drawer-icon">📡</span> IR </a>
       <a href="/system" data-link>
         <span class="drawer-icon">🤖</span> System
       </a>
@@ -116,15 +133,17 @@
       </a>
 
       <span class="drawer-section-label">Ferramentas</span>
-      <a href="/files">
-        <span class="drawer-icon">📁</span> File Manager
-      </a>
+      <a href="/files"> <span class="drawer-icon">📁</span> File Manager </a>
       <a href="/config">
         <span class="drawer-icon">🔧</span> Portal de Configuração
       </a>
 
       <div class="drawer-footer">
-        <a href="https://github.com/elitonz/IRHub-8266" target="_blank" rel="noopener">
+        <a
+          href="https://github.com/elitonz/IRHub-8266"
+          target="_blank"
+          rel="noopener"
+        >
           <span class="drawer-icon">🐙</span> GitHub do Projeto
         </a>
       </div>
@@ -133,7 +152,10 @@
     <div id="app-content"></div>
 
     <footer class="app-footer" id="appFooter">
-      Made with ❤️ by <a href="https://github.com/elitonz" target="_blank" rel="noopener">@elitonz</a>
+      Made with ❤️ by
+      <a href="https://github.com/elitonz" target="_blank" rel="noopener"
+        >@elitonz</a
+      >
       &mdash; IRHub-8266 <span id="footerVersion">v0.x.xx</span>
     </footer>
 
