@@ -45,7 +45,7 @@ bool configDirty = false;
 // BUILD
 // ================================================================
 const String buildDateTime = String(__DATE__) + " " + String(__TIME__);
-const String buildVersion = "0.8.6";
+const String buildVersion = "0.8.12";
 
 // ================================================================
 // PASSWORD
