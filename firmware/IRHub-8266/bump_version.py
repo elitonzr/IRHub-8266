@@ -5,6 +5,7 @@ Uso: python bump_version.py [--minor] [--major]
 """
 import re
 import sys
+from pathlib import Path
 
 VERSION_FILE = "version.txt"
 GLOBALS_FILE = "globals.cpp"
@@ -23,11 +24,12 @@ def bump(parts, level):
     else:
         return [parts[0], parts[1], parts[2] + 1]
 
-# Lê versão atual
-with open(VERSION_FILE, "r") as f:
+version_path = Path(VERSION_FILE)
+globals_path = Path(GLOBALS_FILE)
+
+with version_path.open("r", encoding="utf-8") as f:
     current = parse_version(f.read())
 
-# Determina nível de bump
 level = "patch"
 if "--major" in sys.argv:
     level = "major"
@@ -38,12 +40,10 @@ new_version = bump(current, level)
 new_str = format_version(new_version)
 old_str = format_version(current)
 
-# Atualiza version.txt
-with open(VERSION_FILE, "w") as f:
+with version_path.open("w", encoding="utf-8", newline="\n") as f:
     f.write(new_str + "\n")
 
-# Atualiza globals.cpp
-with open(GLOBALS_FILE, "r") as f:
+with globals_path.open("r", encoding="utf-8") as f:
     content = f.read()
 
 new_content = re.sub(
@@ -52,7 +52,7 @@ new_content = re.sub(
     content
 )
 
-with open(GLOBALS_FILE, "w") as f:
+with globals_path.open("w", encoding="utf-8", newline="\n") as f:
     f.write(new_content)
 
 print(f"Versão atualizada: {old_str} → {new_str}")

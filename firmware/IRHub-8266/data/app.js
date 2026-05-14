@@ -47,7 +47,7 @@ function lsGet(key, fallback = "") {
 function lsSet(key, val) {
   try {
     localStorage.setItem(key, val);
-  } catch { }
+  } catch {}
 }
 
 function toggleTheme() {
@@ -79,25 +79,36 @@ function toggleTheme() {
    appModal(msg, {type, confirmText, cancelText}) → Promise<string|bool|null>
    type: "alert" | "confirm" | "prompt"
 ========================================================= */
-function appModal(msg, { type = "alert", confirmText = "OK", cancelText = "Cancelar", inputPlaceholder = "Senha" } = {}) {
+function appModal(
+  msg,
+  {
+    type = "alert",
+    confirmText = "OK",
+    cancelText = "Cancelar",
+    inputPlaceholder = "Senha",
+  } = {},
+) {
   return new Promise((resolve) => {
-    const modal   = document.getElementById("appModal");
-    const msgEl   = document.getElementById("appModalMsg");
+    const modal = document.getElementById("appModal");
+    const msgEl = document.getElementById("appModalMsg");
     const inputWrap = document.getElementById("appModalInput");
-    const field   = document.getElementById("appModalField");
-    const btnOk   = document.getElementById("appModalConfirm");
+    const field = document.getElementById("appModalField");
+    const btnOk = document.getElementById("appModalConfirm");
     const btnCancel = document.getElementById("appModalCancel");
-    if (!modal) { resolve(null); return; }
+    if (!modal) {
+      resolve(null);
+      return;
+    }
 
     msgEl.innerHTML = msg;
     btnOk.textContent = confirmText;
     btnCancel.textContent = cancelText;
 
-    const isPrompt  = type === "prompt";
-    const isAlert   = type === "alert";
+    const isPrompt = type === "prompt";
+    const isAlert = type === "alert";
 
     inputWrap.style.display = isPrompt ? "" : "none";
-    btnCancel.style.display = isAlert  ? "none" : "";
+    btnCancel.style.display = isAlert ? "none" : "";
     if (isPrompt) {
       field.placeholder = inputPlaceholder;
       field.value = "";
@@ -120,10 +131,15 @@ function appModal(msg, { type = "alert", confirmText = "OK", cancelText = "Cance
       else resolve(true);
     };
 
-    btnCancel.onclick = () => { cleanup(); resolve(false); };
+    btnCancel.onclick = () => {
+      cleanup();
+      resolve(false);
+    };
 
     if (isPrompt) {
-      field.onkeydown = (e) => { if (e.key === "Enter") btnOk.click(); };
+      field.onkeydown = (e) => {
+        if (e.key === "Enter") btnOk.click();
+      };
     }
   });
 }
@@ -145,7 +161,7 @@ function connectWS() {
   state.ws.onclose = () => {
     updateWSStatus(false);
     state.wsAuthenticated = false;
-    state.configPopulated = false;
+    if (!state._settingsFormDirty) state.configPopulated = false;
     scheduleReconnect();
   };
 
@@ -232,8 +248,9 @@ function updateAuthUI(authenticated) {
   const btn = document.getElementById("btnLogin");
   if (btn) btn.textContent = authenticated ? "Logoff" : "Login";
 
-  // Só redireciona ao fazer logout (sai de rota protegida)
-  // ou se a rota atual ficou bloqueada após logout
+  const fileManager = document.querySelector(".card-file-manager");
+  if (fileManager) fileManager.style.display = authenticated ? "" : "none";
+
   const protectedRoutes = ["/ir", "/system", "/settings"];
   if (!authenticated && protectedRoutes.includes(window.location.pathname)) {
     navigateTo("/");
@@ -265,7 +282,11 @@ async function navigateTo(path) {
 
   // Bloqueia acesso a rotas protegidas sem autenticação.
   const protectedRoutes = ["/ir", "/system", "/settings"];
-  if (!state.wsAuthenticated && protectedRoutes.includes(path)) path = "/";
+  if (!state.wsAuthenticated && protectedRoutes.includes(path)) {
+    state._navigating = false;
+    showLoginModal();
+    return;
+  }
 
   window.history.pushState({}, "", path);
 
@@ -404,6 +425,11 @@ function handleWSMessage(event) {
       state.wsAuthenticated = false;
       const errEl = document.getElementById("loginError");
       if (errEl) errEl.style.display = "block";
+      const btn = document.querySelector("#loginModal .btn-primary");
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Entrar";
+      }
       break;
     }
 
@@ -438,11 +464,17 @@ function handleWSMessage(event) {
       break;
 
     case "reboot":
-      appModal("🔄 Dispositivo reiniciando...", { type: "alert", confirmText: "OK" });
+      appModal("🔄 Dispositivo reiniciando...", {
+        type: "alert",
+        confirmText: "OK",
+      });
       break;
 
     case "wifiPortal":
-      appModal(`📶 Conecte-se à rede <b>'${getText("name") || "irhub8266"}'</b> para configurar.`, { type: "alert" });
+      appModal(
+        `📶 Conecte-se à rede <b>'${getText("name") || "irhub8266"}'</b> para configurar.`,
+        { type: "alert" },
+      );
       break;
 
     case "wifiReset":
@@ -509,6 +541,12 @@ function updateWSStatus(connected) {
 
   const overlay = document.getElementById("wsOverlay");
   if (overlay) overlay.style.display = connected ? "none" : "flex";
+
+  const swsEl = document.getElementById("statusWS");
+  if (swsEl) {
+    swsEl.className = "status " + (connected ? "online" : "offline");
+    swsEl.textContent = connected ? "online" : "offline";
+  }
 }
 
 /* =========================================================
@@ -542,7 +580,10 @@ function updateSystemWS(data) {
   setText("name", data.name);
   setText("buildDateTime", data.buildDateTime);
   setText("buildVersion", data.buildVersion);
-  setText("footerVersion", data.buildVersion ? `v${data.buildVersion}` : "v0.x.xx");
+  setText(
+    "footerVersion",
+    data.buildVersion ? `v${data.buildVersion}` : "v0.x.xx",
+  );
   setText("heap", data.heap);
 
   document.title = `✅ ${data.name}`;
@@ -599,6 +640,13 @@ function updateSensorWS(data) {
     status.textContent = data.status;
     text.textContent = "";
     return;
+  }
+
+  const sahtEl = document.getElementById("statusAHT");
+  if (sahtEl) {
+    const on = !data.status;
+    sahtEl.className = "status " + (on ? "online" : "offline");
+    sahtEl.textContent = on ? "online" : "offline";
   }
 
   text.innerHTML = `Temperatura: ${data.temperatura} °C<br>Umidade: ${data.umidade} %`;
@@ -664,6 +712,17 @@ function updateMQTTWS(data) {
   } else {
     status.className = "status offline";
     status.textContent = "offline";
+  }
+
+  const smqttEl = document.getElementById("statusMQTT");
+  if (smqttEl) {
+    const on = data.enabled && data.status;
+    smqttEl.className = "status " + (on ? "online" : "offline");
+    smqttEl.textContent = on
+      ? "online"
+      : data.enabled
+        ? "offline"
+        : "desabilitado";
   }
 }
 
@@ -749,7 +808,10 @@ function saveIRToHistory(payload) {
 
 // Limpa todo o histórico.
 async function cleanHistory() {
-  const ok = await appModal("Limpar todo o histórico IR?", { type: "confirm", confirmText: "Limpar" });
+  const ok = await appModal("Limpar todo o histórico IR?", {
+    type: "confirm",
+    confirmText: "Limpar",
+  });
   if (!ok) return;
   state.irHistory = [];
   renderIRHistory();
@@ -863,7 +925,10 @@ function renderLogHistory() {
 
 // Limpa o histórico de logs.
 async function clearLogs() {
-  const ok = await appModal("Limpar o console?", { type: "confirm", confirmText: "Limpar" });
+  const ok = await appModal("Limpar o console?", {
+    type: "confirm",
+    confirmText: "Limpar",
+  });
   if (!ok) return;
   state.logHistory = [];
   state.logRenderedIndex = 0;
@@ -913,7 +978,7 @@ function escapeHtml(str) {
     /[&<>"']/g,
     (m) =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-      m
+        m
       ],
   );
 }
@@ -961,7 +1026,9 @@ async function downloadFile(path, filename, statusFn) {
 // statusFn(msg, color) é chamado para feedback; onSuccess é chamado após upload ok.
 async function uploadFile(file, statusFn, onSuccess = null) {
   if (!file) {
-    await appModal("Selecione um arquivo antes de continuar.", { type: "alert" });
+    await appModal("Selecione um arquivo antes de continuar.", {
+      type: "alert",
+    });
     return;
   }
 
@@ -974,7 +1041,11 @@ async function uploadFile(file, statusFn, onSuccess = null) {
     }
   }
 
-  const httpPass = await appModal("🔐 Informe a senha para continuar:", { type: "prompt", confirmText: "Enviar", inputPlaceholder: "Senha HTTP" });
+  const httpPass = await appModal("🔐 Informe a senha para continuar:", {
+    type: "prompt",
+    confirmText: "Enviar",
+    inputPlaceholder: "Senha HTTP",
+  });
   if (!httpPass) return;
 
   const formData = new FormData();
@@ -1006,7 +1077,10 @@ async function exportConfig() {
 }
 
 async function importConfig() {
-  const ok = await appModal("⚠️ O <b>config.json</b> contém dados sensíveis (senhas, tokens). Deseja continuar com a importação?", { type: "confirm", confirmText: "Importar" });
+  const ok = await appModal(
+    "⚠️ O <b>config.json</b> contém dados sensíveis (senhas, tokens). Deseja continuar com a importação?",
+    { type: "confirm", confirmText: "Importar" },
+  );
   if (!ok) return;
   const file = document.getElementById("configFile")?.files[0];
   await uploadFile(file, (msg, color) =>
@@ -1049,7 +1123,9 @@ function showOtaStatus(msg, color) {
 async function startOTAUpdate() {
   const file = document.getElementById("otaFile")?.files[0];
   if (!file) {
-    await appModal("Selecione um arquivo <b>.bin</b> antes de continuar.", { type: "alert" });
+    await appModal("Selecione um arquivo <b>.bin</b> antes de continuar.", {
+      type: "alert",
+    });
     return;
   }
 
@@ -1058,10 +1134,17 @@ async function startOTAUpdate() {
     return;
   }
 
-  const ok = await appModal(`Atualizar firmware com <b>"${file.name}"</b>?<br><span style="opacity:0.6;font-size:12px">O dispositivo será reiniciado após o envio.</span>`, { type: "confirm", confirmText: "Atualizar" });
+  const ok = await appModal(
+    `Atualizar firmware com <b>"${file.name}"</b>?<br><span style="opacity:0.6;font-size:12px">O dispositivo será reiniciado após o envio.</span>`,
+    { type: "confirm", confirmText: "Atualizar" },
+  );
   if (!ok) return;
 
-  const httpPass = await appModal("🔐 Informe a senha para continuar:", { type: "prompt", confirmText: "Enviar", inputPlaceholder: "Senha HTTP" });
+  const httpPass = await appModal("🔐 Informe a senha para continuar:", {
+    type: "prompt",
+    confirmText: "Enviar",
+    inputPlaceholder: "Senha HTTP",
+  });
   if (!httpPass) return;
 
   const formData = new FormData();
@@ -1201,7 +1284,8 @@ function loadButtons(model) {
       state.remotesData[model].buttons || state.remotesData[model].button || [];
 
     const emptyState = document.getElementById("remotesEmptyState");
-    const hasButtons = buttons && buttons.filter(b => b.type !== "space").length > 0;
+    const hasButtons =
+      buttons && buttons.filter((b) => b.type !== "space").length > 0;
 
     if (!hasButtons) {
       if (emptyState) {
@@ -1214,47 +1298,47 @@ function loadButtons(model) {
     if (emptyState) emptyState.style.display = "none";
 
     buttons.forEach((btn) => {
-    // Espaço vazio no grid.
-    if (btn.type === "space") {
-      const space = document.createElement("div");
-      if (btn.span) space.className = `span-${btn.span}`;
-      container.appendChild(space);
-      return;
-    }
-
-    // Label descritivo (sem ação).
-    if (btn.type === "label") {
-      const label = document.createElement("div");
-      label.textContent = btn.name || "";
-      label.className = `remote-label${btn.span ? ` span-${btn.span}` : " span-3"}`;
-      container.appendChild(label);
-      return;
-    }
-
-    // Ignora tipos desconhecidos (exceto "button" e sem type).
-    if (btn.type && btn.type !== "button") return;
-
-    const b = document.createElement("button");
-    b.textContent = btn.name;
-    b.type = "button";
-    b.className = "btn-ir-remote";
-
-    if (btn.fontSize) b.style.fontSize = btn.fontSize;
-    if (btn.span) b.classList.add(`span-${btn.span}`);
-    if (btn.rowSpan) b.classList.add(`row-span-${btn.rowSpan}`);
-    if (btn.background) b.style.background = `#${btn.background}`;
-    if (btn.color) b.style.color = `#${btn.color}`;
-
-    b.onclick = () => {
-      if (!btn.code) {
-        showIrToast("Botão sem código IR", true);
+      // Espaço vazio no grid.
+      if (btn.type === "space") {
+        const space = document.createElement("div");
+        if (btn.span) space.className = `span-${btn.span}`;
+        container.appendChild(space);
         return;
       }
-      sendIR(btn.protocol, btn.code, btn.bits, b);
-    };
 
-    container.appendChild(b);
-  });
+      // Label descritivo (sem ação).
+      if (btn.type === "label") {
+        const label = document.createElement("div");
+        label.textContent = btn.name || "";
+        label.className = `remote-label${btn.span ? ` span-${btn.span}` : " span-3"}`;
+        container.appendChild(label);
+        return;
+      }
+
+      // Ignora tipos desconhecidos (exceto "button" e sem type).
+      if (btn.type && btn.type !== "button") return;
+
+      const b = document.createElement("button");
+      b.textContent = btn.name;
+      b.type = "button";
+      b.className = "btn-ir-remote";
+
+      if (btn.fontSize) b.style.fontSize = btn.fontSize;
+      if (btn.span) b.classList.add(`span-${btn.span}`);
+      if (btn.rowSpan) b.classList.add(`row-span-${btn.rowSpan}`);
+      if (btn.background) b.style.background = `#${btn.background}`;
+      if (btn.color) b.style.color = `#${btn.color}`;
+
+      b.onclick = () => {
+        if (!btn.code) {
+          showIrToast("Botão sem código IR", true);
+          return;
+        }
+        sendIR(btn.protocol, btn.code, btn.bits, b);
+      };
+
+      container.appendChild(b);
+    });
 
     container.style.opacity = "1";
   }, 120);
@@ -1318,7 +1402,10 @@ async function sendIRManual() {
   const isDec = /^\d+$/.test(code);
 
   if (!isHex0x && !isHexRaw && !isDec) {
-    await appModal("Código inválido.<br><span style='opacity:0.6;font-size:12px'>Use hex (0x20DF10EF) ou decimal (551489775).</span>", { type: "alert" });
+    await appModal(
+      "Código inválido.<br><span style='opacity:0.6;font-size:12px'>Use hex (0x20DF10EF) ou decimal (551489775).</span>",
+      { type: "alert" },
+    );
     return;
   }
 
@@ -1411,25 +1498,37 @@ function toggleLEDB() {
 ========================================================= */
 
 async function rebootDevice() {
-  const ok = await appModal("Reiniciar o dispositivo?", { type: "confirm", confirmText: "Reiniciar" });
+  const ok = await appModal("Reiniciar o dispositivo?", {
+    type: "confirm",
+    confirmText: "Reiniciar",
+  });
   if (!ok) return;
   wsSend({ cmd: "reboot" });
 }
 
 async function openWifiPortal() {
-  const ok = await appModal("Abrir portal de configuração WiFi?<br><span style='opacity:0.6;font-size:12px'>A conexão atual será derrubada.</span>", { type: "confirm", confirmText: "Abrir Portal" });
+  const ok = await appModal(
+    "Abrir portal de configuração WiFi?<br><span style='opacity:0.6;font-size:12px'>A conexão atual será derrubada.</span>",
+    { type: "confirm", confirmText: "Abrir Portal" },
+  );
   if (!ok) return;
   wsSend({ cmd: "wifiPortal" });
 }
 
 async function resetWifi() {
-  const ok = await appModal("⚠️ Resetar configurações WiFi?<br><span style='opacity:0.6;font-size:12px'>O dispositivo perderá a conexão atual.</span>", { type: "confirm", confirmText: "Resetar" });
+  const ok = await appModal(
+    "⚠️ Resetar configurações WiFi?<br><span style='opacity:0.6;font-size:12px'>O dispositivo perderá a conexão atual.</span>",
+    { type: "confirm", confirmText: "Resetar" },
+  );
   if (!ok) return;
   wsSend({ cmd: "resetWifi" });
 }
 
 async function resetConfig() {
-  const ok = await appModal("⚠️ Resetar <b>todas</b> as configurações?<br><span style='opacity:0.6;font-size:12px'>Todas as configurações atuais serão perdidas e restauradas para o padrão.</span>", { type: "confirm", confirmText: "Resetar Tudo" });
+  const ok = await appModal(
+    "⚠️ Resetar <b>todas</b> as configurações?<br><span style='opacity:0.6;font-size:12px'>Todas as configurações atuais serão perdidas e restauradas para o padrão.</span>",
+    { type: "confirm", confirmText: "Resetar Tudo" },
+  );
   if (!ok) return;
   wsSend({ cmd: "resetConfig" });
 }

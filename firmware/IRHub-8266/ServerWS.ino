@@ -219,13 +219,14 @@ void setup_server() {
     },
     // Callback de progresso: chamado a cada chunk recebido.
     []() {
-      if (server.upload().status == UPLOAD_FILE_START) {
+      HTTPUpload& upload = server.upload();
+      if (upload.status == UPLOAD_FILE_START) {
         uploadAuthorized = checkAuth();
-      }
-      if (!uploadAuthorized) {
-        if (fsUploadFile) fsUploadFile.close();
+        if (!uploadAuthorized) return;
+        handleUpload();
         return;
       }
+      if (!uploadAuthorized) return;
       handleUpload();
     });
 
@@ -463,14 +464,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
             wsAuthenticated[num] = true;
             debugLogPrint("[AUTH]", "Login ok!");
             webSocket.sendTXT(num, "{\"type\":\"loginOk\"}");
-            // Força envio de config completa a todos após login bem-sucedido
-            configDirty = true;
-            wsSendSystem();
-            wsSendNetwork();
-            wsSendMQTT();
-            wsSendInfoIR();
+            wsSendSystemTo(num, true);
+            wsSendNetworkTo(num);
+            wsSendMQTTTo(num);
+            wsSendInfoIRTo(num);
             wsSendInfoIR_Receptor();
-            wsSendLEDB();
+            wsSendLEDBTo(num);
           } else {
             debugLogPrint("[AUTH]", "Login falhou");
             wsAuthenticated[num] = false;

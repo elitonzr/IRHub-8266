@@ -1,5 +1,7 @@
 # IRHub-8266
 
+![alt text](assets/images/IRHub-500x500.png)
+
 IRHub-8266 é um hub de automação baseado em **ESP8266 (NodeMCU)** com suporte a:
 
 - 📡 Comunicação MQTT

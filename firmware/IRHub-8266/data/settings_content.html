@@ -1,35 +1,24 @@
 <div class="page-content">
   <div class="grid2">
-    <!-- CONFIG MANAGER -->
-    <section class="card">
-      <header>Arquivo de Configuração config.json</header>
-      <div class="item">
-        <div class="upload-row">
-          <input type="file" id="configFile" accept=".json" />
-          <button class="btn-send" onclick="importConfig()">📤 Importar</button>
-        </div>
-        <div class="item">
-          <button class="btn-primary btn-block" onclick="exportConfig()">📥 Exportar</button>
-          <div class="item">
-            <button class="btn-clean btn-block" onclick="resetConfig()">🔄 Resetar</button>
-          </div>
-        </div>
-      </div>
-      <div id="configFileStatus" class="status-msg"></div>
-    </section>
-
     <!-- CONFIG -->
     <section class="card">
       <header>Configuração</header>
-      <p class="cfg-note">As configurações são salvas e aplicadas sem reiniciar.<br/>Mudanças de Hostname e Grupo só têm efeito completo após reboot.</p>
+      <p class="cfg-note">
+        As configurações são salvas e aplicadas sem reiniciar.<br />Mudanças de
+        Hostname e Grupo só têm efeito completo após reboot.
+      </p>
 
       <div class="accordion-item">
         <button class="accordion-toggle" onclick="toggleAccordion(this)">
           <span>🏷️ Identificação</span><span class="accordion-arrow">▾</span>
         </button>
         <div class="accordion-body open">
-          <div class="item">Hostname: <input id="cfg_hostname" type="text" /></div>
-          <div class="item">MQTT ID: <input id="cfg_mqtt_id" type="text" /></div>
+          <div class="item">
+            Hostname: <input id="cfg_hostname" type="text" />
+          </div>
+          <div class="item">
+            MQTT ID: <input id="cfg_mqtt_id" type="text" />
+          </div>
           <div class="item">Grupo: <input id="cfg_grupo" type="text" /></div>
         </div>
       </div>
@@ -40,11 +29,26 @@
         </button>
         <div class="accordion-body open">
           <div class="item">SSID: <input id="cfg_wifi_ssid" type="text" /></div>
-          <div class="item">Senha: <input id="cfg_wifi_password" type="password" placeholder="deixe vazio para manter a atual" /></div>
+          <div class="item">
+            Senha:
+            <input
+              id="cfg_wifi_password"
+              type="password"
+              placeholder="deixe vazio para manter a atual"
+            />
+          </div>
           <hr />
           <p class="section-label">Ações WiFi</p>
-          <div class="item"><button class="btn-primary btn-block" onclick="openWifiPortal()">📶 Abrir Portal AP (derruba conexão)</button></div>
-          <div class="item"><button class="btn-clean btn-block" onclick="resetWifi()">⚠️ Reset WiFi</button></div>
+          <div class="item">
+            <button class="btn-primary btn-block" onclick="openWifiPortal()">
+              📶 Abrir Portal AP (derruba conexão)
+            </button>
+          </div>
+          <div class="item">
+            <button class="btn-clean btn-block" onclick="resetWifi()">
+              ⚠️ Reset WiFi
+            </button>
+          </div>
         </div>
       </div>
 
@@ -53,11 +57,26 @@
           <span>🌐 Rede</span><span class="accordion-arrow">▾</span>
         </button>
         <div class="accordion-body open">
-          <div class="item">Modo: <select id="cfg_ip_mode" onchange="toggleIPFields()"><option value="dhcp">DHCP</option><option value="static">IP Fixo</option></select></div>
+          <div class="item">
+            Modo:
+            <select id="cfg_ip_mode" onchange="toggleIPFields()">
+              <option value="dhcp">DHCP</option>
+              <option value="static">IP Fixo</option>
+            </select>
+          </div>
           <div id="cfg_ip_fields" class="hidden">
-            <div class="item">IP: <input id="cfg_ip" type="text" placeholder="ex: 192.168.1.100" /></div>
-            <div class="item">Gateway: <input id="cfg_gw" type="text" placeholder="ex: 192.168.1.1" /></div>
-            <div class="item">Subnet: <input id="cfg_sn" type="text" placeholder="ex: 255.255.255.0" /></div>
+            <div class="item">
+              IP:
+              <input id="cfg_ip" type="text" placeholder="ex: 192.168.1.100" />
+            </div>
+            <div class="item">
+              Gateway:
+              <input id="cfg_gw" type="text" placeholder="ex: 192.168.1.1" />
+            </div>
+            <div class="item">
+              Subnet:
+              <input id="cfg_sn" type="text" placeholder="ex: 255.255.255.0" />
+            </div>
           </div>
         </div>
       </div>
@@ -67,12 +86,36 @@
           <span>📨 MQTT</span><span class="accordion-arrow">▾</span>
         </button>
         <div class="accordion-body open">
-          <div class="item">MQTT: <select id="cfg_mqtt_enabled" onchange="toggleMQTTFields()"><option value="true">Habilitado</option><option value="false">Desabilitado</option></select></div>
+          <div class="item">
+            MQTT:
+            <select id="cfg_mqtt_enabled" onchange="toggleMQTTFields()">
+              <option value="true">Habilitado</option>
+              <option value="false">Desabilitado</option>
+            </select>
+          </div>
           <div id="cfg_mqtt_fields">
-            <div class="item">Servidor: <input id="cfg_mqtt_server" type="text" /></div>
-            <div class="item">Porta: <input id="cfg_mqtt_port" type="number" min="1" max="65535" /></div>
-            <div class="item">Usuário: <input id="cfg_mqtt_user" type="text" /></div>
-            <div class="item">Senha: <input id="cfg_mqtt_password" type="password" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="deixe vazio para manter a atual" /></div>
+            <div class="item">
+              Servidor: <input id="cfg_mqtt_server" type="text" />
+            </div>
+            <div class="item">
+              Porta:
+              <input id="cfg_mqtt_port" type="number" min="1" max="65535" />
+            </div>
+            <div class="item">
+              Usuário: <input id="cfg_mqtt_user" type="text" />
+            </div>
+            <div class="item">
+              Senha:
+              <input
+                id="cfg_mqtt_password"
+                type="password"
+                autocomplete="new-password"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="deixe vazio para manter a atual"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -82,7 +125,13 @@
           <span>🌡️ Sensores</span><span class="accordion-arrow">▾</span>
         </button>
         <div class="accordion-body open">
-          <div class="item">AHT10: <select id="cfg_aht10_enabled"><option value="true">Habilitado</option><option value="false">Desabilitado</option></select></div>
+          <div class="item">
+            AHT10:
+            <select id="cfg_aht10_enabled">
+              <option value="true">Habilitado</option>
+              <option value="false">Desabilitado</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -91,15 +140,94 @@
           <span>🔒 Segurança</span><span class="accordion-arrow">▾</span>
         </button>
         <div class="accordion-body open">
-          <div class="item">Usuário Admin: <input id="cfg_admin_user" type="text" /></div>
-          <div class="item">Senha WebSocket: <input id="cfg_ws_password" type="password" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="deixe vazio para manter a atual" /></div>
+          <div class="item">
+            Usuário Admin: <input id="cfg_admin_user" type="text" />
+          </div>
+          <div class="item">
+            Senha WebSocket:
+            <input
+              id="cfg_ws_password"
+              type="password"
+              autocomplete="new-password"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              placeholder="deixe vazio para manter a atual"
+            />
+          </div>
         </div>
       </div>
 
       <div id="cfgStatus" class="status-msg"></div>
-      <div class="item" style="margin-top:12px">
-        <button class="btn-primary btn-block" onclick="saveDeviceConfig()">💾 Salvar Configuração</button>
+      <div class="item" style="margin-top: 12px">
+        <button class="btn-primary btn-block" onclick="saveDeviceConfig()">
+          💾 Salvar Configuração
+        </button>
       </div>
+    </section>
+
+    <!-- FILE -->
+    <section class="card">
+      <header>Arquivos</header>
+
+      <!-- OTA UPDATE -->
+      <p class="section-label">Atualização de Firmware "IRHub-8266.ino.bin"</p>
+      <div class="item">
+        <div class="upload-row">
+          <input type="file" id="otaFile" accept=".bin" />
+          <button class="btn-send" onclick="startOTAUpdate()">📤 Importar</button>
+        </div>
+      </div>
+      <div class="item">
+        <progress
+          id="otaProgress"
+          value="0"
+          max="100"
+          style="display: none"
+        ></progress>
+      </div>
+      <div id="otaStatus" class="status-msg"></div>
+      <hr />
+
+      <!-- CONFIG MANAGER -->
+      <p class="section-label">Arquivo de Configuração "config.json"</p>
+      <div class="item">
+        <div class="upload-row">
+          <input type="file" id="configFile" accept=".json" />
+          <button class="btn-send" onclick="importConfig()">📤 Importar</button>
+        </div>
+        <div class="item">
+          <button class="btn-primary btn-block" onclick="exportConfig()">
+            📥 Exportar config.json
+          </button>
+          <div class="item">
+            <button class="btn-clean btn-block" onclick="resetConfig()">
+              🔄 Resetar config.json
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="configFileStatus" class="status-msg"></div>
+      <hr />
+
+      <!-- REMOTES MANAGER -->
+      <!-- <section class="card card-file-manager"> -->
+      <p class="section-label">Controles Remotos "remotes.json"</p>
+      <div class="item">
+        <div class="upload-row">
+          <input type="file" id="remotesFile" accept=".json" />
+          <button class="btn-send" onclick="importRemotes()">
+            📤 Importar
+          </button>
+        </div>
+        <div class="item">
+          <button class="btn-primary btn-block" onclick="exportRemotes()">
+            📥 Exportar remotes.json
+          </button>
+        </div>
+      </div>
+      <div id="remotesStatus" class="status-msg"></div>
+      <hr />
     </section>
   </div>
 </div>
