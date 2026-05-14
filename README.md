@@ -1,6 +1,6 @@
-<center>
+<div align="center">
   <img src="assets/images/IRHub.png" alt="alt text" width="250">
-</center>
+</div>
 
 IRHub-8266 é um hub de automação baseado em **ESP8266 (NodeMCU)** com suporte a:
 
@@ -14,11 +14,11 @@ IRHub-8266 é um hub de automação baseado em **ESP8266 (NodeMCU)** com suporte
 - 💡 Controle de saída digital (LED B)
 - ⚙️ Configuração via portal WiFiManager + página de settings
 
-O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e sistemas de automação como Home Assistant, Node-RED e outros clientes MQTT.
-
-<center>
+<div align="center">
   <img src="assets/images/temas.png" alt="alt text" width="500">
-</center>
+</div>
+
+O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e sistemas de automação como Home Assistant, Node-RED e outros clientes MQTT.
 
 ---
 
