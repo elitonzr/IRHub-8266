@@ -58,6 +58,8 @@ function toggleTheme() {
   lsSet("theme", next);
   document.getElementById("btnTheme").textContent =
     next === "light" ? "🌙" : "☀️";
+  const drawerIcon = document.getElementById("drawerThemeIcon");
+  if (drawerIcon) drawerIcon.textContent = next === "light" ? "🌙" : "☀️";
 }
 
 // Chamar no início da inicialização (antes de qualquer render):
@@ -251,7 +253,7 @@ function updateAuthUI(authenticated) {
   const fileManager = document.querySelector(".card-file-manager");
   if (fileManager) fileManager.style.display = authenticated ? "" : "none";
 
-  const protectedRoutes = ["/ir", "/system", "/settings"];
+  const protectedRoutes = ["/ir", "/system", "/settings","/files"];
   if (!authenticated && protectedRoutes.includes(window.location.pathname)) {
     navigateTo("/");
   }
@@ -580,10 +582,11 @@ function updateSystemWS(data) {
   setText("name", data.name);
   setText("buildDateTime", data.buildDateTime);
   setText("buildVersion", data.buildVersion);
-  setText(
-    "footerVersion",
-    data.buildVersion ? `v${data.buildVersion}` : "v0.x.xx",
-  );
+
+  const fv = document.getElementById("footerVersion");
+  if (fv)
+    fv.textContent = data.buildVersion ? `v${data.buildVersion}` : "v0.x.xx";
+
   setText("heap", data.heap);
 
   document.title = `✅ ${data.name}`;
@@ -825,6 +828,7 @@ function renderIRHistory() {
   list.innerHTML = "";
 
   state.irHistory.forEach((d) => {
+
     const li = document.createElement("li");
     li.textContent = `${d.timestamp} | ${d.protocol} | ${d.bits}b | ${d.dec} | ${d.hex} 📋`;
 
@@ -1354,7 +1358,7 @@ function loadButtons(model) {
 function sendIR(protocol, code, bits, element = null) {
   if (element) {
     element.classList.add("btn-active-feedback");
-    setTimeout(() => element.classList.remove("btn-active-feedback"), 150);
+    setTimeout(() => element.classList.remove("btn-active-feedback"), 400);
   }
 
   if (!code) {

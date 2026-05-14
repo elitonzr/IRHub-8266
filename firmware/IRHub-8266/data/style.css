@@ -324,6 +324,14 @@ progress {
   filter: none;
 }
 
+.navbar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .navbar-brand {
   font-size: 16px;
   font-weight: 600;
@@ -562,6 +570,27 @@ progress {
 /* ================================================
    REMOTES EMPTY STATE
    ================================================ */
+.remote-select-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.remote-select-label {
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+.remote-select {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 12px;
+}
+
 .remotes-empty-state {
   grid-column: 1 / -1;
   display: flex;
@@ -838,6 +867,7 @@ progress {
   grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 400px));
   justify-content: center;
   gap: 20px;
+  align-items: start;
 }
 
 .upload-row {
@@ -1132,9 +1162,10 @@ select:focus-visible {
 }
 
 .btn-active-feedback {
-  transform: scale(0.95);
-  filter: brightness(1.3);
-  transition: transform 0.1s, filter 0.1s;
+  transform: scale(0.93);
+  filter: brightness(1.4);
+  transition: transform 0.1s ease, filter 0.1s ease;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
 }
 
 /* ================================================
@@ -1191,6 +1222,28 @@ select:focus-visible {
   font-size: 12px;
   scroll-behavior: smooth;
 }
+
+/* #irHistory li {
+  display: grid;
+  grid-template-columns: 64px 72px 36px 1fr 110px 24px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#irHistory li:last-child { border-bottom: none; }
+#irHistory li:hover { background: var(--hover); }
+
+.ir-col { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ir-col-time { opacity: 0.5; }
+.ir-col-proto { color: var(--accent); font-weight: 600; }
+.ir-col-bits { opacity: 0.6; text-align: center; }
+.ir-col-hex { font-family: monospace; }
+.ir-col-copy { text-align: center; opacity: 0.4; }
+#irHistory li:hover .ir-col-copy { opacity: 1; } */
 
 #irHistory li {
   cursor: pointer;

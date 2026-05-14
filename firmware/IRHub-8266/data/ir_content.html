@@ -1,5 +1,5 @@
 <div class="page-content">
-  <div class="grid">
+  <div class="grid" style="align-items: start">
     <!-- IR EMISSOR -->
     <section class="card">
       <header>Emissor</header>
@@ -83,8 +83,8 @@
       <hr />
 
       <p class="section-label">Configuração</p>
-      <div class="item">
-        <select id="irReceptorSelect">
+      <div class="item" style="display: flex; gap: 8px; align-items: center">
+        <select id="irReceptorSelect" style="flex: 1">
           <option value="0">ALL</option>
           <option value="1">KNOWN</option>
           <option value="2">DISABLED</option>
@@ -98,10 +98,12 @@
           <option value="10">JVC</option>
           <option value="11">WHYNTER</option>
         </select>
-      </div>
-      <div class="item">
-        <button class="btn-ir-receptor btn-block" onclick="setIRReceptor()">
-          ✅ Aplicar Protocolo
+        <button
+          class="btn-ir-receptor"
+          onclick="setIRReceptor()"
+          style="white-space: nowrap"
+        >
+          ✅ Aplicar
         </button>
       </div>
     </section>
