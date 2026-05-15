@@ -10,13 +10,27 @@ const char PAGE_PORTAL_1[] PROGMEM = R"rawliteral(
 <style>
 body { font-family:sans-serif; background:#111827; color:#f9fafb; padding:20px; }
 .card { background:#1f2937; padding:20px; border-radius:10px; max-width:400px; margin:auto; }
-input, select, button { width:100%; padding:10px; margin-top:10px; }
-button { background:#2563eb; color:white; border:none; cursor:pointer; }
+
+input, select, button { width:100%; padding:10px; margin-top:10px; border-radius:6px; box-sizing:border-box; }
+input, select { background:#111827; color:#f9fafb; border:1px solid #374151; }
+input:focus, select:focus { outline:none; border-color:#2563eb; }
+
+button { background:#2563eb; color:white; border:none; cursor:pointer; border-radius:6px; font-weight:600; }
+button:hover { background:#1d4ed8; }
+button[style*='dc2626'] { background:#dc2626 !important; }
+button[style*='dc2626']:hover { background:#b91c1c !important; }
+
 </style>
 </head>
 <body>
+
 <div class='card'>
-<h2>Configuração WiFi</h2>
+<div style='text-align:center;margin-bottom:16px'>
+  <img src='/logo.png' alt='IRHub' style='width:56px;height:56px;border-radius:50%;object-fit:cover;' onerror='this.style.display="none"'>
+  <h2 style='margin:8px 0 0'>IRHub-8266</h2>
+  <p style='margin:4px 0 0;opacity:0.5;font-size:13px'>Configuração WiFi</p>
+</div>
+
 <form action='/save' method='POST'>
 
 <label>Redes disponíveis</label>
@@ -133,28 +147,58 @@ const char FILES_PAGE[] PROGMEM = R"rawliteral(
 <head>
 <meta charset="utf-8">
 <title>LittleFS Manager</title>
-
+<script>
+(function(){
+  var t = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <link rel="stylesheet" href="/style.css" />
-
 </head>
 <body>
 
 <nav class="navbar">
-  <button class="navbar-burger" onclick="drawerOpen()" aria-label="Menu">
-    &#9776;
-  </button>
+  <img src="/logo.png" alt="IRHub" class="navbar-logo" />
+  <button class="navbar-burger" onclick="drawerOpen()" aria-label="Menu">&#9776;</button>
   <span class="navbar-brand" id="name">IRHub-8266</span>
   <div class="navbar-links">
     <a href="/">Home</a>
     <a href="/system">System</a>
   </div>
+  <button id="btnTheme" class="btn-navbar" onclick="toggleTheme()" title="Alternar tema (claro/escuro)" aria-label="Alternar tema">🌙</button>
 </nav>
 
 <div class="drawer-overlay" id="drawerOverlay" onclick="drawerClose()"></div>
+
 <div class="drawer" id="drawer">
-  <div class="drawer-title">IRHub-8266</div>
-  <a href="/">&#x1F3E0; Home</a>
-  <a href="/system">&#x1F916; System</a>
+  <div class="drawer-header">
+    <div class="drawer-title">IRHub-8266</div>
+  </div>
+  <span class="drawer-section-label">Navegação</span>
+  <a href="/"><span class="drawer-icon">🏠</span> Home</a>
+  <a href="/system"><span class="drawer-icon">🤖</span> System</a>
+  <a href="/settings"><span class="drawer-icon">⚙️</span> Settings</a>
+  <span class="drawer-section-label">Ferramentas</span>
+  <a href="/files"><span class="drawer-icon">📁</span> File Manager</a>
+  <span class="drawer-section-label">Preferências</span>
+  <a href="#" onclick="toggleTheme(); drawerClose(); return false;">
+    <span class="drawer-icon" id="drawerThemeIcon">🌙</span> Alternar Tema
+  </a>
+  <span class="drawer-section-label">Login</span>
+  <button id="btnLogin" class="btn-navbar" onclick="handleLoginBtn()">
+  Login
+  </button>
+
+        <div class="drawer-footer">
+        <a
+          href="https://github.com/elitonzr/IRHub-8266"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="drawer-icon">🐙</span> GitHub do Projeto
+        </a>
+      </div>
+      
 </div>
 
 <div class="page-content">
@@ -170,7 +214,7 @@ const char FILES_PAGE[] PROGMEM = R"rawliteral(
     <button class="btn-send" onclick="upload()">📤 Enviar</button>
   </div>
 
-  <progress id="prog" value="0" max="100"></progress>
+  <progress id="prog" value="0" max="100" style="display:none"></progress>
 </div>
 
   <div class="card">
@@ -188,6 +232,19 @@ const char FILES_PAGE[] PROGMEM = R"rawliteral(
 
 </div>
 
+<div id="appModal">
+  <div class="app-modal-box">
+    <p id="appModalMsg" class="app-modal-msg"></p>
+    <div id="appModalInput" class="app-modal-input-wrap" style="display:none">
+      <input id="appModalField" type="password" placeholder="Senha" />
+    </div>
+    <div class="app-modal-actions">
+      <button id="appModalCancel" class="app-modal-btn app-modal-btn-cancel">Cancelar</button>
+      <button id="appModalConfirm" class="app-modal-btn app-modal-btn-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <script src="/app.js"></script>
 
 <script>
@@ -198,25 +255,28 @@ function upload(){
   const xhr=new XMLHttpRequest();
 
   xhr.upload.onprogress=function(e){
-    if(e.lengthComputable){
-      document.getElementById('prog').value=(e.loaded/e.total)*100;
-    }
-  };
+  var prog=document.getElementById('prog');
+  prog.style.display='block';
+  if(e.lengthComputable) prog.value=(e.loaded/e.total)*100;
+};
 
-  xhr.onload=function(){
-    alert('Upload concluído');
-    window.location.reload();
-  };
+xhr.onload=function(){
+  document.getElementById('prog').style.display='none';
+  alert('Upload concluído');
+  window.location.reload();
+};
 
   const formData=new FormData();
   formData.append('upload',file);
 
-  const pass = prompt('🔐 Informe a senha HTTP para continuar:');
+appModal('🔐 Informe a senha para continuar:', {type:'prompt', confirmText:'Enviar', inputPlaceholder:'Senha HTTP'}).then(function(pass){
   if (!pass) return;
   xhr.withCredentials=true;
   xhr.open('POST','/upload',true);
   xhr.setRequestHeader('Authorization', 'Basic ' + btoa('%ADMIN_USER%:' + pass));
   xhr.send(formData);
+});
+
 }
 </script>
 

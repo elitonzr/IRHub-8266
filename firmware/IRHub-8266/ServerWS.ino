@@ -142,9 +142,9 @@ void setup_server() {
       rows += "<tr>";
       rows += "<td>" + name + "</td>";
       rows += "<td>" + String(dir.fileSize()) + " bytes</td>";
-      rows += "<td>";
-      rows += "<a href='/download?file=" + name + "'>📥 Baixar</a> ";
-      rows += "<a href='/delete?file=" + name + "' onclick=\"return confirm('Excluir?')\">❌Excluir</a>";
+      rows += "<td style='display:flex;gap:8px;'>";
+      rows += "<a href='/download?file=" + name + "' class='btn-primary' style='font-size:12px;padding:4px 10px;text-decoration:none;border-radius:6px;'>📥 Baixar</a>";
+      rows += "<a href='/delete?file=" + name + "' class='btn-clean' style='font-size:12px;padding:4px 10px;text-decoration:none;border-radius:6px;' onclick=\"return confirm('Excluir " + name + "?')\">🗑 Excluir</a>";
       rows += "</td></tr>";
     }
 

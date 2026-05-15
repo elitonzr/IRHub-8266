@@ -259,6 +259,14 @@ function updateAuthUI(authenticated) {
   }
 }
 
+function togglePass(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const show = el.type === "password";
+  el.type = show ? "text" : "password";
+  btn.textContent = show ? "🙈" : "👁";
+}
+
 /* =========================================================
    3. ROTEAMENTO SPA
    Carrega partials HTML por rota sem recarregar a página.

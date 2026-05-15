@@ -31,11 +31,21 @@
           <div class="item">SSID: <input id="cfg_wifi_ssid" type="text" /></div>
           <div class="item">
             Senha:
-            <input
-              id="cfg_wifi_password"
-              type="password"
-              placeholder="deixe vazio para manter a atual"
-            />
+            <div style="display: flex; gap: 8px; align-items: center">
+              <input
+                id="cfg_wifi_password"
+                type="password"
+                placeholder="deixe vazio para manter a atual"
+                style="flex: 1; margin: 0"
+              />
+              <button
+                type="button"
+                onclick="togglePass('cfg_wifi_password', this)"
+                class="btn-navbar"
+              >
+                👁
+              </button>
+            </div>
           </div>
           <hr />
           <p class="section-label">Ações WiFi</p>
@@ -106,15 +116,25 @@
             </div>
             <div class="item">
               Senha:
-              <input
-                id="cfg_mqtt_password"
-                type="password"
-                autocomplete="new-password"
-                autocorrect="off"
-                autocapitalize="off"
-                spellcheck="false"
-                placeholder="deixe vazio para manter a atual"
-              />
+              <div style="display: flex; gap: 8px; align-items: center">
+                <input
+                  id="cfg_mqtt_password"
+                  type="password"
+                  autocomplete="new-password"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  placeholder="deixe vazio para manter a atual"
+                  style="flex: 1; margin: 0"
+                />
+                <button
+                  type="button"
+                  onclick="togglePass('cfg_mqtt_password', this)"
+                  class="btn-navbar"
+                >
+                  👁
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -145,15 +165,25 @@
           </div>
           <div class="item">
             Senha WebSocket:
-            <input
-              id="cfg_ws_password"
-              type="password"
-              autocomplete="new-password"
-              autocorrect="off"
-              autocapitalize="off"
-              spellcheck="false"
-              placeholder="deixe vazio para manter a atual"
-            />
+            <div style="display: flex; gap: 8px; align-items: center">
+              <input
+                id="cfg_ws_password"
+                type="password"
+                autocomplete="new-password"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="deixe vazio para manter a atual"
+                style="flex: 1; margin: 0"
+              />
+              <button
+                type="button"
+                onclick="togglePass('cfg_ws_password', this)"
+                class="btn-navbar"
+              >
+                👁
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -175,7 +205,9 @@
       <div class="item">
         <div class="upload-row">
           <input type="file" id="otaFile" accept=".bin" />
-          <button class="btn-send" onclick="startOTAUpdate()">📤 Importar</button>
+          <button class="btn-send" onclick="startOTAUpdate()">
+            📤 Importar
+          </button>
         </div>
       </div>
       <div class="item">
