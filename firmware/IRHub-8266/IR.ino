@@ -232,7 +232,7 @@ bool parseIRCode(const char* str, uint64_t& outCode) {
 
   // HEX com 0x/0X explícito
   if (strstr(str, "0x") == str || strstr(str, "0X") == str) {
-    outCode = strtoull(str, NULL, 16);
+    outCode = strtoull(str, NULL, 0);
     return true;
   }
 

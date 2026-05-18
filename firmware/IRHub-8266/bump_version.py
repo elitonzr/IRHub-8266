@@ -40,11 +40,14 @@ new_version = bump(current, level)
 new_str = format_version(new_version)
 old_str = format_version(current)
 
-with version_path.open("w", encoding="utf-8", newline="\n") as f:
-    f.write(new_str + "\n")
+with globals_path.open("rb") as f:
+    raw = f.read()
+newline = b"\r\n" if b"\r\n" in raw else b"\n"
 
-with globals_path.open("r", encoding="utf-8") as f:
-    content = f.read()
+with version_path.open("wb") as f:
+    f.write((new_str + "\n").encode("utf-8").replace(b"\n", newline))
+
+content = raw.decode("utf-8")
 
 new_content = re.sub(
     r'(const String buildVersion\s*=\s*")[^"]+(")',
@@ -52,7 +55,9 @@ new_content = re.sub(
     content
 )
 
-with globals_path.open("w", encoding="utf-8", newline="\n") as f:
-    f.write(new_content)
+with globals_path.open("wb") as f:
+    f.write(new_content.encode("utf-8").replace(b"\r\n", b"\n").replace(b"\n", newline))
 
 print(f"Versão atualizada: {old_str} → {new_str}")
+
+input("Pressione Enter para fechar...")

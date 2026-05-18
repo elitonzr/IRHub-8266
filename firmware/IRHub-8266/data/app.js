@@ -56,8 +56,8 @@ function toggleTheme() {
   const next = isLight ? "dark" : "light";
   html.setAttribute("data-theme", next);
   lsSet("theme", next);
-  document.getElementById("btnTheme").textContent =
-    next === "light" ? "🌙" : "☀️";
+  const btnThemeEl = document.getElementById("btnTheme");
+  if (btnThemeEl) btnThemeEl.textContent = next === "light" ? "🌙" : "☀️";
   const drawerIcon = document.getElementById("drawerThemeIcon");
   if (drawerIcon) drawerIcon.textContent = next === "light" ? "🌙" : "☀️";
 }
@@ -253,7 +253,7 @@ function updateAuthUI(authenticated) {
   const fileManager = document.querySelector(".card-file-manager");
   if (fileManager) fileManager.style.display = authenticated ? "" : "none";
 
-  const protectedRoutes = ["/ir", "/system", "/settings","/files"];
+  const protectedRoutes = ["/ir", "/system", "/settings", "/files"];
   if (!authenticated && protectedRoutes.includes(window.location.pathname)) {
     navigateTo("/");
   }
@@ -370,6 +370,12 @@ function initPageScript(path) {
   if (path === "/system") {
     state.logRenderedIndex = 0;
     renderLogHistory();
+    const swsEl = document.getElementById("statusWS");
+    if (swsEl) {
+      const connected = state.ws && state.ws.readyState === WebSocket.OPEN;
+      swsEl.className = "status " + (connected ? "online" : "offline");
+      swsEl.textContent = connected ? "online" : "offline";
+    }
   }
 
   if (path === "/settings") {
@@ -629,8 +635,13 @@ function updateSystemWS(data) {
 
   // Mostra/oculta card AHT10 conforme configuração.
   const cardAHT10 = document.getElementById("cardAHT10");
-  if (cardAHT10 && data.config)
-    cardAHT10.style.display = data.config.aht10_enabled ? "" : "none";
+  if (cardAHT10) {
+    if (data.config) {
+      cardAHT10.style.display = data.config.aht10_enabled ? "" : "none";
+    } else {
+      cardAHT10.style.display = "none"; // oculta por padrão até receber config
+    }
+  }
 }
 
 // Atualiza estado do LED B (dot + texto).
@@ -655,9 +666,14 @@ function updateSensorWS(data) {
 
   const sahtEl = document.getElementById("statusAHT");
   if (sahtEl) {
-    const on = !data.status;
-    sahtEl.className = "status " + (on ? "online" : "offline");
-    sahtEl.textContent = on ? "online" : "offline";
+    if (data.disabled) {
+      sahtEl.className = "status warn";
+      sahtEl.textContent = "desabilitado";
+    } else {
+      const on = !data.status;
+      sahtEl.className = "status " + (on ? "online" : "offline");
+      sahtEl.textContent = on ? "online" : "offline";
+    }
   }
 
   text.innerHTML = `Temperatura: ${data.temperatura} °C<br>Umidade: ${data.umidade} %`;
@@ -750,12 +766,7 @@ function applyIRReceptorState(data) {
   }
   if (!state.irDotTimer) {
     const dot = document.getElementById("irDot");
-    if (dot)
-      dot.className =
-        "dot " +
-        (data.receptor_protocol && data.receptor_protocol !== "DISABLED"
-          ? "green"
-          : "yellow");
+    if (dot) dot.className = "dot yellow";
   }
 }
 
@@ -836,7 +847,6 @@ function renderIRHistory() {
   list.innerHTML = "";
 
   state.irHistory.forEach((d) => {
-
     const li = document.createElement("li");
     li.textContent = `${d.timestamp} | ${d.protocol} | ${d.bits}b | ${d.dec} | ${d.hex} 📋`;
 
@@ -1305,6 +1315,9 @@ function loadButtons(model) {
         container.appendChild(emptyState);
       }
       container.style.opacity = "1";
+      setTimeout(() => {
+        container.style.transition = "";
+      }, 150);
       return;
     }
     if (emptyState) emptyState.style.display = "none";
@@ -1353,6 +1366,9 @@ function loadButtons(model) {
     });
 
     container.style.opacity = "1";
+    setTimeout(() => {
+      container.style.transition = "";
+    }, 150);
   }, 120);
 }
 
@@ -1681,6 +1697,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateWSStatus(false);
   connectWS();
+  checkForUpdate();
 
   // Se WS já estava aberto (navegação SPA sem reload), atualiza badge imediatamente.
   if (state.ws && state.ws.readyState === WebSocket.OPEN) updateWSStatus(true);
@@ -1689,5 +1706,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnTheme = document.getElementById("btnTheme");
   if (btnTheme) {
     btnTheme.textContent = lsGet("theme") === "light" ? "🌙" : "☀️";
+  }
+
+  async function checkForUpdate() {
+    try {
+      const res = await fetch(
+        "https://api.github.com/repos/elitonzr/IRHub-8266/releases/latest",
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const latest = data.tag_name?.replace(/^v/, ""); // ex: "0.4.42"
+      if (!latest || !state.lastConfig) return;
+
+      const current = getText("buildVersion") || "";
+      if (latest !== current) {
+        const badge = document.getElementById("versionBadge");
+        if (badge) {
+          badge.textContent = `⬆️ v${latest} disponível`;
+          badge.style.display = "inline";
+          badge.title = `Nova versão disponível! Atual: v${current}`;
+          badge.onclick = () =>
+            window.open(data.html_url, "_blank", "noopener");
+          badge.style.cursor = "pointer";
+        }
+      }
+    } catch {
+      // silencioso — sem internet ou rate limit
+    }
   }
 });

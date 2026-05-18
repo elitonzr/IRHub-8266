@@ -223,7 +223,7 @@ void setup_server() {
       if (upload.status == UPLOAD_FILE_START) {
         uploadAuthorized = checkAuth();
         if (!uploadAuthorized) return;
-        handleUpload();
+        // handleUpload();
         return;
       }
       if (!uploadAuthorized) return;
@@ -444,7 +444,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length)
     // -------- Mensagem de texto: comandos JSON --------
     case WStype_TEXT:
       {
-        StaticJsonDocument<768> doc;
+        StaticJsonDocument<1024> doc;
         DeserializationError err = deserializeJson(doc, payload, length);
         if (err) {
           debugLogPrintf("[ERROR]", "[WS] JSON inválido: %.*s", length, (const char*)payload);
@@ -675,7 +675,9 @@ void wsSendAHT10() {
   lerSensorAHT10();
   StaticJsonDocument<128> doc;
   doc["type"] = "sensor";
-  if (estadoAHT10 != AHT10_ONLINE) {
+  if (!aht10_enabled) {
+    doc["disabled"] = true;
+  } else if (estadoAHT10 != AHT10_ONLINE) {
     doc["status"] = EstadoAHT10();
   } else {
     doc["temperatura"] = String(temperatura, 1);
@@ -768,7 +770,9 @@ void wsSendAHT10To(uint8_t num) {
   lerSensorAHT10();
   StaticJsonDocument<128> doc;
   doc["type"] = "sensor";
-  if (estadoAHT10 != AHT10_ONLINE) {
+  if (!aht10_enabled) {
+    doc["disabled"] = true;
+  } else if (estadoAHT10 != AHT10_ONLINE) {
     doc["status"] = EstadoAHT10();
   } else {
     doc["temperatura"] = String(temperatura, 1);
