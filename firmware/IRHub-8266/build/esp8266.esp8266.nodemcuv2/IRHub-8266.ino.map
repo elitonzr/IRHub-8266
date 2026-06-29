@@ -50983,12 +50983,14 @@ END GROUP
  .rodata._Z16getLedModeStringv.str1.1
                 0x000000003ffead55        0xd C:\Users\Eletrica01\AppData\Local\arduino\sketches\67493988845B8AE5F9E49C039DCAC2CA\sketch\globals.cpp.o
  .rodata._GLOBAL__sub_I_hostname_buf.str1.1
-                0x000000003ffead62       0x1c C:\Users\Eletrica01\AppData\Local\arduino\sketches\67493988845B8AE5F9E49C039DCAC2CA\sketch\globals.cpp.o
-                                         0x1f (size before relaxing)
+                0x000000003ffead62       0x19 C:\Users\Eletrica01\AppData\Local\arduino\sketches\67493988845B8AE5F9E49C039DCAC2CA\sketch\globals.cpp.o
+                                         0x1c (size before relaxing)
+ *fill*         0x000000003ffead7b        0x1 
  .rodata.CSWTCH$12
-                0x000000003ffead7e        0xc C:\Users\Eletrica01\AppData\Local\arduino\sketches\67493988845B8AE5F9E49C039DCAC2CA\sketch\globals.cpp.o
+                0x000000003ffead7c        0xc C:\Users\Eletrica01\AppData\Local\arduino\sketches\67493988845B8AE5F9E49C039DCAC2CA\sketch\globals.cpp.o
  .rodata.str1.1
-                0x000000003ffead8a       0x72 C:\Users\Eletrica01\AppData\Local\arduino\sketches\67493988845B8AE5F9E49C039DCAC2CA\sketch\globals.cpp.o
+                0x000000003ffead88       0x72 C:\Users\Eletrica01\AppData\Local\arduino\sketches\67493988845B8AE5F9E49C039DCAC2CA\sketch\globals.cpp.o
+ *fill*         0x000000003ffeadfa        0x2 
  .rodata.CSWTCH$8
                 0x000000003ffeadfc       0x20 C:\Users\Eletrica01\AppData\Local\arduino\sketches\67493988845B8AE5F9E49C039DCAC2CA\sketch\globals.cpp.o
  .rodata._ZZNSt19_Sp_make_shared_tag5_S_tiEvE5__tag

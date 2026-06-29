@@ -303,15 +303,26 @@ async function navigateTo(path) {
   try {
     const file = routes[path];
     if (!file) {
-      contentArea.innerHTML = `<div style="padding:20px">Página não encontrada: ${path}</div>`;
+      const div = document.createElement("div");
+      div.style.padding = "20px";
+      div.textContent = `Página não encontrada: ${path}`;
+      contentArea.replaceChildren(div);
       return;
     }
 
     const response = await fetch(file);
     if (!response.ok) {
       const msg = `fetch(${file}) → HTTP ${response.status} ${response.statusText}`;
-      contentArea.innerHTML = `<div style="padding:20px;font-family:monospace"><b>Erro ao carregar página</b><br><span style="font-size:12px;opacity:0.6">${msg}</span></div>`;
       console.error("navigateTo:", msg);
+      const wrap = document.createElement("div");
+      wrap.style.cssText = "padding:20px;font-family:monospace";
+      const title = document.createElement("b");
+      title.textContent = "Erro ao carregar página";
+      const detail = document.createElement("span");
+      detail.style.cssText = "font-size:12px;opacity:0.6";
+      detail.textContent = msg;
+      wrap.append(title, document.createElement("br"), detail);
+      contentArea.replaceChildren(wrap);
       return;
     }
 
@@ -512,6 +523,10 @@ function handleWSMessage(event) {
     case "configReset":
       appModal("✅ Configurações resetadas para o padrão.", { type: "alert" });
       break;
+
+    case "authError":
+      showLoginModal();
+      break;
   }
 }
 
@@ -528,6 +543,15 @@ function setText(id, val) {
 // Lê o textContent de um elemento pelo id.
 function getText(id) {
   return document.getElementById(id)?.textContent || "";
+}
+
+// Busca elemento dentro do partial ativo, evitando conflito de IDs duplicados
+// entre partials (ex: irDot e irMode existem em /ir e /system).
+function getActiveEl(id) {
+  const content = document.getElementById("app-content");
+  return content
+    ? content.querySelector(`#${id}`)
+    : document.getElementById(id);
 }
 
 // Exibe mensagem de status num elemento pelo id, com cor e auto-limpeza.
@@ -692,7 +716,7 @@ function updateIRReceptorWS(data) {
 
 // Pisca o dot IR por 300ms ao receber um sinal.
 function flashIRDot() {
-  const dot = document.getElementById("irDot");
+  const dot = getActiveEl("irDot");
   if (!dot) return;
 
   if (state.irDotTimer) {
@@ -702,7 +726,7 @@ function flashIRDot() {
 
   dot.className = "dot green";
   state.irDotTimer = setTimeout(() => {
-    const d = document.getElementById("irDot"); // re-busca após possível navegação SPA
+    const d = getActiveEl("irDot");
     if (d) d.className = "dot yellow";
     state.irDotTimer = null;
   }, 300);
@@ -765,7 +789,7 @@ function applyIRReceptorState(data) {
     if (sel) sel.value = irModeMap[data.receptor_protocol];
   }
   if (!state.irDotTimer) {
-    const dot = document.getElementById("irDot");
+    const dot = getActiveEl("irDot");
     if (dot) dot.className = "dot yellow";
   }
 }
@@ -851,23 +875,12 @@ function renderIRHistory() {
     li.textContent = `${d.timestamp} | ${d.protocol} | ${d.bits}b | ${d.dec} | ${d.hex} 📋`;
 
     // Click simples: copia hex para clipboard.
-    li.onclick = () => {
-      if (navigator.clipboard) {
-        navigator.clipboard
-          .writeText(d.hex)
-          .then(() => showIrToast("✅ Copiado!"))
-          .catch(() => showIrToast("❌ Falha ao copiar", true));
-      } else {
-        // Fallback para browsers sem Clipboard API.
-        const ta = document.createElement("textarea");
-        ta.value = d.hex;
-        ta.style.cssText = "position:fixed;opacity:0";
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
+    li.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(d.hex);
         showIrToast("✅ Copiado!");
+      } catch {
+        showIrToast("❌ Falha ao copiar", true);
       }
     };
 
@@ -1465,7 +1478,8 @@ const irModeMap = {
 function updateIRWS(data) {
   const ativo = data.emissor_teste;
   setText("irEmitter", ativo ? "Ativo" : "Desligado");
-  setText("irMode", data.receptor_protocol || "--");
+  const irModeEl = getActiveEl("irMode");
+  if (irModeEl) irModeEl.textContent = data.receptor_protocol || "--";
 
   const btn = document.querySelector(".btn-ir-emitter");
   if (btn) {
@@ -1488,7 +1502,7 @@ function updateIRWS(data) {
 
   // Atualiza dot apenas se não há timer ativo (evita conflito com flash de sinal recebido).
   if (!state.irDotTimer) {
-    const dot = document.getElementById("irDot");
+    const dot = getActiveEl("irDot");
     if (dot)
       dot.className =
         "dot " +

@@ -177,10 +177,6 @@ body {
     color .2s ease;
 }
 
-h1 {
-  display: none;
-}
-
 hr {
   border-color: var(--border);
   margin: 10px 0;
@@ -942,6 +938,13 @@ section.card header {
   min-width: 300px;
   min-height: 400px;
   margin: 0 auto;
+}
+
+.card header h2 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
 }
 
 /* ================================================
