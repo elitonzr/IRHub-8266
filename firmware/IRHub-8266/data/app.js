@@ -1676,6 +1676,30 @@ function showCfgStatus(msg, color) {
   }
 }
 
+async function checkForUpdate() {
+  try {
+    const res = await fetch(
+      "https://api.github.com/repos/elitonzr/IRHub-8266/releases/latest",
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    const latest = data.tag_name?.replace(/^v/, "");
+    if (!latest) return;
+
+    const current = getText("buildVersion") || "";
+    if (!current || latest === current) return;
+
+    const badge = document.getElementById("versionBadge");
+    if (badge) {
+      badge.textContent = `⬆️ v${latest} disponível`;
+      badge.style.display = "inline";
+      badge.title = `Nova versão disponível! Atual: v${current}`;
+      badge.onclick = () => window.open(data.html_url, "_blank", "noopener");
+      badge.style.cursor = "pointer";
+    }
+  } catch {}
+}
+
 /* =========================================================
    20. INICIALIZAÇÃO
    Executado uma vez ao carregar a página.
@@ -1706,32 +1730,5 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnTheme = document.getElementById("btnTheme");
   if (btnTheme) {
     btnTheme.textContent = lsGet("theme") === "light" ? "🌙" : "☀️";
-  }
-
-  async function checkForUpdate() {
-    try {
-      const res = await fetch(
-        "https://api.github.com/repos/elitonzr/IRHub-8266/releases/latest",
-      );
-      if (!res.ok) return;
-      const data = await res.json();
-      const latest = data.tag_name?.replace(/^v/, ""); // ex: "0.4.42"
-      if (!latest || !state.lastConfig) return;
-
-      const current = getText("buildVersion") || "";
-      if (latest !== current) {
-        const badge = document.getElementById("versionBadge");
-        if (badge) {
-          badge.textContent = `⬆️ v${latest} disponível`;
-          badge.style.display = "inline";
-          badge.title = `Nova versão disponível! Atual: v${current}`;
-          badge.onclick = () =>
-            window.open(data.html_url, "_blank", "noopener");
-          badge.style.cursor = "pointer";
-        }
-      }
-    } catch {
-      // silencioso — sem internet ou rate limit
-    }
   }
 });

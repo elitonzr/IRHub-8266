@@ -30,7 +30,7 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 - Publicação periódica de uptime, rede e sensores (a cada 5 minutos)
 - Publicação event-driven de IR recebido/enviado e estado do LED
 - Subscrição em `<topic>/command` para receber comandos JSON
-- Reconexão automática com intervalo de 60 segundos
+- Reconexão automática com backoff exponencial (5s → até 300s)
 
 ### IR
 
@@ -40,7 +40,7 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 - **Recepção** configurável com 12 modos: ALL, KNOWN, DISABLED e cada protocolo individualmente
 - Modo de recepção persistido em `config.json`
 - Modo de teste do emissor: ciclo de desligamento universal automático
-- Debounce de 300ms na recepção
+- Debounce de 150ms na recepção
 
 ### Sensor AHT10
 
@@ -74,7 +74,7 @@ O objetivo do projeto é atuar como ponte entre dispositivos infravermelhos e si
 
 - **ArduinoOTA** — atualização via IDE Arduino ou terminal na rede local
   - Hostname: `hostname_buf` (ex: `irhub8266`)
-  - Senha: ChipID em hexadecimal (8 dígitos)
+  - Senha: `PasswordWS` (mesma senha do WebSocket/portal — padrão: ChipID em hex)
 - **OTA via browser** — atualização pelo dashboard em `/system`
   - Endpoint: `POST /update` com autenticação HTTP Basic
   - Aceita arquivo `.bin` gerado pelo Arduino IDE
@@ -136,7 +136,7 @@ O portal de configuração WiFi (`irhub8266` / `192.168.4.1`) é protegido por `
 |-------------------|----------------|---------------------------|------------------|
 | HTTP Basic Auth   | `admin`        | ChipID em hex (8 dígitos) | `/settings`      |
 | WebSocket / Login | `admin`        | ChipID em hex (8 dígitos) | `/settings`      |
-| OTA (ArduinoOTA)  | —              | ChipID em hex (8 dígitos) | não              |
+| OTA (ArduinoOTA)  | —              | ChipID em hex (8 dígitos) | `/settings`      |
 | OTA (browser)     | `admin`        | ChipID em hex (8 dígitos) | `/settings`      |
 | Portal WiFi AP    | —              | ChipID em hex (8 dígitos) | `/settings`      |
 
@@ -180,32 +180,25 @@ Comandos que alteram estado ou configuração exigem autenticação prévia:
 | `wifiPortal`      | ✅          |
 | `resetWifi`       | ✅          |
 | `resetConfig`     | ✅          |
-| `reboot`          | ❌          |
-| `telnetCmd`       | ❌          |
+| `reboot`          | ✅          |
+| `telnetCmd`       | ✅          |
 
 #### Fluxo de autenticação WebSocket
-
 
 ```
 Cliente                        Dispositivo
 │                               │
-│── { cmd: "getChipId" } ──────►│
-│◄─ { type: "chipId",           │
-│     value: "AABBCCDD" } ──────│
-│                               │
-│  hash = SHA-256(senha + chipId)
-│                               │
-│── { cmd: "auth",              │
-│     hash: "<sha256>" } ───────►│
-│◄─ { type: "authOk" } ─────────│
+│── { cmd: "login",             │
+│     user: "admin",            │
+│     password: "senha" } ─────►│
+│◄─ { type: "loginOk" } ────────│
 │        ou                     │
-│◄─ { type: "authError" } ──────│
+│◄─ { type: "loginError" } ─────│
 ```
 
-- O hash é calculado como `SHA-256(PasswordWS + ChipID_hex)`
-- O ChipID é obtido em tempo real via `getChipId` para evitar replay attacks
-- A senha (`PasswordWS`) é configurável em `/settings` → "Senha WebSocket"
-- O padrão é o ChipID em hex (8 dígitos), consultável via Telnet: `senha`
+- Credenciais: `admin_user` + `PasswordWS` (configuráveis em `/settings`)
+- O padrão de ambos é o ChipID em hex (8 dígitos), consultável via Telnet: `senha`
+- Logout: `{ cmd: "logout" }` → `{ type: "logoutOk" }`
 
 ---
 
