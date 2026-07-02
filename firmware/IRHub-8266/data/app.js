@@ -26,7 +26,6 @@ const state =
     saveConfigTimer: null, // timeout de confirmação de saveConfig
     remotesData: {}, // dados do remotes.json carregados em memória
     lastPayloads: {}, // cache dos últimos payloads recebidos por type
-    lastConfig: null, // última config recebida via WS (type: system)
     logRenderedIndex: 0, // índice de renderização incremental do console
     _settingsFormDirty: false, // true se o usuário editou o form antes de salvar
     selectedRemote: lsGet("selectedRemote") || null, // último modelo de controle remoto selecionado
@@ -180,14 +179,25 @@ function scheduleReconnect() {
   }, 2000);
 }
 
-// Envia mensagem pelo WS. Se offline, enfileira para envio posterior.
+// Comandos que não fazem sentido enfileirar para envio posterior —
+// são ações de tempo real (ex: enviar IR agora), não configurações.
+const NO_QUEUE_CMDS = new Set(["sendIR", "toggleIREmissor"]);
+
+// Envia mensagem pelo WS. Se offline, enfileira para envio posterior
+// (exceto comandos em NO_QUEUE_CMDS).
 function wsSend(msg) {
-  const data = typeof msg === "object" ? JSON.stringify(msg) : msg;
+  const isObj = typeof msg === "object";
+  const data = isObj ? JSON.stringify(msg) : msg;
+
   if (state.ws && state.ws.readyState === WebSocket.OPEN) {
     state.ws.send(data);
-  } else {
-    if (state.wsQueue.length < 20) state.wsQueue.push(data);
+    return;
   }
+
+  const cmd = isObj ? msg.cmd : JSON.parse(msg)?.cmd;
+  if (NO_QUEUE_CMDS.has(cmd)) return;
+
+  if (state.wsQueue.length < 20) state.wsQueue.push(data);
 }
 
 // Envia todas as mensagens enfileiradas após reconexão.
@@ -393,8 +403,9 @@ function initPageScript(path) {
     // Repopula o form apenas se não houver edições pendentes do usuário.
     if (!state._settingsFormDirty) {
       state.configPopulated = false;
-      if (state.lastConfig) {
-        populateConfig(state.lastConfig);
+      const cfg = state.lastPayloads.system?.config;
+      if (cfg) {
+        populateConfig(cfg);
         state.configPopulated = true;
       }
     }
@@ -426,6 +437,87 @@ function updateActiveLinks(path) {
    Roteador central — cada type dispara um updater de UI.
 ========================================================= */
 
+function handleLoginOk() {
+  state.wsAuthenticated = true;
+  hideLoginModal();
+  // Só reseta configPopulated se o form não tiver edições pendentes.
+  if (!state._settingsFormDirty) state.configPopulated = false;
+  replayLastPayloads();
+  updateAuthUI(true);
+}
+
+function handleLoginError() {
+  state.wsAuthenticated = false;
+  const errEl = document.getElementById("loginError");
+  if (errEl) errEl.style.display = "block";
+  const btn = document.querySelector("#loginModal .btn-primary");
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = "Entrar";
+  }
+}
+
+function handleLogoutOk() {
+  state.wsAuthenticated = false;
+  updateAuthUI(false);
+}
+
+function handleRebootMsg() {
+  appModal("🔄 Dispositivo reiniciando...", {
+    type: "alert",
+    confirmText: "OK",
+  });
+}
+
+function handleWifiPortalMsg() {
+  appModal(
+    `📶 Conecte-se à rede <b>'${getText("name") || "irhub8266"}'</b> para configurar.`,
+    { type: "alert" },
+  );
+}
+
+function handleWifiResetMsg() {
+  appModal("✅ WiFi resetado com sucesso!", { type: "alert" });
+}
+
+function handleConfigSaved() {
+  if (state.saveConfigTimer) {
+    clearTimeout(state.saveConfigTimer);
+    state.saveConfigTimer = null;
+  }
+  showCfgStatus("✅ Configuração salva!", "#22c55e");
+}
+
+function handleConfigError(data) {
+  showCfgStatus("❌ Erro: " + (data.msg || ""), "#ef4444");
+}
+
+function handleConfigReset() {
+  appModal("✅ Configurações resetadas para o padrão.", { type: "alert" });
+}
+
+// Mapa de despacho: type da mensagem WS → handler correspondente.
+const WS_MESSAGE_HANDLERS = {
+  loginOk: handleLoginOk,
+  loginError: handleLoginError,
+  logoutOk: handleLogoutOk,
+  system: updateSystemWS,
+  ledb: updateLEDBWS,
+  sensor: updateSensorWS,
+  ir: updateIRWS,
+  ir_receptor: updateIRReceptorWS,
+  network: updateNetworkWS,
+  mqtt: updateMQTTWS,
+  console: saveLogToHistory,
+  reboot: handleRebootMsg,
+  wifiPortal: handleWifiPortalMsg,
+  wifiReset: handleWifiResetMsg,
+  configSaved: handleConfigSaved,
+  configError: handleConfigError,
+  configReset: handleConfigReset,
+  authError: showLoginModal,
+};
+
 function handleWSMessage(event) {
   let data;
   try {
@@ -433,101 +525,12 @@ function handleWSMessage(event) {
   } catch {
     return;
   }
-
-  // Armazena o último payload de cada type para replayLastPayloads().
-  if (data.type) state.lastPayloads[data.type] = data;
   if (!data.type) return;
 
-  switch (data.type) {
-    case "loginOk":
-      state.wsAuthenticated = true;
-      hideLoginModal();
-      // Só reseta configPopulated se o form não tiver edições pendentes.
-      if (!state._settingsFormDirty) state.configPopulated = false;
-      replayLastPayloads();
-      updateAuthUI(true);
-      break;
+  // Armazena o último payload de cada type para replayLastPayloads().
+  state.lastPayloads[data.type] = data;
 
-    case "loginError": {
-      state.wsAuthenticated = false;
-      const errEl = document.getElementById("loginError");
-      if (errEl) errEl.style.display = "block";
-      const btn = document.querySelector("#loginModal .btn-primary");
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "Entrar";
-      }
-      break;
-    }
-
-    case "logoutOk":
-      state.wsAuthenticated = false;
-      updateAuthUI(false);
-      break;
-
-    case "system":
-      updateSystemWS(data);
-      break;
-    case "ledb":
-      updateLEDBWS(data);
-      break;
-    case "sensor":
-      updateSensorWS(data);
-      break;
-    case "ir":
-      updateIRWS(data);
-      break;
-    case "ir_receptor":
-      updateIRReceptorWS(data);
-      break;
-    case "network":
-      updateNetworkWS(data);
-      break;
-    case "mqtt":
-      updateMQTTWS(data);
-      break;
-    case "console":
-      saveLogToHistory(data);
-      break;
-
-    case "reboot":
-      appModal("🔄 Dispositivo reiniciando...", {
-        type: "alert",
-        confirmText: "OK",
-      });
-      break;
-
-    case "wifiPortal":
-      appModal(
-        `📶 Conecte-se à rede <b>'${getText("name") || "irhub8266"}'</b> para configurar.`,
-        { type: "alert" },
-      );
-      break;
-
-    case "wifiReset":
-      appModal("✅ WiFi resetado com sucesso!", { type: "alert" });
-      break;
-
-    case "configSaved":
-      if (state.saveConfigTimer) {
-        clearTimeout(state.saveConfigTimer);
-        state.saveConfigTimer = null;
-      }
-      showCfgStatus("✅ Configuração salva!", "#22c55e");
-      break;
-
-    case "configError":
-      showCfgStatus("❌ Erro: " + (data.msg || ""), "#ef4444");
-      break;
-
-    case "configReset":
-      appModal("✅ Configurações resetadas para o padrão.", { type: "alert" });
-      break;
-
-    case "authError":
-      showLoginModal();
-      break;
-  }
+  WS_MESSAGE_HANDLERS[data.type]?.(data);
 }
 
 /* =========================================================
@@ -642,9 +645,6 @@ function updateSystemWS(data) {
       }
     }
   }
-
-  // Armazena config para uso em navegações futuras (ex: ao abrir /settings).
-  if (data.config) state.lastConfig = data.config;
 
   // Popula o form de configurações apenas uma vez por conexão.
   if (data.config && !state.configPopulated) {
@@ -797,17 +797,18 @@ function applyIRReceptorState(data) {
 // Reaplica o último estado conhecido de cada type ao navegar entre páginas.
 // ir_receptor usa applyIRReceptorState (restauração silenciosa) em vez de
 // updateIRReceptorWS (que aciona flash e adiciona ao histórico).
+const WS_UPDATERS = {
+  system: updateSystemWS,
+  ledb: updateLEDBWS,
+  sensor: updateSensorWS,
+  ir: updateIRWS,
+  ir_receptor: applyIRReceptorState,
+  network: updateNetworkWS,
+  mqtt: updateMQTTWS,
+};
+
 function replayLastPayloads() {
-  const updaters = {
-    system: updateSystemWS,
-    ledb: updateLEDBWS,
-    sensor: updateSensorWS,
-    ir: updateIRWS,
-    ir_receptor: applyIRReceptorState,
-    network: updateNetworkWS,
-    mqtt: updateMQTTWS,
-  };
-  Object.entries(updaters).forEach(([type, fn]) => {
+  Object.entries(WS_UPDATERS).forEach(([type, fn]) => {
     if (state.lastPayloads[type]) fn(state.lastPayloads[type]);
   });
 }
@@ -981,30 +982,35 @@ function sendTelnetCmd() {
   input.value = "";
 }
 
+// Mapa de tags de log para cores do console. Ordem importa: a primeira
+// chave que der match (via includes) define a cor.
+const LOG_COLORS = [
+  ["HTTP", "#00FFFF"], // ciano
+  ["MQTT", "#FFA500"], // laranja
+  ["WIFI", "#8e5a8a"], // roxo
+  ["WS", "#60a5fa"], // azul claro
+  ["IR", "#a78bfa"], // violeta
+  ["FS", "#34d399"], // verde
+  ["AHT", "#22d3ee"], // ciano claro
+  ["SYS", "#f472b6"], // rosa
+  ["BTN", "#fb923c"], // laranja claro
+  ["OTA", "#facc15"], // amarelo
+  ["LED A", "#009dff"], // azul
+  ["LED B", "#FFD700"], // dourado
+  ["ERROR", "#FF4C4C"], // vermelho
+  ["WARN", "#FFD700"], // dourado
+  ["INFO", "#87CEFA"], // azul claro
+  ["TELNET", "#94a3b8"], // cinza azulado
+  ["AUTH", "#f87171"], // vermelho claro
+  ["TESTE", "#c084fc"], // lilás
+];
+
 // Retorna a cor associada à tag de log para colorização do console.
 function getLogColor(tag) {
   if (!tag) return "#ffffff";
-  tag = tag.toUpperCase();
-
-  if (tag.includes("HTTP")) return "#00FFFF"; // ciano
-  if (tag.includes("MQTT")) return "#FFA500"; // laranja
-  if (tag.includes("WIFI")) return "#8e5a8a"; // roxo
-  if (tag.includes("WS")) return "#60a5fa"; // azul claro
-  if (tag.includes("IR")) return "#a78bfa"; // violeta
-  if (tag.includes("FS")) return "#34d399"; // verde
-  if (tag.includes("AHT")) return "#22d3ee"; // ciano claro
-  if (tag.includes("SYS")) return "#f472b6"; // rosa
-  if (tag.includes("BTN")) return "#fb923c"; // laranja claro
-  if (tag.includes("OTA")) return "#facc15"; // amarelo
-  if (tag.includes("LED A")) return "#009dff"; // azul
-  if (tag.includes("LED B")) return "#FFD700"; // dourado
-  if (tag.includes("ERROR")) return "#FF4C4C"; // vermelho
-  if (tag.includes("WARN")) return "#FFD700"; // dourado
-  if (tag.includes("INFO")) return "#87CEFA"; // azul claro
-  if (tag.includes("TELNET")) return "#94a3b8"; // cinza azulado
-  if (tag.includes("AUTH")) return "#f87171"; // vermelho claro
-  if (tag.includes("TESTE")) return "#c084fc"; // lilás
-  return "#CCCCCC";
+  const upper = tag.toUpperCase();
+  const match = LOG_COLORS.find(([key]) => upper.includes(key));
+  return match ? match[1] : "#CCCCCC";
 }
 
 // Escapa caracteres HTML especiais para exibição segura no console.
@@ -1029,7 +1035,7 @@ function escapeHtml(str) {
 // Retorna o header Authorization Basic.
 // Usa o admin_user da última config recebida, com fallback para "admin".
 function makeBasicAuth(pass) {
-  const user = state.lastConfig?.admin_user || "admin";
+  const user = state.lastPayloads.system?.config?.admin_user || "admin";
   return "Basic " + btoa(`${user}:${pass}`);
 }
 
@@ -1229,9 +1235,10 @@ function toggleIPFields() {
 
 // Exibe/oculta campos MQTT conforme habilitado/desabilitado.
 function toggleMQTTFields() {
-  const enabled = document.getElementById("cfg_mqtt_enabled")?.value;
-  const fields = document.getElementById("cfg_mqtt_fields");
-  if (fields) fields.style.display = enabled === "true" ? "block" : "none";
+  const enabled = document.getElementById("cfg_mqtt_enabled")?.value === "true";
+  document
+    .getElementById("cfg_mqtt_fields")
+    ?.classList.toggle("hidden", !enabled);
 }
 
 // Valida formato de endereço IP. String vazia é aceita (indica modo DHCP).
@@ -1299,7 +1306,30 @@ function populateRemoteSelect() {
   }
 }
 
-// Renderiza os botões do modelo selecionado no grid.
+// Renderiza um botão individual do controle remoto a partir da definição do JSON.
+function createRemoteButton(btn) {
+  const b = document.createElement("button");
+  b.textContent = btn.name;
+  b.type = "button";
+  b.className = "btn-ir-remote";
+
+  if (btn.fontSize) b.style.fontSize = btn.fontSize;
+  if (btn.span) b.classList.add(`span-${btn.span}`);
+  if (btn.rowSpan) b.classList.add(`row-span-${btn.rowSpan}`);
+  if (btn.background) b.style.background = `#${btn.background}`;
+  if (btn.color) b.style.color = `#${btn.color}`;
+
+  b.onclick = () => {
+    if (!btn.code) {
+      showIrToast("Botão sem código IR", true);
+      return;
+    }
+    sendIR(btn.protocol, btn.code, btn.bits, b);
+  };
+
+  return b;
+}
+
 function loadButtons(model) {
   if (!state.remotesData?.[model]) {
     console.warn(`Dados para o modelo ${model} ainda não disponíveis.`);
@@ -1309,10 +1339,12 @@ function loadButtons(model) {
   const container = document.getElementById("buttonsContainer");
   if (!container) return;
 
-  container.style.opacity = "0";
   container.style.transition = "opacity 0.15s ease";
+  container.style.opacity = "0";
 
-  setTimeout(() => {
+  // Espera o fade-out terminar (1 frame é suficiente para o browser
+  // registrar a mudança de opacidade) antes de trocar o conteúdo.
+  requestAnimationFrame(() => {
     container.innerHTML = "";
 
     const buttons =
@@ -1328,15 +1360,11 @@ function loadButtons(model) {
         container.appendChild(emptyState);
       }
       container.style.opacity = "1";
-      setTimeout(() => {
-        container.style.transition = "";
-      }, 150);
       return;
     }
     if (emptyState) emptyState.style.display = "none";
 
     buttons.forEach((btn) => {
-      // Espaço vazio no grid.
       if (btn.type === "space") {
         const space = document.createElement("div");
         if (btn.span) space.className = `span-${btn.span}`;
@@ -1344,7 +1372,6 @@ function loadButtons(model) {
         return;
       }
 
-      // Label descritivo (sem ação).
       if (btn.type === "label") {
         const label = document.createElement("div");
         label.textContent = btn.name || "";
@@ -1353,36 +1380,13 @@ function loadButtons(model) {
         return;
       }
 
-      // Ignora tipos desconhecidos (exceto "button" e sem type).
       if (btn.type && btn.type !== "button") return;
 
-      const b = document.createElement("button");
-      b.textContent = btn.name;
-      b.type = "button";
-      b.className = "btn-ir-remote";
-
-      if (btn.fontSize) b.style.fontSize = btn.fontSize;
-      if (btn.span) b.classList.add(`span-${btn.span}`);
-      if (btn.rowSpan) b.classList.add(`row-span-${btn.rowSpan}`);
-      if (btn.background) b.style.background = `#${btn.background}`;
-      if (btn.color) b.style.color = `#${btn.color}`;
-
-      b.onclick = () => {
-        if (!btn.code) {
-          showIrToast("Botão sem código IR", true);
-          return;
-        }
-        sendIR(btn.protocol, btn.code, btn.bits, b);
-      };
-
-      container.appendChild(b);
+      container.appendChild(createRemoteButton(btn));
     });
 
     container.style.opacity = "1";
-    setTimeout(() => {
-      container.style.transition = "";
-    }, 150);
-  }, 120);
+  });
 }
 
 /* =========================================================
@@ -1426,6 +1430,19 @@ function showIrToast(message, isError = false) {
 // Envia código IR digitado manualmente no form.
 // Hex sem prefixo 0x é auto-prefixado antes do envio para garantir
 // interpretação correta pelo backend (strtoull com base 0).
+// Normaliza um código IR digitado manualmente para o formato esperado
+// pelo backend. Aceita decimal puro, hex com prefixo "0x" ou hex sem
+// prefixo (desde que contenha ao menos um caractere A-F, senão seria
+// ambíguo com decimal). Retorna null se o formato for inválido.
+function normalizeIRCode(raw) {
+  if (/^\d+$/.test(raw)) return raw; // decimal puro
+  if (/^0x[0-9a-fA-F]+$/i.test(raw)) return raw; // hex já prefixado
+  if (/^[0-9a-fA-F]{1,16}$/i.test(raw) && /[a-fA-F]/.test(raw)) {
+    return "0x" + raw; // hex sem prefixo
+  }
+  return null;
+}
+
 async function sendIRManual() {
   const code = document.getElementById("irCode")?.value.trim();
   const proto = document.getElementById("irProto")?.value;
@@ -1436,13 +1453,8 @@ async function sendIRManual() {
     return;
   }
 
-  const isHex0x = /^0x[0-9a-fA-F]+$/i.test(code);
-  const isHexRaw =
-    /^[0-9a-fA-F]{1,16}$/.test(code) && !/^\d+$/.test(code) && !isHex0x;
-  const finalCode = isHexRaw ? "0x" + code : code;
-  const isDec = /^\d+$/.test(code);
-
-  if (!isHex0x && !isHexRaw && !isDec) {
+  const finalCode = normalizeIRCode(code);
+  if (!finalCode) {
     await appModal(
       "Código inválido.<br><span style='opacity:0.6;font-size:12px'>Use hex (0x20DF10EF) ou decimal (551489775).</span>",
       { type: "alert" },
@@ -1581,7 +1593,7 @@ async function resetConfig() {
 
 // Popula o form de configurações com os dados recebidos do backend.
 // Chamado uma vez por conexão WS (via updateSystemWS) ou ao navegar
-// para /settings se state.lastConfig estiver disponível.
+// para /settings se state.lastPayloads.system?.config estiver disponível.
 function populateConfig(data) {
   const fields = {
     cfg_hostname: data.hostname,

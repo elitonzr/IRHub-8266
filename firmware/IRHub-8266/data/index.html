@@ -9,7 +9,7 @@
   </head>
 
   <body>
-    <div id="loginModal">
+    <div id="loginModal" role="dialog" aria-modal="true" aria-label="Login">
       <div class="login-box">
         <h3 style="margin: 0; text-align: center; font-size: 15px">Login</h3>
         <input id="loginUser" type="text" placeholder="Usuário" value="admin" />
@@ -37,7 +37,12 @@
     </div>
 
     <!-- MODAL CUSTOMIZADO -->
-    <div id="appModal">
+    <div
+      id="appModal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="appModalMsg"
+    >
       <div class="app-modal-box">
         <p id="appModalMsg" class="app-modal-msg"></p>
         <div
